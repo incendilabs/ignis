@@ -8,10 +8,3 @@ design decisions.
 > Ignis is an experimental project for early-stage exploration. Thus, the implementations in this repository are not
 > intended for production use.
 
-## Set up the repository
-1. Clone the repository.
-2. Initalize the spark submodule:
-   ```
-   git submodule init
-   git submodule update
-   ```
