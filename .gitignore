@@ -1,0 +1,53 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Visual Studio / C#
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+.vs/
+TestResults/
+*.pdb
+*.mdb
+*.opendb
+*.dbmdl
+*.ncrunch*
+
+# JetBrains Rider / IDE
+.idea/
+*.sln.iml
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.local
+.env.*.local
+dist/
+build/
+.cache/
+.next/
+coverage/
+
+# Editor directories and files
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# Temp
+*.tmp
+*.temp
