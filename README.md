@@ -1,15 +1,17 @@
-# Ignis - FHIR server implementation
+# Ignis
+Explorative area for early-stage concepts and implementations for the [Spark FHIR Server](https://github.com/firelyteam/spark)
 
-⚠️ **Experimental repository**
+This repository exists to test concepts quickly, learn fast, and validate direction before committing to long-term
+design decisions.
 
-Ignis is an experimental project for exploring ideas around **FHIR** services, APIs, and workflows.  
+> [!IMPORTANT]
+> Ignis is an experimental project for early-stage exploration. Thus, the implementations in this repository are not
+> intended for production use.
 
-It builds on [Spark FHIR Server](https://github.com/firelyteam/spark).
-
-## Status
-- Early-stage exploration
-- Architecture and APIs may change frequently
-- Not intended for production use
-
-## Purpose
-This repository exists to test concepts quickly, learn fast, and validate direction before committing to long-term design decisions.
+## Set up the repository
+1. Clone the repository.
+2. Initalize the spark submodule:
+   ```
+   git submodule init
+   git submodule update
+   ```
