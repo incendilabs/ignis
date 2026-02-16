@@ -1,0 +1,3 @@
+[submodule "spark"]
+	path = spark
+	url = git@github.com:FirelyTeam/spark.git
