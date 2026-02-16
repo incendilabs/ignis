@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="src/Ignis.Api/Ignis.Api.csproj" />
+  <Project Path="tests/Ignis.Api.Tests/Ignis.Api.Tests.csproj" />
 </Solution>
