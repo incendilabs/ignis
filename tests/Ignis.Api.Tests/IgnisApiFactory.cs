@@ -1,31 +1,16 @@
-
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 
-using Testcontainers.MongoDb;
-
 namespace Ignis.Api.Tests;
 
-public class IgnisApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class IgnisApiFactory : WebApplicationFactory<Program>
 {
-    private readonly MongoDbContainer _mongoContainer = new MongoDbBuilder()
-        .WithImage("mongo:8")
-        .Build();
+    private readonly string _connectionString;
 
-    public async ValueTask InitializeAsync()
+    public IgnisApiFactory(string connectionString)
     {
-        await _mongoContainer.StartAsync();
-    }
-
-    async ValueTask IAsyncDisposable.DisposeAsync()
-    {
-        await _mongoContainer.DisposeAsync();
-        await base.DisposeAsync();
+        _connectionString = connectionString;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -34,7 +19,7 @@ public class IgnisApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["StoreSettings:ConnectionString"] = _mongoContainer.GetConnectionString() + "/ignis_test",
+                ["StoreSettings:ConnectionString"] = _connectionString,
                 ["SparkSettings:Endpoint"] = "https://localhost/fhir",
                 ["SparkSettings:FhirRelease"] = "R4",
                 ["SparkSettings:UseAsynchronousIO"] = "true",
