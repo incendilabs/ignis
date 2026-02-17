@@ -5,15 +5,18 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+using System.Net;
+
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
+
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+
 using Spark.Engine;
 using Spark.Engine.Core;
 using Spark.Engine.Extensions;
 using Spark.Engine.Service;
-using System.Net;
 
 namespace Ignis.Api.Controllers;
 
