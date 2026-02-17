@@ -1,32 +1,33 @@
 using System.Net;
-using System.Net.Http;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 using FluentAssertions;
 
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 
+using Xunit;
+
+// Avoid clash with Hl7.Fhir.Model.Task
 using Task = System.Threading.Tasks.Task;
 
 namespace Ignis.Api.Tests;
 
-public class FhirControllerTests : IClassFixture<IgnisApiFactory>
+public class FhirControllerTests : IClassFixture<IntegrationFixture>
 {
     private readonly HttpClient _client;
+
     private readonly FhirJsonSerializer _serializer = new();
     private readonly FhirJsonParser _parser = new();
 
-    public FhirControllerTests(IgnisApiFactory factory)
+    public FhirControllerTests(IntegrationFixture fixture)
     {
-        _client = factory.CreateClient();
+        _client = fixture.Factory.CreateClient();
     }
 
     private static CancellationToken CT => TestContext.Current.CancellationToken;
 
-    // ============= Metadata
+    // Metadata
 
     [Fact]
     public async Task Metadata_ReturnsCapabilityStatement()
@@ -40,7 +41,7 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         resource.Should().BeOfType<CapabilityStatement>();
     }
 
-    // ============= Create + Read
+    // Create + Read
 
     [Fact]
     public async Task Create_And_Read_Patient()
@@ -68,7 +69,7 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         read.Name[0].Family.Should().Be("Losen");
     }
 
-    // ============= Type validation
+    // Type validation
 
     [Fact]
     public async Task Create_WithMismatchedType_ReturnsBadRequest()
@@ -76,15 +77,14 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         var observation = new Observation
         {
             Status = ObservationStatus.Final,
-            Code = new CodeableConcept("http://loinc.org", "72166-2")
+            Code = new CodeableConcept("http://loinc.org", "72166-2"),
         };
 
-        // Post an Observation to the Patient endpoint
         var response = await PostFhirResource("Patient", observation);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ============= Update
+    // Update
 
     [Fact]
     public async Task Update_ExistingPatient()
@@ -95,7 +95,10 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         };
 
         var createResponse = await PostFhirResource("Patient", patient);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
         var created = _parser.Parse<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
+        created.Id.Should().NotBeNullOrEmpty();
 
         created.Name[0].Family = "Johansen";
 
@@ -103,11 +106,13 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var readResponse = await _client.GetAsync($"/fhir/Patient/{created.Id}", CT);
+        readResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
         var read = _parser.Parse<Patient>(await readResponse.Content.ReadAsStringAsync(CT));
         read.Name[0].Family.Should().Be("Johansen");
     }
 
-    // ============= Delete
+    // Delete
 
     [Fact]
     public async Task Delete_ExistingPatient_ReturnsNoContent()
@@ -118,7 +123,10 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         };
 
         var createResponse = await PostFhirResource("Patient", patient);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
         var created = _parser.Parse<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
+        created.Id.Should().NotBeNullOrEmpty();
 
         var deleteResponse = await _client.DeleteAsync($"/fhir/Patient/{created.Id}", CT);
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -127,7 +135,7 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         readResponse.StatusCode.Should().Be(HttpStatusCode.Gone);
     }
 
-    // ============= Search
+    // Search
 
     [Fact]
     public async Task Search_Patients_ReturnsBundle()
@@ -137,10 +145,11 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
 
         var body = await response.Content.ReadAsStringAsync(CT);
         var bundle = _parser.Parse<Bundle>(body);
+
         bundle.Type.Should().Be(Bundle.BundleType.Searchset);
     }
 
-    // ============= ConditionalDelete guard
+    // ConditionalDelete guard
 
     [Fact]
     public async Task ConditionalDelete_WithoutParams_ReturnsBadRequest()
@@ -149,7 +158,7 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ============= History
+    // History
 
     [Fact]
     public async Task History_ReturnsBundle()
@@ -160,40 +169,45 @@ public class FhirControllerTests : IClassFixture<IgnisApiFactory>
         };
 
         var createResponse = await PostFhirResource("Patient", patient);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
         var created = _parser.Parse<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
+        created.Id.Should().NotBeNullOrEmpty();
 
         var historyResponse = await _client.GetAsync($"/fhir/Patient/{created.Id}/_history", CT);
         historyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await historyResponse.Content.ReadAsStringAsync(CT);
         var bundle = _parser.Parse<Bundle>(body);
+
         bundle.Type.Should().Be(Bundle.BundleType.History);
         bundle.Entry.Should().NotBeEmpty();
     }
 
-    // ============= Transaction validation
+    // Transaction validation
 
     [Fact]
     public async Task Transaction_WithInvalidBundleType_ReturnsBadRequest()
     {
         var bundle = new Bundle { Type = Bundle.BundleType.Collection };
+
         var response = await PostFhirResource(string.Empty, bundle);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ============= Helpers
+    // Helpers
 
     private async Task<HttpResponseMessage> PostFhirResource(string path, Resource resource)
     {
-        var json = await _serializer.SerializeToStringAsync(resource);
-        var content = new StringContent(json, Encoding.UTF8, "application/fhir+json");
+        var json = _serializer.SerializeToString(resource);
+        using var content = new StringContent(json, Encoding.UTF8, "application/fhir+json");
         return await _client.PostAsync($"/fhir/{path}", content, CT);
     }
 
     private async Task<HttpResponseMessage> PutFhirResource(string path, Resource resource)
     {
-        var json = await _serializer.SerializeToStringAsync(resource);
-        var content = new StringContent(json, Encoding.UTF8, "application/fhir+json");
+        var json = _serializer.SerializeToString(resource);
+        using var content = new StringContent(json, Encoding.UTF8, "application/fhir+json");
         return await _client.PutAsync($"/fhir/{path}", content, CT);
     }
 }
