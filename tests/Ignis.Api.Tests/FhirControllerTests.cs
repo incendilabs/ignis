@@ -1,11 +1,14 @@
-using FluentAssertions;
-using Hl7.Fhir.Model;
-using Hl7.Fhir.Serialization;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
+using FluentAssertions;
+
+using Hl7.Fhir.Model;
+using Hl7.Fhir.Serialization;
+
 using Task = System.Threading.Tasks.Task;
 
 namespace Ignis.Api.Tests;
