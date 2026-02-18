@@ -20,6 +20,21 @@ app:
     # Use an existing Secret for the API (skips chart-managed secret)
     existingSecret: ""
 
+  web:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: ignis-web
+      tag: latest
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
   gateway:
     enabled: true
     # Name of the Gateway resource to attach HTTPRoutes to

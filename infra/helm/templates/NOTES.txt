@@ -2,7 +2,17 @@ Ignis FHIR Server has been deployed!
 
 Components:
   - Ignis API: {{ include "ignis.fullname" . }}-api
+{{- if .Values.app.web.enabled }}
+  - Ignis Web: {{ include "ignis.fullname" . }}-web
+{{- end }}
 
 To access the API locally:
   kubectl port-forward svc/{{ include "ignis.fullname" . }}-api 8080:8080
   # Then visit http://localhost:8080/fhir
+
+{{- if .Values.app.web.enabled }}
+
+To access the Web UI locally:
+  kubectl port-forward svc/{{ include "ignis.fullname" . }}-web 3000:3000
+  # Then visit http://localhost:3000
+{{- end }}
