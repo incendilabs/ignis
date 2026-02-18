@@ -16,7 +16,7 @@ api:
     fhirRelease: "R4"
   externalMongodbConnectionString: ""
   existingSecret: ""
-  # Hostnames for API route (overrides gateway.hostname)
+  # Hostnames for API HTTPRoute
   hostnames: []
 
 web:
@@ -33,7 +33,7 @@ web:
     limits:
       cpu: 200m
       memory: 256Mi
-  # Hostnames for Web route (overrides gateway.hostname)
+  # Hostnames for Web HTTPRoute
   hostnames: []
 
 gateway:
