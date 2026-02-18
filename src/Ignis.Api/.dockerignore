@@ -1,0 +1,8 @@
+bin/
+obj/
+*.user
+.vs/
+.vscode/
+*.DotSettings.user
+TestResults/
+README.md
