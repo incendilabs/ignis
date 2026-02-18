@@ -30,6 +30,14 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>
     // Metadata
 
     [Fact]
+    public async Task Healthz_ReturnsOk()
+    {
+        var response = await _client.GetAsync("/healthz", CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task Metadata_ReturnsCapabilityStatement()
     {
         var response = await _client.GetAsync("/fhir/metadata", CT);

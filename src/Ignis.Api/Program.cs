@@ -55,5 +55,6 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors();
 app.MapControllers();
+app.MapGet("/healthz", () => Results.Ok("ok"));
 
 app.Run();
