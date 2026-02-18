@@ -2,8 +2,11 @@ dependencies:
 - name: app
   repository: file://charts/app
   version: 0.1.0
+- name: db
+  repository: file://charts/db
+  version: 0.1.0
 - name: traefik
   repository: https://traefik.github.io/charts
   version: 35.4.0
-digest: sha256:1db5d7ce919d667ca4bd325f102de3fc7f37fb07968c6906d2f74e7c68c005a9
-generated: "2026-02-18T14:29:36.005138+01:00"
+digest: sha256:1fa76fb3e4b5a91efbd2d26982cac7c8fc13180db480ac6778d0db1501dbf3e1
+generated: "2026-02-18T14:43:20.134259+01:00"
