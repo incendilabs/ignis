@@ -14,6 +14,9 @@ persistence:
   size: 10Gi
   storageClass: ""
 
+networkPolicy:
+  enabled: false
+
 resources:
   requests:
     cpu: 100m
