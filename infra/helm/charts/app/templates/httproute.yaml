@@ -11,9 +11,11 @@ spec:
       {{- if .Values.gateway.namespace }}
       namespace: {{ .Values.gateway.namespace }}
       {{- end }}
-  {{- if .Values.gateway.hostname }}
+  {{- if .Values.api.hostnames }}
   hostnames:
-    - {{ .Values.gateway.hostname | quote }}
+    {{- range .Values.api.hostnames }}
+    - {{ . | quote }}
+    {{- end }}
   {{- end }}
   rules:
     - matches:
@@ -37,9 +39,11 @@ spec:
       {{- if .Values.gateway.namespace }}
       namespace: {{ .Values.gateway.namespace }}
       {{- end }}
-  {{- if .Values.gateway.hostname }}
+  {{- if .Values.web.hostnames }}
   hostnames:
-    - {{ .Values.gateway.hostname | quote }}
+    {{- range .Values.web.hostnames }}
+    - {{ . | quote }}
+    {{- end }}
   {{- end }}
   rules:
     - matches:

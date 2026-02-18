@@ -41,8 +41,6 @@ app:
     name: ignis-gateway
     # Namespace of the Gateway (if different from release namespace)
     namespace: ""
-    # Hostname for routing (optional)
-    hostname: ""
 
 db:
   enabled: true
