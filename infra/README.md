@@ -80,9 +80,39 @@ helm install ignis infra/helm \
   --set app.api.externalMongodbConnectionString="mongodb://user:pass@mongo-host:27017/ignis?authSource=admin"
 ```
 
+## Existing Traefik
+
+If your cluster already has Traefik installed, disable the bundled one and point the HTTPRoutes at the existing Gateway:
+
+```bash
+helm install ignis infra/helm \
+  --set db.auth.password="$MONGO_PASSWORD" \
+  --set traefik.enabled=false \
+  --set app.gateway.name=traefik-gateway \
+  --set app.gateway.namespace=traefik
+```
+
+## Hostnames
+
+API and Web require separate hostnames to avoid routing conflicts. Pass them as lists:
+
+```bash
+helm install ignis infra/helm \
+  --set db.auth.password="$MONGO_PASSWORD" \
+  --set 'app.api.hostnames[0]=api.ignis.example.com' \
+  --set 'app.web.hostnames[0]=ignis.example.com'
+```
+
+Multiple hostnames per service are supported:
+
+```bash
+--set 'app.web.hostnames[0]=ignis.example.com' \
+--set 'app.web.hostnames[1]=ignis.example.org'
+```
+
 ## TLS
 
-TLS termination is handled by Traefik using certificates issued by [cert-manager](https://cert-manager.io/docs/installation/). The chart itself does not install cert-manager — it expects a `ClusterIssuer` to already exist in the cluster.
+TLS termination is handled by the Gateway using certificates issued by [cert-manager](https://cert-manager.io/docs/installation/). The chart does not install cert-manager — it expects a `ClusterIssuer` to already exist in the cluster.
 
 ### 1. Install cert-manager (if not already installed)
 
@@ -94,6 +124,8 @@ helm install cert-manager jetstack/cert-manager \
 ```
 
 ### 2. Create a ClusterIssuer
+
+For HTTP-01 (simplest — works with any DNS provider):
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -116,34 +148,62 @@ spec:
 > [!TIP]
 > Use `https://acme-staging-v02.api.letsencrypt.org/directory` as server while testing to avoid rate limits.
 
-### 3. Enable the HTTPS listener on Traefik
-
-Create a `values-tls.yaml` (or add to your existing values override):
+### 3. Create a Certificate
 
 ```yaml
-traefik:
-  gateway:
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt
-    listeners:
-      websecure:
-        port: 8443
-        protocol: HTTPS
-        hostname: fhir.example.com
-        namespacePolicy:
-          from: Same
-        certificateRefs:
-          - name: ignis-tls
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ignis-tls
+  namespace: ignis
+spec:
+  secretName: ignis-tls
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer
+  dnsNames:
+    - ignis.example.com
+    - api.ignis.example.com
 ```
 
-```bash
-helm upgrade ignis infra/helm \
-  -f infra/helm/values-production.yaml \
-  -f values-tls.yaml \
-  --set db.auth.password="$MONGO_PASSWORD"
+### 4. Add HTTPS listeners to the Gateway
+
+Add a listener for each hostname on the Gateway, referencing the TLS secret:
+
+```yaml
+listeners:
+  - name: https-ignis
+    port: 8443
+    protocol: HTTPS
+    hostname: ignis.example.com
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: ignis-tls
+          namespace: ignis
 ```
 
-cert-manager will automatically provision a certificate from Let's Encrypt and store it in the `ignis-tls` Secret.
+If the Gateway is in a different namespace than the Certificate, create a `ReferenceGrant` to allow it to read the TLS secret:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-gateway-tls
+  namespace: ignis
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      namespace: traefik
+  to:
+    - group: ""
+      kind: Secret
+      name: ignis-tls
+```
 
 ## Argo CD
 

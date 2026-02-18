@@ -10,9 +10,11 @@
 | `app.api.image.repository` | API image repository | `ignis-api` |
 | `app.api.image.tag` | API image tag | `latest` |
 | `app.api.resources` | CPU/memory resource limits | See values.yaml |
+| `app.api.hostnames` | Hostnames for API HTTPRoute | `[]` |
 | `app.api.sparkSettings.endpoint` | FHIR endpoint URL | `http://ignis-api:8080/fhir` |
 | `app.api.sparkSettings.fhirRelease` | FHIR release version | `R4` |
 | `app.api.externalMongodbConnectionString` | External MongoDB connection string | `""` |
+| `app.api.existingSecret` | Use existing Secret (skips chart-managed secret) | `""` |
 
 ### Web (`app.web`)
 
@@ -23,6 +25,7 @@
 | `app.web.image.repository` | Web image repository | `ignis-web` |
 | `app.web.image.tag` | Web image tag | `latest` |
 | `app.web.resources` | CPU/memory resource limits | See values.yaml |
+| `app.web.hostnames` | Hostnames for Web HTTPRoute | `[]` |
 
 ### Gateway API (`app.gateway`)
 
@@ -31,7 +34,6 @@
 | `app.gateway.enabled` | Enable HTTPRoute resources | `true` |
 | `app.gateway.name` | Name of the Gateway to attach to | `ignis-gateway` |
 | `app.gateway.namespace` | Namespace of the Gateway | `""` |
-| `app.gateway.hostname` | Hostname for routing | `""` |
 
 ### Traefik (`traefik`)
 
