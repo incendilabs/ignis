@@ -17,6 +17,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: ignis-web
           image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"

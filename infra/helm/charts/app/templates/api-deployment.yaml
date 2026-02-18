@@ -16,6 +16,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1654
       containers:
         - name: ignis-api
           image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
