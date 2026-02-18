@@ -1,0 +1,47 @@
+name: Ignis.Infra CI
+
+on:
+  workflow_call:
+
+jobs:
+  helm-validate:
+    name: Infra - Helm Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Update dependencies
+        run: helm dependency update infra/helm
+
+      - name: Lint (default values)
+        run: helm lint infra/helm --set db.auth.password=ci-test
+
+      - name: Lint (production values)
+        run: helm lint infra/helm -f infra/helm/values-production.yaml --set db.auth.password=ci-test
+
+      - name: Template (default)
+        run: helm template ignis infra/helm --set db.auth.password=ci-test > /dev/null
+
+      - name: Template (external MongoDB)
+        run: |
+          helm template ignis infra/helm \
+            --set db.enabled=false \
+            --set app.api.externalMongodbConnectionString="mongodb://test:27017/ignis" > /dev/null
+
+      - name: Template (production)
+        run: |
+          helm template ignis infra/helm \
+            -f infra/helm/values-production.yaml \
+            --set db.auth.password=ci-test > /dev/null
+
+      - name: Validate with kubeconform
+        run: |
+          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+          helm template ignis infra/helm --set db.auth.password=ci-test | \
+            ./kubeconform -strict -summary \
+              -skip HTTPRoute,Gateway,GatewayClass \
+              -kubernetes-version 1.30.0
