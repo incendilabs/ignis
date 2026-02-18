@@ -13,6 +13,7 @@ using Task = System.Threading.Tasks.Task;
 
 namespace Ignis.Api.Tests;
 
+[Collection("IntegrationTests")]
 public class FhirControllerTests : IClassFixture<IntegrationFixture>
 {
     private readonly HttpClient _client;

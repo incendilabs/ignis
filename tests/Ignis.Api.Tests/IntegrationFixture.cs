@@ -36,6 +36,11 @@ public sealed class IntegrationFixture : IAsyncLifetime
         var connectionString = BuildConnectionString(_mongo.GetConnectionString());
 
         Environment.SetEnvironmentVariable("StoreSettings__ConnectionString", connectionString);
+        Environment.SetEnvironmentVariable("AuthSettings__Enabled", "true");
+        Environment.SetEnvironmentVariable("AuthSettings__ConnectionString", connectionString);
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientId", "test-client");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientSecret", "test-secret");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__DisplayName", "Test Client");
 
         Factory = new IgnisApiFactory(connectionString);
     }
@@ -43,6 +48,11 @@ public sealed class IntegrationFixture : IAsyncLifetime
     public async ValueTask DisposeAsync()
     {
         Environment.SetEnvironmentVariable("StoreSettings__ConnectionString", null);
+        Environment.SetEnvironmentVariable("AuthSettings__Enabled", null);
+        Environment.SetEnvironmentVariable("AuthSettings__ConnectionString", null);
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientId", null);
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientSecret", null);
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__DisplayName", null);
         Factory.Dispose();
         await _mongo.DisposeAsync();
     }
