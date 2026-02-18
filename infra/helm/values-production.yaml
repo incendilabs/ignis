@@ -25,6 +25,8 @@ app:
 
 db:
   enabled: true
+  networkPolicy:
+    enabled: true
   persistence:
     enabled: true
     size: 50Gi
