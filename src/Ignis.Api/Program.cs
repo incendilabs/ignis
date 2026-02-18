@@ -1,3 +1,6 @@
+using Ignis.Auth;
+using Ignis.Auth.Extensions;
+
 using Spark.Engine;
 using Spark.Engine.Extensions;
 using Spark.Mongo.Extensions;
@@ -11,6 +14,15 @@ builder.Configuration.Bind("SparkSettings", sparkSettings);
 // Bind Store settings (includes MongoDB connection string)
 var storeSettings = new StoreSettings();
 builder.Configuration.Bind("StoreSettings", storeSettings);
+
+// Bind Auth settings (optional OAuth 2.0 server)
+var authSettings = new AuthSettings();
+builder.Configuration.Bind("AuthSettings", authSettings);
+
+if (authSettings.Enabled)
+{
+    builder.Services.AddIgnisAuth(authSettings, builder.Environment.IsDevelopment());
+}
 
 // Set up CORS policy
 builder.Services.AddCors(options =>
@@ -36,9 +48,20 @@ builder.Services.AddMongoFhirStore(storeSettings);
 // Register Spark FHIR engine (also registers controllers + FHIR formatters)
 builder.Services.AddFhir(sparkSettings);
 
-// Re-register controller discovery so API Explorer picks up our controllers
+// The project reference to Ignis.Auth causes auto-discovery of its controllers.
+// Remove them when auth is disabled to avoid DI resolution failures.
 builder.Services.AddControllers()
-    .AddApplicationPart(typeof(Program).Assembly);
+    .ConfigureApplicationPartManager(manager =>
+    {
+        if (!authSettings.Enabled)
+        {
+            var authAssemblyName = typeof(AuthSettings).Assembly.GetName().Name;
+            var authPart = manager.ApplicationParts
+                .FirstOrDefault(p => p.Name == authAssemblyName);
+            if (authPart != null)
+                manager.ApplicationParts.Remove(authPart);
+        }
+    });
 
 // OpenAPI document generation
 builder.Services.AddEndpointsApiExplorer();
