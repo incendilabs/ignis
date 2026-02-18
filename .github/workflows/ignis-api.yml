@@ -78,7 +78,8 @@ jobs:
         if: steps.dockerhub.outputs.can_push == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: src/Ignis.Api
+          context: src
+          file: src/Ignis.Api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -90,7 +91,8 @@ jobs:
         if: steps.dockerhub.outputs.can_push != 'true'
         uses: docker/build-push-action@v6
         with:
-          context: src/Ignis.Api
+          context: src
+          file: src/Ignis.Api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: false
           cache-from: type=gha
