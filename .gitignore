@@ -54,3 +54,9 @@ infra/helm/charts/*.tgz
 # Temp
 *.tmp
 *.temp
+
+# Certificates
+certs/
+  
+# Ignore appsettings files for development
+src/Ignis.Api/appsettings.Development.json

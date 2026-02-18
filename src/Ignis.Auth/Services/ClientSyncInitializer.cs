@@ -1,0 +1,76 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using OpenIddict.Abstractions;
+
+using static OpenIddict.Abstractions.OpenIddictConstants;
+
+namespace Ignis.Auth.Services;
+
+public class ClientSyncInitializer
+{
+    private readonly IOpenIddictApplicationManager _manager;
+    private readonly AuthSettings _settings;
+    private readonly ILogger<ClientSyncInitializer> _logger;
+
+    public ClientSyncInitializer(
+        IOpenIddictApplicationManager manager,
+        IOptions<AuthSettings> settings,
+        ILogger<ClientSyncInitializer> logger)
+    {
+        _manager = manager;
+        _settings = settings.Value;
+        _logger = logger;
+    }
+
+    public async Task RunAsync(CancellationToken cancellationToken)
+    {
+        var configuredIds = new HashSet<string>();
+
+        foreach (var client in _settings.Clients)
+        {
+            if (string.IsNullOrWhiteSpace(client.ClientId) || string.IsNullOrWhiteSpace(client.ClientSecret))
+            {
+                _logger.LogWarning("Skipping OAuth client with missing ClientId or ClientSecret.");
+                continue;
+            }
+
+            configuredIds.Add(client.ClientId);
+
+            var descriptor = new OpenIddictApplicationDescriptor
+            {
+                ClientId = client.ClientId,
+                ClientSecret = client.ClientSecret,
+                ClientType = ClientTypes.Confidential,
+                DisplayName = client.DisplayName.Length > 0 ? client.DisplayName : client.ClientId,
+                Permissions =
+                {
+                    Permissions.Endpoints.Token,
+                    Permissions.GrantTypes.ClientCredentials,
+                }
+            };
+
+            var existingClient = await _manager.FindByClientIdAsync(client.ClientId, cancellationToken);
+            if (existingClient != null)
+            {
+                await _manager.UpdateAsync(existingClient, descriptor, cancellationToken);
+                _logger.LogInformation("Updated OAuth client {ClientId}.", client.ClientId);
+            }
+            else
+            {
+                await _manager.CreateAsync(descriptor, cancellationToken);
+                _logger.LogInformation("Created OAuth client {ClientId}.", client.ClientId);
+            }
+        }
+
+        await foreach (var app in _manager.ListAsync(cancellationToken: cancellationToken))
+        {
+            var clientId = await _manager.GetClientIdAsync(app, cancellationToken);
+            if (clientId != null && !configuredIds.Contains(clientId))
+            {
+                await _manager.DeleteAsync(app, cancellationToken);
+                _logger.LogInformation("Removed OAuth client {ClientId}.", clientId);
+            }
+        }
+    }
+}

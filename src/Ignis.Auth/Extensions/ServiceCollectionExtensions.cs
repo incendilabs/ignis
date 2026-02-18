@@ -1,4 +1,4 @@
-using Ignis.Auth.Workers;
+using Ignis.Auth.Services;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -57,6 +57,8 @@ public static class ServiceCollectionExtensions
                 options.UseLocalServer();
                 options.UseAspNetCore();
             });
+
+        services.AddTransient<ClientSyncInitializer>();
 
         return services;
     }

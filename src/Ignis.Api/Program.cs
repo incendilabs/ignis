@@ -1,5 +1,6 @@
 using Ignis.Auth;
 using Ignis.Auth.Extensions;
+using Ignis.Auth.Services;
 
 using Spark.Engine;
 using Spark.Engine.Extensions;
@@ -68,6 +69,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+if (authSettings.Enabled)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var clientSyncInitializer = scope.ServiceProvider.GetRequiredService<ClientSyncInitializer>();
+    await clientSyncInitializer.RunAsync(app.Lifetime.ApplicationStopping);
+}
 
 if (app.Environment.IsDevelopment())
 {
