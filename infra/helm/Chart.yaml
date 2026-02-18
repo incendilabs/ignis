@@ -9,6 +9,10 @@ dependencies:
   - name: app
     version: 0.1.0
     repository: "file://charts/app"
+  - name: db
+    version: 0.1.0
+    repository: "file://charts/db"
+    condition: db.enabled
   - name: traefik
     version: "~35"
     repository: "https://traefik.github.io/charts"

@@ -22,3 +22,16 @@ app:
 
   gateway:
     enabled: true
+
+db:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 50Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi

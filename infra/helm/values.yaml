@@ -44,6 +44,29 @@ app:
     # Hostname for routing (optional)
     hostname: ""
 
+db:
+  enabled: true
+  image:
+    repository: mongo
+    tag: "8"
+    pullPolicy: IfNotPresent
+  auth:
+    username: ignis
+    password: ""
+    database: ignis
+    existingSecret: ""
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
 traefik:
   enabled: true
   gateway:

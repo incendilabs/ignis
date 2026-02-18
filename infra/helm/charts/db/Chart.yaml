@@ -1,0 +1,5 @@
+apiVersion: v2
+name: db
+description: MongoDB database for Ignis
+type: application
+version: 0.1.0
