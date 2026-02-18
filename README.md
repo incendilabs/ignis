@@ -26,3 +26,7 @@ dotnet run
 ```
 
 The API will be available at `https://localhost:5201/fhir` and the OpenAPI document at `https://localhost:5201/openapi/v1.json`.
+
+### Kubernetes
+
+See the [infrastructure guide](infra/README.md) for testing Ignis on Kubernetes.
