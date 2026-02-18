@@ -1,0 +1,45 @@
+name: Main CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  scope:
+    name: Scope
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Filter paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'src/Ignis.Api/**'
+              - 'tests/Ignis.Api.Tests/**'
+              - '.github/workflows/ignis-api.yml'
+              - '.github/workflows/main.yml'
+            web:
+              - 'src/Ignis.Web/**'
+              - '.github/workflows/ignis-web.yml'
+              - '.github/workflows/main.yml'
+
+  api:
+    name: Ignis.Api CI
+    needs: scope
+    if: needs.scope.outputs.api == 'true'
+    uses: ./.github/workflows/ignis-api.yml
+    secrets: inherit
+
+  web:
+    name: Ignis.Web CI
+    needs: scope
+    if: needs.scope.outputs.web == 'true'
+    uses: ./.github/workflows/ignis-web.yml
+    secrets: inherit
