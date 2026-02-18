@@ -11,6 +11,7 @@ Kubernetes deployment for the Ignis FHIR Server using Helm. This chart allows yo
 - [Helm](https://helm.sh/docs/intro/install/) v3+
 - A Kubernetes cluster (e.g. [k3d](https://k3d.io/) for local development)
 - Container images for `ignis-api` and `ignis-web`
+- [cert-manager](https://cert-manager.io/docs/installation/) with a `ClusterIssuer` (only required for TLS)
 
 ## Quick Start
 
@@ -78,6 +79,71 @@ helm install ignis infra/helm \
   --set db.enabled=false \
   --set app.api.externalMongodbConnectionString="mongodb://user:pass@mongo-host:27017/ignis?authSource=admin"
 ```
+
+## TLS
+
+TLS termination is handled by Traefik using certificates issued by [cert-manager](https://cert-manager.io/docs/installation/). The chart itself does not install cert-manager — it expects a `ClusterIssuer` to already exist in the cluster.
+
+### 1. Install cert-manager (if not already installed)
+
+```bash
+helm repo add jetstack https://charts.jetstack.io
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager --create-namespace \
+  --set crds.enabled=true
+```
+
+### 2. Create a ClusterIssuer
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    email: you@example.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-key
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: ignis-gateway
+```
+
+> [!TIP]
+> Use `https://acme-staging-v02.api.letsencrypt.org/directory` as server while testing to avoid rate limits.
+
+### 3. Enable the HTTPS listener on Traefik
+
+Create a `values-tls.yaml` (or add to your existing values override):
+
+```yaml
+traefik:
+  gateway:
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+    listeners:
+      websecure:
+        port: 8443
+        protocol: HTTPS
+        hostname: fhir.example.com
+        namespacePolicy:
+          from: Same
+        certificateRefs:
+          - name: ignis-tls
+```
+
+```bash
+helm upgrade ignis infra/helm \
+  -f infra/helm/values-production.yaml \
+  -f values-tls.yaml \
+  --set db.auth.password="$MONGO_PASSWORD"
+```
+
+cert-manager will automatically provision a certificate from Let's Encrypt and store it in the `ignis-tls` Secret.
 
 ## Argo CD
 

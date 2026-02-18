@@ -16,6 +16,8 @@ api:
     fhirRelease: "R4"
   externalMongodbConnectionString: ""
   existingSecret: ""
+  # Hostnames for API route (overrides gateway.hostname)
+  hostnames: []
 
 web:
   enabled: true
@@ -31,6 +33,8 @@ web:
     limits:
       cpu: 200m
       memory: 256Mi
+  # Hostnames for Web route (overrides gateway.hostname)
+  hostnames: []
 
 gateway:
   enabled: true
@@ -38,5 +42,3 @@ gateway:
   name: "ignis-gateway"
   # Namespace of the Gateway (if different from release namespace)
   namespace: ""
-  # Hostname for routing (optional)
-  hostname: ""
