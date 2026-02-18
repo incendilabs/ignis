@@ -1,0 +1,15 @@
+apiVersion: v2
+name: ignis
+description: Helm chart for Ignis FHIR Server
+type: application
+version: 0.1.0
+appVersion: "latest"
+
+dependencies:
+  - name: app
+    version: 0.1.0
+    repository: "file://charts/app"
+  - name: traefik
+    version: "~35"
+    repository: "https://traefik.github.io/charts"
+    condition: traefik.enabled

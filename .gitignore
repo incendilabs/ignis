@@ -48,6 +48,9 @@ coverage/
 logs/
 *.log
 
+# Helm
+infra/helm/charts/*.tgz
+
 # Temp
 *.tmp
 *.temp

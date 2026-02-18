@@ -1,0 +1,41 @@
+app:
+  api:
+    replicaCount: 1
+    image:
+      repository: ignis-api
+      tag: latest
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    sparkSettings:
+      endpoint: "http://ignis-api:8080/fhir"
+      fhirRelease: "R4"
+    # Connection string for an external MongoDB instance
+    externalMongodbConnectionString: ""
+    # Use an existing Secret for the API (skips chart-managed secret)
+    existingSecret: ""
+
+  gateway:
+    enabled: true
+    # Name of the Gateway resource to attach HTTPRoutes to
+    name: ignis-gateway
+    # Namespace of the Gateway (if different from release namespace)
+    namespace: ""
+    # Hostname for routing (optional)
+    hostname: ""
+
+traefik:
+  enabled: true
+  gateway:
+    name: ignis-gateway
+  providers:
+    kubernetesGateway:
+      enabled: true
+  ingressRoute:
+    dashboard:
+      enabled: false

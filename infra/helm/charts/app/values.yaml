@@ -1,0 +1,27 @@
+api:
+  replicaCount: 1
+  image:
+    repository: ignis-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  sparkSettings:
+    endpoint: "http://ignis-api:8080/fhir"
+    fhirRelease: "R4"
+  externalMongodbConnectionString: ""
+  existingSecret: ""
+
+gateway:
+  enabled: true
+  # Name of the Gateway resource to attach HTTPRoutes to
+  name: "ignis-gateway"
+  # Namespace of the Gateway (if different from release namespace)
+  namespace: ""
+  # Hostname for routing (optional)
+  hostname: ""
