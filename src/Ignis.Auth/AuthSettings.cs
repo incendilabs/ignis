@@ -27,4 +27,5 @@ public class ClientDefinition
     public string ClientId { get; set; } = "";
     public string ClientSecret { get; set; } = "";
     public string DisplayName { get; set; } = "";
+    public List<string> AllowedGrantTypes { get; set; } = [];
 }
