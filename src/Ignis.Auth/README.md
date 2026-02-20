@@ -23,9 +23,9 @@ Currently supports the `client_credentials` grant type.
     },
     "Certificates": {
       "SigningCertificatePath": "certs/signing.pfx",
-      "SigningCertificatePassword": "change-me",
+      "SigningCertificatePassword": "",
       "EncryptionCertificatePath": "certs/encryption.pfx",
-      "EncryptionCertificatePassword": "change-me"
+      "EncryptionCertificatePassword": ""
     }
   }
 }
@@ -75,18 +75,6 @@ Clients defined in `AuthSettings.Clients` are synced to MongoDB on startup:
 - New clients are created
 - Existing clients are updated (secret, display name)
 - Clients not in config are removed
-
-## Database storage
-
-Ignis.Auth uses OpenIddict with MongoDB and stores data in the database selected by `AuthSettings.ConnectionString`.
-
-At minimum, this includes OAuth client applications (from `AuthSettings.Clients`). Depending on token activity, OpenIddict may also persist related authorization/token data.
-
-Important:
-
-- `AuthSettings.Clients` is treated as the source of truth at startup
-- On each startup sync, clients missing from config are removed from storage
-- Changes in `AuthSettings.Clients` take effect after app restart
 
 ## Usage
 
