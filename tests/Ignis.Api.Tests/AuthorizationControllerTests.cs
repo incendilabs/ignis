@@ -8,11 +8,11 @@ namespace Ignis.Api.Tests;
 [Collection("IntegrationTests")]
 public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
 {
-    private readonly HttpClient _client;
+    private readonly IntegrationFixture _fixture;
 
     public AuthorizationControllerTests(IntegrationFixture fixture)
     {
-        _client = fixture.Factory.CreateClient();
+        _fixture = fixture;
     }
 
     private static CancellationToken CT => TestContext.Current.CancellationToken;
@@ -20,7 +20,9 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
     [Fact]
     public async Task Token_WithValidClientCredentials_ReturnsAccessToken()
     {
-        var response = await _client.PostAsync("/connect/token",
+        using var client = _fixture.Factory.CreateClient();
+
+        var response = await client.PostAsync("/connect/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["grant_type"] = "client_credentials",
@@ -38,7 +40,9 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
     [Fact]
     public async Task Token_WithInvalidClient_ReturnsUnauthorized()
     {
-        var response = await _client.PostAsync("/connect/token",
+        using var client = _fixture.Factory.CreateClient();
+
+        var response = await client.PostAsync("/connect/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["grant_type"] = "client_credentials",
@@ -52,7 +56,9 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
     [Fact]
     public async Task Token_WithWrongSecret_ReturnsUnauthorized()
     {
-        var response = await _client.PostAsync("/connect/token",
+        using var client = _fixture.Factory.CreateClient();
+
+        var response = await client.PostAsync("/connect/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["grant_type"] = "client_credentials",
@@ -66,7 +72,9 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
     [Fact]
     public async Task Token_WithUnsupportedGrantType_ReturnsBadRequest()
     {
-        var response = await _client.PostAsync("/connect/token",
+        using var client = _fixture.Factory.CreateClient();
+
+        var response = await client.PostAsync("/connect/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["grant_type"] = "password",
