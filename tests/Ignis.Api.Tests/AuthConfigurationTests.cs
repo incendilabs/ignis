@@ -123,6 +123,7 @@ public class AuthConfigurationTests : IAsyncLifetime
             ["AuthSettings__Clients__0__ClientId"] = "config-client",
             ["AuthSettings__Clients__0__ClientSecret"] = "config-secret",
             ["AuthSettings__Clients__0__DisplayName"] = "Config Client",
+            ["AuthSettings__Clients__0__AllowedGrantTypes__0"] = "client_credentials",
             ["StoreSettings__ConnectionString"] = _connectionString,
         };
         SetEnvVars(envVars);
@@ -139,6 +140,7 @@ public class AuthConfigurationTests : IAsyncLifetime
                 ["AuthSettings:Clients:0:ClientId"] = "config-client",
                 ["AuthSettings:Clients:0:ClientSecret"] = "config-secret",
                 ["AuthSettings:Clients:0:DisplayName"] = "Config Client",
+                ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
             });
             using var client = factory.CreateClient();
 
@@ -174,6 +176,7 @@ public class AuthConfigurationTests : IAsyncLifetime
                 ["AuthSettings__Clients__0__ClientId"] = "cert-client",
                 ["AuthSettings__Clients__0__ClientSecret"] = "cert-secret",
                 ["AuthSettings__Clients__0__DisplayName"] = "Cert Client",
+                ["AuthSettings__Clients__0__AllowedGrantTypes__0"] = "client_credentials",
                 ["AuthSettings__Certificates__SigningCertificatePath"] = signingCertPath,
                 ["AuthSettings__Certificates__SigningCertificatePassword"] = signingCertPassword,
                 ["AuthSettings__Certificates__EncryptionCertificatePath"] = encryptionCertPath,
@@ -194,6 +197,7 @@ public class AuthConfigurationTests : IAsyncLifetime
                     ["AuthSettings:Clients:0:ClientId"] = "cert-client",
                     ["AuthSettings:Clients:0:ClientSecret"] = "cert-secret",
                     ["AuthSettings:Clients:0:DisplayName"] = "Cert Client",
+                    ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
                     ["AuthSettings:Certificates:SigningCertificatePath"] = signingCertPath,
                     ["AuthSettings:Certificates:SigningCertificatePassword"] = signingCertPassword,
                     ["AuthSettings:Certificates:EncryptionCertificatePath"] = encryptionCertPath,
@@ -235,6 +239,7 @@ public class AuthConfigurationTests : IAsyncLifetime
             ["AuthSettings__ConnectionString"] = _connectionString,
             ["AuthSettings__Clients__0__ClientId"] = "cert-client",
             ["AuthSettings__Clients__0__ClientSecret"] = "cert-secret",
+            ["AuthSettings__Clients__0__AllowedGrantTypes__0"] = "client_credentials",
             ["StoreSettings__ConnectionString"] = _connectionString,
         };
         SetEnvVars(envVars);
@@ -252,6 +257,7 @@ public class AuthConfigurationTests : IAsyncLifetime
                     ["AuthSettings:ConnectionString"] = _connectionString,
                     ["AuthSettings:Clients:0:ClientId"] = "cert-client",
                     ["AuthSettings:Clients:0:ClientSecret"] = "cert-secret",
+                    ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
                 }, environment: "Production");
                 factory.CreateClient();
             };
