@@ -103,6 +103,7 @@ public class ClientSyncInitializerTests : IAsyncLifetime
         {
             ["AuthSettings:Clients:0:ClientId"] = "sync-client-a",
             ["AuthSettings:Clients:0:ClientSecret"] = "secret-a",
+            ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
         });
         try
         {
@@ -127,6 +128,7 @@ public class ClientSyncInitializerTests : IAsyncLifetime
         {
             ["AuthSettings:Clients:0:ClientId"] = "sync-update",
             ["AuthSettings:Clients:0:ClientSecret"] = "old-secret",
+            ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
         });
         try
         {
@@ -147,6 +149,7 @@ public class ClientSyncInitializerTests : IAsyncLifetime
         {
             ["AuthSettings:Clients:0:ClientId"] = "sync-update",
             ["AuthSettings:Clients:0:ClientSecret"] = "new-secret",
+            ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
         });
         try
         {
@@ -177,8 +180,10 @@ public class ClientSyncInitializerTests : IAsyncLifetime
         {
             ["AuthSettings:Clients:0:ClientId"] = "sync-keep",
             ["AuthSettings:Clients:0:ClientSecret"] = "secret-keep",
+            ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
             ["AuthSettings:Clients:1:ClientId"] = "sync-remove",
             ["AuthSettings:Clients:1:ClientSecret"] = "secret-remove",
+            ["AuthSettings:Clients:1:AllowedGrantTypes:0"] = "client_credentials",
         });
         try
         {
@@ -199,6 +204,7 @@ public class ClientSyncInitializerTests : IAsyncLifetime
         {
             ["AuthSettings:Clients:0:ClientId"] = "sync-keep",
             ["AuthSettings:Clients:0:ClientSecret"] = "secret-keep",
+            ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
         });
         try
         {
