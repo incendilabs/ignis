@@ -11,29 +11,32 @@ jobs:
     name: Scope
     runs-on: ubuntu-latest
     outputs:
-      api: ${{ steps.filter.outputs.api }}
-      web: ${{ steps.filter.outputs.web }}
-      infra: ${{ steps.filter.outputs.infra }}
+      api: ${{ steps.check.outputs.api }}
+      web: ${{ steps.check.outputs.web }}
+      infra: ${{ steps.check.outputs.infra }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Filter paths
-        id: filter
-        uses: dorny/paths-filter@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          filters: |
-            api:
-              - 'src/Ignis.Api/**'
-              - 'tests/Ignis.Api.Tests/**'
-              - '.github/workflows/ignis-api.yml'
-              - '.github/workflows/main.yml'
-            web:
-              - 'src/Ignis.Web/**'
-              - '.github/workflows/ignis-web.yml'
-              - '.github/workflows/main.yml'
-            infra:
-              - 'infra/**'
-              - '.github/workflows/ignis-infra.yml'
-              - '.github/workflows/main.yml'
+          fetch-depth: 0
+      - name: Detect changes
+        id: check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+          else
+            CHANGED=$(git diff --name-only "${PUSH_BEFORE}...${PUSH_AFTER}")
+          fi
+
+          echo "api=$(echo "$CHANGED" | grep -Eq '^(src/Ignis\.Api/|tests/Ignis\.Api\.Tests/|\.github/workflows/ignis-api\.yml$|\.github/workflows/main\.yml$)' && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "web=$(echo "$CHANGED" | grep -Eq '^(src/Ignis\.Web/|\.github/workflows/ignis-web\.yml$|\.github/workflows/main\.yml$)' && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "infra=$(echo "$CHANGED" | grep -Eq '^(infra/|\.github/workflows/ignis-infra\.yml$|\.github/workflows/main\.yml$)' && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
   api:
     name: Ignis.Api CI
