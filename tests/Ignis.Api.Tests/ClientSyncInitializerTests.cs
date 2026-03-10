@@ -47,14 +47,12 @@ public class ClientSyncInitializerTests : IAsyncLifetime
             ["SparkSettings:Endpoint"] = "https://localhost/fhir",
             ["SparkSettings:FhirRelease"] = "R4",
             ["SparkSettings:UseAsynchronousIO"] = "true",
-            ["AuthSettings:Enabled"] = "true",
             ["AuthSettings:ConnectionString"] = _connectionString,
         };
 
         var envVars = new Dictionary<string, string?>
         {
             ["StoreSettings__ConnectionString"] = _connectionString,
-            ["AuthSettings__Enabled"] = "true",
             ["AuthSettings__ConnectionString"] = _connectionString,
         };
 

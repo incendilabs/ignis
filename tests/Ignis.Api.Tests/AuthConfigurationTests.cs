@@ -75,50 +75,10 @@ public class AuthConfigurationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TokenEndpoint_NotAvailable_WhenAuthDisabled()
+    public async Task TokenEndpoint_ReturnsAccessToken()
     {
         var envVars = new Dictionary<string, string?>
         {
-            ["AuthSettings__Enabled"] = "false",
-            ["AuthSettings__ConnectionString"] = _connectionString,
-            ["StoreSettings__ConnectionString"] = _connectionString,
-        };
-        SetEnvVars(envVars);
-        try
-        {
-            await using var factory = CreateFactory(new Dictionary<string, string?>
-            {
-                ["StoreSettings:ConnectionString"] = _connectionString,
-                ["SparkSettings:Endpoint"] = "https://localhost/fhir",
-                ["SparkSettings:FhirRelease"] = "R4",
-                ["SparkSettings:UseAsynchronousIO"] = "true",
-                ["AuthSettings:Enabled"] = "false",
-                ["AuthSettings:ConnectionString"] = _connectionString,
-            });
-            using var client = factory.CreateClient();
-
-            var response = await client.PostAsync("/connect/token",
-                new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    ["grant_type"] = "client_credentials",
-                    ["client_id"] = "test-client",
-                    ["client_secret"] = "test-secret",
-                }), CT);
-
-            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        }
-        finally
-        {
-            ClearEnvVars(envVars);
-        }
-    }
-
-    [Fact]
-    public async Task TokenEndpoint_Available_WhenAuthEnabled()
-    {
-        var envVars = new Dictionary<string, string?>
-        {
-            ["AuthSettings__Enabled"] = "true",
             ["AuthSettings__ConnectionString"] = _connectionString,
             ["AuthSettings__Clients__0__ClientId"] = "config-client",
             ["AuthSettings__Clients__0__ClientSecret"] = "config-secret",
@@ -135,7 +95,6 @@ public class AuthConfigurationTests : IAsyncLifetime
                 ["SparkSettings:Endpoint"] = "https://localhost/fhir",
                 ["SparkSettings:FhirRelease"] = "R4",
                 ["SparkSettings:UseAsynchronousIO"] = "true",
-                ["AuthSettings:Enabled"] = "true",
                 ["AuthSettings:ConnectionString"] = _connectionString,
                 ["AuthSettings:Clients:0:ClientId"] = "config-client",
                 ["AuthSettings:Clients:0:ClientSecret"] = "config-secret",
@@ -171,7 +130,6 @@ public class AuthConfigurationTests : IAsyncLifetime
         {
             var envVars = new Dictionary<string, string?>
             {
-                ["AuthSettings__Enabled"] = "true",
                 ["AuthSettings__ConnectionString"] = _connectionString,
                 ["AuthSettings__Clients__0__ClientId"] = "cert-client",
                 ["AuthSettings__Clients__0__ClientSecret"] = "cert-secret",
@@ -192,7 +150,6 @@ public class AuthConfigurationTests : IAsyncLifetime
                     ["SparkSettings:Endpoint"] = "https://localhost/fhir",
                     ["SparkSettings:FhirRelease"] = "R4",
                     ["SparkSettings:UseAsynchronousIO"] = "true",
-                    ["AuthSettings:Enabled"] = "true",
                     ["AuthSettings:ConnectionString"] = _connectionString,
                     ["AuthSettings:Clients:0:ClientId"] = "cert-client",
                     ["AuthSettings:Clients:0:ClientSecret"] = "cert-secret",
@@ -235,7 +192,6 @@ public class AuthConfigurationTests : IAsyncLifetime
     {
         var envVars = new Dictionary<string, string?>
         {
-            ["AuthSettings__Enabled"] = "true",
             ["AuthSettings__ConnectionString"] = _connectionString,
             ["AuthSettings__Clients__0__ClientId"] = "cert-client",
             ["AuthSettings__Clients__0__ClientSecret"] = "cert-secret",
@@ -253,7 +209,6 @@ public class AuthConfigurationTests : IAsyncLifetime
                     ["SparkSettings:Endpoint"] = "https://localhost/fhir",
                     ["SparkSettings:FhirRelease"] = "R4",
                     ["SparkSettings:UseAsynchronousIO"] = "true",
-                    ["AuthSettings:Enabled"] = "true",
                     ["AuthSettings:ConnectionString"] = _connectionString,
                     ["AuthSettings:Clients:0:ClientId"] = "cert-client",
                     ["AuthSettings:Clients:0:ClientSecret"] = "cert-secret",

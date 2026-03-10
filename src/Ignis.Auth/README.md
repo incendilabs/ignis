@@ -2,7 +2,7 @@
 
 OAuth 2.0 token service for Ignis, built on [OpenIddict](https://documentation.openiddict.com/) with MongoDB storage.
 
-Currently supports the `client_credentials` grant type.
+The library provides an `AuthorizationHandler` containing the token endpoint logic, while the host application supplies a thin controller that delegates to it. Currently supports the `client_credentials` grant type.
 
 ## Configuration
 
@@ -15,12 +15,10 @@ Currently supports the `client_credentials` grant type.
       {
         "ClientId": "my-client",
         "ClientSecret": "my-secret",
-        "DisplayName": "My Client"
+        "DisplayName": "My Client",
+        "AllowedGrantTypes": ["client_credentials"]
       }
     ],
-    "Endpoints": {
-      "TokenEndpointPath": "connect/token"
-    },
     "Certificates": {
       "SigningCertificatePath": "certs/signing.pfx",
       "SigningCertificatePassword": "",

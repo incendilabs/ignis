@@ -33,14 +33,11 @@ public sealed class IntegrationFixture : IAsyncLifetime
     private static readonly string[] EnvVarKeys =
     [
         "StoreSettings__ConnectionString",
-        "AuthSettings__Enabled",
         "AuthSettings__ConnectionString",
         "AuthSettings__Clients__0__ClientId",
         "AuthSettings__Clients__0__ClientSecret",
         "AuthSettings__Clients__0__DisplayName",
         "AuthSettings__Clients__0__AllowedGrantTypes__0",
-        "AuthSettings__Clients__0__AllowedGrantTypes__1",
-        "AuthSettings__Clients__0__RedirectUris__0",
     ];
 
     public async ValueTask InitializeAsync()
@@ -49,13 +46,11 @@ public sealed class IntegrationFixture : IAsyncLifetime
         var connectionString = BuildConnectionString(_mongo.GetConnectionString());
 
         Environment.SetEnvironmentVariable("StoreSettings__ConnectionString", connectionString);
-        Environment.SetEnvironmentVariable("AuthSettings__Enabled", "true");
         Environment.SetEnvironmentVariable("AuthSettings__ConnectionString", connectionString);
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientId", "test-client");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientSecret", "test-secret");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__DisplayName", "Test Client");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedGrantTypes__0", "client_credentials");
-        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__RedirectUris__0", "http://localhost/callback");
 
         Factory = new IgnisApiFactory(connectionString);
     }
