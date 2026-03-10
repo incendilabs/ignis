@@ -1,6 +1,5 @@
 using Ignis.Auth;
 using Ignis.Auth.Extensions;
-using Ignis.Auth.Services;
 
 using Spark.Engine;
 using Spark.Engine.Extensions;
@@ -16,14 +15,13 @@ builder.Configuration.Bind("SparkSettings", sparkSettings);
 var storeSettings = new StoreSettings();
 builder.Configuration.Bind("StoreSettings", storeSettings);
 
-// Bind Auth settings (optional OAuth 2.0 server)
+// Bind Auth settings
 var authSettings = new AuthSettings();
 builder.Configuration.Bind("AuthSettings", authSettings);
 
-if (authSettings.Enabled)
-{
-    builder.Services.AddIgnisAuth(authSettings, builder.Environment.IsDevelopment());
-}
+builder.Services
+    .AddIgnisAuthServer(authSettings, builder.Environment.IsDevelopment())
+    .AddIgnisClientSync();
 
 // Set up CORS policy
 builder.Services.AddCors(options =>
@@ -49,33 +47,13 @@ builder.Services.AddMongoFhirStore(storeSettings);
 // Register Spark FHIR engine (also registers controllers + FHIR formatters)
 builder.Services.AddFhir(sparkSettings);
 
-// The project reference to Ignis.Auth causes auto-discovery of its controllers.
-// Remove them when auth is disabled to avoid DI resolution failures.
-builder.Services.AddControllers()
-    .ConfigureApplicationPartManager(manager =>
-    {
-        if (!authSettings.Enabled)
-        {
-            var authAssemblyName = typeof(AuthSettings).Assembly.GetName().Name;
-            var authPart = manager.ApplicationParts
-                .FirstOrDefault(p => p.Name == authAssemblyName);
-            if (authPart != null)
-                manager.ApplicationParts.Remove(authPart);
-        }
-    });
+builder.Services.AddControllers();
 
 // OpenAPI document generation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
-
-if (authSettings.Enabled)
-{
-    await using var scope = app.Services.CreateAsyncScope();
-    var clientSyncInitializer = scope.ServiceProvider.GetRequiredService<ClientSyncInitializer>();
-    await clientSyncInitializer.RunAsync(app.Lifetime.ApplicationStopping);
-}
 
 if (app.Environment.IsDevelopment())
 {
@@ -85,6 +63,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
+
+await app.SyncOAuthClientsAsync();
 app.MapControllers();
 app.MapGet("/healthz", () => Results.Ok("ok"));
 

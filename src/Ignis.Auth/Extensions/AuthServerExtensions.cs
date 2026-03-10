@@ -1,7 +1,5 @@
 using System.Security.Cryptography.X509Certificates;
 
-using Ignis.Auth.Services;
-
 using Microsoft.Extensions.DependencyInjection;
 
 using MongoDB.Driver;
@@ -10,26 +8,46 @@ using OpenIddict.Server;
 
 namespace Ignis.Auth.Extensions;
 
-public static class ServiceCollectionExtensions
+public static class AuthServerExtensions
 {
-    public static IServiceCollection AddIgnisAuth(
+    /// <summary>
+    /// Registers the OpenIddict authorization server and certificates.
+    /// Use this when the application acts as an authorization server.
+    /// </summary>
+    public static IServiceCollection AddIgnisAuthServer(
         this IServiceCollection services,
         AuthSettings settings,
         bool useDevelopmentCertificates)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(settings.ConnectionString, "AuthSettings:ConnectionString is required when auth is enabled.");
-        ArgumentNullException.ThrowIfNull(settings.Endpoints?.TokenEndpointPath, "AuthSettings:Endpoints:TokenEndpointPath is required when auth is enabled.");
+        ArgumentException.ThrowIfNullOrWhiteSpace(settings.ConnectionString);
 
         services.Configure<AuthSettings>(options =>
         {
-            options.Enabled = settings.Enabled;
             options.ConnectionString = settings.ConnectionString;
             options.Clients = settings.Clients;
             options.Endpoints = settings.Endpoints;
             options.Certificates = settings.Certificates;
         });
 
+        services.AddOpenIddictServer(settings, useDevelopmentCertificates);
+        services.AddOpenIddict()
+            .AddValidation(options =>
+            {
+                options.UseLocalServer();
+                options.UseAspNetCore();
+            });
+
+        services.AddTransient<AuthorizationHandler>();
+
+        return services;
+    }
+
+    private static void AddOpenIddictServer(
+        this IServiceCollection services,
+        AuthSettings settings,
+        bool useDevelopmentCertificates)
+    {
         services.AddOpenIddict()
             .AddCore(options =>
             {
@@ -43,31 +61,20 @@ public static class ServiceCollectionExtensions
                     .SetTokenEndpointUris(settings.Endpoints.TokenEndpointPath)
                     .AllowClientCredentialsFlow();
 
-                ConfigureCertificates(options, settings, useDevelopmentCertificates);
+                ConfigureCertificates(options, settings.Certificates, useDevelopmentCertificates);
 
                 var aspNetCoreBuilder = options
                     .UseAspNetCore()
                     .EnableTokenEndpointPassthrough();
 
                 if (useDevelopmentCertificates)
-                {
                     aspNetCoreBuilder.DisableTransportSecurityRequirement();
-                }
-            })
-            .AddValidation(options =>
-            {
-                options.UseLocalServer();
-                options.UseAspNetCore();
             });
-
-        services.AddTransient<ClientSyncInitializer>();
-
-        return services;
     }
 
     private static void ConfigureCertificates(
         OpenIddictServerBuilder options,
-        AuthSettings settings,
+        AuthCertificateSettings certs,
         bool useDevelopmentCertificates)
     {
         if (useDevelopmentCertificates)
@@ -77,8 +84,6 @@ public static class ServiceCollectionExtensions
                 .AddDevelopmentSigningCertificate();
             return;
         }
-
-        var certs = settings.Certificates;
 
         options
             .AddSigningCertificate(LoadCertificate(
