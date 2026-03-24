@@ -51,3 +51,11 @@ spec:
             timeoutSeconds: 3
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
+{{- if .Values.api.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml .Values.api.extraVolumeMounts | nindent 12 }}
+{{- end }}
+{{- if .Values.api.extraVolumes }}
+      volumes:
+        {{- toYaml .Values.api.extraVolumes | nindent 8 }}
+{{- end }}
