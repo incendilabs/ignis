@@ -16,6 +16,10 @@ api:
     fhirRelease: "R4"
   externalMongodbConnectionString: ""
   existingSecret: ""
+  # Extra volume mounts for the API container (e.g. for certificate files)
+  extraVolumeMounts: []
+  # Extra volumes for the API pod (e.g. Kubernetes Secrets)
+  extraVolumes: []
   # Hostnames for API HTTPRoute
   hostnames: []
 
