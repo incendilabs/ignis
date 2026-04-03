@@ -58,7 +58,13 @@ public class AuthConfigurationTests : IAsyncLifetime
     {
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((_, c) => c.AddInMemoryCollection(config));
+            builder.ConfigureAppConfiguration((WebHostBuilderContext _, IConfigurationBuilder configBuilder) =>
+            {
+                // Re-add environment variables then override with in-memory config,
+                // ensuring test values take precedence over leaked env vars.
+                configBuilder.AddEnvironmentVariables();
+                configBuilder.AddInMemoryCollection(config);
+            });
             builder.UseEnvironment(environment);
         });
     }

@@ -97,8 +97,32 @@ public class ClientSyncInitializer
                     break;
 
                 case GrantTypes.AuthorizationCode:
-                    throw new NotImplementedException(
-                        $"Grant type '{GrantTypes.AuthorizationCode}' is not yet supported.");
+                    if (client.RedirectUris.Count == 0)
+                    {
+                        _logger.LogWarning(
+                            "Client {ClientId} allows authorization_code but has no RedirectUris configured – skipping auth code permissions.",
+                            client.ClientId);
+                        break;
+                    }
+
+                    descriptor.Permissions.Add(Permissions.Endpoints.Authorization);
+                    descriptor.Permissions.Add(Permissions.Endpoints.PushedAuthorization);
+                    descriptor.Permissions.Add(Permissions.GrantTypes.AuthorizationCode);
+                    descriptor.Permissions.Add(Permissions.ResponseTypes.Code);
+
+                    descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
+                    descriptor.Requirements.Add(Requirements.Features.PushedAuthorizationRequests);
+
+                    foreach (var uri in client.RedirectUris)
+                        descriptor.RedirectUris.Add(new Uri(uri));
+
+                    if (client.PostLogoutRedirectUris.Count > 0)
+                    {
+                        descriptor.Permissions.Add(Permissions.Endpoints.EndSession);
+                        foreach (var uri in client.PostLogoutRedirectUris)
+                            descriptor.PostLogoutRedirectUris.Add(new Uri(uri));
+                    }
+                    break;
 
                 default:
                     _logger.LogWarning(

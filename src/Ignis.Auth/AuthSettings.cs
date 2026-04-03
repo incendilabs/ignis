@@ -19,6 +19,7 @@ public class AuthCertificateSettings
 public class AuthEndpointSettings
 {
     public string TokenEndpointPath { get; set; } = "connect/token";
+    public string LoginPath { get; set; } = "connect/login";
 }
 
 public class ClientDefinition
@@ -27,4 +28,6 @@ public class ClientDefinition
     public string ClientSecret { get; set; } = "";
     public string DisplayName { get; set; } = "";
     public List<string> AllowedGrantTypes { get; set; } = [];
+    public List<string> RedirectUris { get; set; } = [];
+    public List<string> PostLogoutRedirectUris { get; set; } = [];
 }
