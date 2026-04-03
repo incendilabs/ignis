@@ -38,6 +38,8 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__Clients__0__ClientSecret",
         "AuthSettings__Clients__0__DisplayName",
         "AuthSettings__Clients__0__AllowedGrantTypes__0",
+        "AuthSettings__Clients__0__AllowedGrantTypes__1",
+        "AuthSettings__Clients__0__RedirectUris__0",
     ];
 
     public async ValueTask InitializeAsync()
@@ -51,6 +53,8 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientSecret", "test-secret");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__DisplayName", "Test Client");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedGrantTypes__0", "client_credentials");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedGrantTypes__1", "authorization_code");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__RedirectUris__0", "http://localhost/callback");
 
         Factory = new IgnisApiFactory(connectionString);
     }
