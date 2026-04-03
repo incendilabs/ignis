@@ -1,24 +1,32 @@
 # Ignis.Auth
 
-OAuth 2.0 token service for Ignis, built on [OpenIddict](https://documentation.openiddict.com/) with MongoDB storage.
-
-The library provides an `AuthorizationHandler` containing the token endpoint logic, while the host application supplies a thin controller that delegates to it. Currently supports the `client_credentials` grant type.
+OAuth 2.0 authorization server built on [OpenIddict](https://documentation.openiddict.com/) with MongoDB storage. Currently supports the `client_credentials` grant type; `authorization_code` with mandatory PKCE and Pushed Authorization Requests (PAR) is prepared in settings and client sync but not yet enabled in the server pipeline.
 
 ## Configuration
 
 ```json
 {
   "AuthSettings": {
-    "Enabled": true,
     "ConnectionString": "mongodb://localhost:27017/ignis",
     "Clients": [
       {
-        "ClientId": "my-client",
+        "ClientId": "my-backend",
         "ClientSecret": "my-secret",
-        "DisplayName": "My Client",
+        "DisplayName": "Backend Service",
         "AllowedGrantTypes": ["client_credentials"]
+      },
+      {
+        "ClientId": "my-web-app",
+        "ClientSecret": "web-secret",
+        "DisplayName": "My Web App",
+        "AllowedGrantTypes": ["authorization_code"],
+        "RedirectUris": ["https://app.example.com/callback"],
+        "PostLogoutRedirectUris": ["https://app.example.com"]
       }
     ],
+    "Endpoints": {
+      "LoginPath": "connect/login"
+    },
     "Certificates": {
       "SigningCertificatePath": "certs/signing.pfx",
       "SigningCertificatePassword": "",
@@ -29,56 +37,26 @@ The library provides an `AuthorizationHandler` containing the token endpoint log
 }
 ```
 
+All clients are confidential and require a `ClientSecret`. `AllowedGrantTypes` is required.
+
 ## Certificates
 
-OpenIddict requires a signing certificate and an encryption certificate for token generation and validation.
-
-### Development
-
-In development mode, OpenIddict automatically generates ephemeral development certificates. No configuration needed.
-
-### Production
-
-Generate self-signed PFX certificates for signing and encryption:
+Development mode uses ephemeral auto-generated certificates. For production, generate PFX certificates:
 
 ```bash
 mkdir -p certs
-
-# Signing certificate
-openssl req -x509 -nodes -newkey rsa:2048 \
-  -keyout certs/signing-key.pem -out certs/signing-cert.pem \
-  -days 365 -subj "/CN=Ignis Token Signing"
-openssl pkcs12 -export -out certs/signing.pfx \
-  -inkey certs/signing-key.pem -in certs/signing-cert.pem \
-  -passout pass:
-
-# Encryption certificate
-openssl req -x509 -nodes -newkey rsa:2048 \
-  -keyout certs/encryption-key.pem -out certs/encryption-cert.pem \
-  -days 365 -subj "/CN=Ignis Token Encryption"
-openssl pkcs12 -export -out certs/encryption.pfx \
-  -inkey certs/encryption-key.pem -in certs/encryption-cert.pem \
-  -passout pass:
-
-# Clean up PEM files
+for NAME in signing encryption; do
+  openssl req -x509 -nodes -newkey rsa:2048 \
+    -keyout certs/$NAME-key.pem -out certs/$NAME-cert.pem \
+    -days 365 -subj "/CN=Ignis ${NAME^}"
+  openssl pkcs12 -export -out certs/$NAME.pfx \
+    -inkey certs/$NAME-key.pem -in certs/$NAME-cert.pem -passout pass:
+done
 rm certs/*.pem
 ```
 
-The `certs/` directory is gitignored. Mount certificates via volume or secrets in production.
+The `certs/` directory is gitignored. Mount via volume or secrets in production.
 
 ## Client sync
 
-Clients defined in `AuthSettings.Clients` are synced to MongoDB on startup:
-
-- New clients are created
-- Existing clients are updated (secret, display name)
-- Clients not in config are removed
-
-## Usage
-
-```bash
-curl -X POST https://localhost:5201/connect/token \
-  -d grant_type=client_credentials \
-  -d client_id=my-client \
-  -d client_secret=my-secret
-```
+Clients in `AuthSettings.Clients` are synced to MongoDB on startup — created, updated, or removed to match configuration.
