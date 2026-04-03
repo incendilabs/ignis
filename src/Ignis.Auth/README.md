@@ -1,6 +1,6 @@
 # Ignis.Auth
 
-OAuth 2.0 authorization server built on [OpenIddict](https://documentation.openiddict.com/) with MongoDB storage. Currently supports the `client_credentials` grant type; `authorization_code` with mandatory PKCE and Pushed Authorization Requests (PAR) is prepared in settings and client sync but not yet enabled in the server pipeline.
+OAuth 2.0 authorization server built on [OpenIddict](https://documentation.openiddict.com/) with MongoDB storage. Supports `client_credentials` and `authorization_code` (with mandatory PKCE + PAR) grant types.
 
 ## Configuration
 

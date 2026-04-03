@@ -18,7 +18,6 @@ public class AuthCertificateSettings
 
 public class AuthEndpointSettings
 {
-    public string TokenEndpointPath { get; set; } = "connect/token";
     public string LoginPath { get; set; } = "connect/login";
 }
 

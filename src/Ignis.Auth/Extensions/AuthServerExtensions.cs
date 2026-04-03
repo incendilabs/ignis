@@ -1,17 +1,20 @@
 using System.Security.Cryptography.X509Certificates;
 
+using Ignis.Auth;
+
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 using MongoDB.Driver;
-
-using OpenIddict.Server;
 
 namespace Ignis.Auth.Extensions;
 
 public static class AuthServerExtensions
 {
     /// <summary>
-    /// Registers the OpenIddict authorization server and certificates.
+    /// Registers the OpenIddict authorization server, token validation,
+    /// session cookie authentication and certificates.
     /// Use this when the application acts as an authorization server.
     /// </summary>
     public static IServiceCollection AddIgnisAuthServer(
@@ -30,20 +33,38 @@ public static class AuthServerExtensions
             options.Certificates = settings.Certificates;
         });
 
-        services.AddOpenIddictServer(settings, useDevelopmentCertificates);
-        services.AddOpenIddict()
-            .AddValidation(options =>
-            {
-                options.UseLocalServer();
-                options.UseAspNetCore();
-            });
+        services
+            .AddSessionCookieAuthentication(settings.Endpoints.LoginPath)
+            .AddOpenIddictServer(settings, useDevelopmentCertificates)
+            .AddOpenIddictValidation();
 
         services.AddTransient<AuthorizationHandler>();
 
         return services;
     }
 
-    private static void AddOpenIddictServer(
+    private static IServiceCollection AddSessionCookieAuthentication(
+        this IServiceCollection services,
+        string loginPath)
+    {
+        services.AddAuthentication()
+            .AddCookie(AuthConstants.SessionScheme, options =>
+            {
+                options.LoginPath = new PathString("/" + loginPath.TrimStart('/'));
+                // Always issue a 302 redirect; the default cookie handler
+                // returns 401 for non-browser requests (missing Accept: text/html),
+                // which breaks the OAuth 2.0 authorization endpoint flow.
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    context.Response.Redirect(context.RedirectUri);
+                    return Task.CompletedTask;
+                };
+            });
+
+        return services;
+    }
+
+    private static IServiceCollection AddOpenIddictServer(
         this IServiceCollection services,
         AuthSettings settings,
         bool useDevelopmentCertificates)
@@ -58,18 +79,38 @@ public static class AuthServerExtensions
             .AddServer(options =>
             {
                 options
-                    .SetTokenEndpointUris(settings.Endpoints.TokenEndpointPath)
-                    .AllowClientCredentialsFlow();
+                    .SetTokenEndpointUris("connect/token")
+                    .SetAuthorizationEndpointUris("connect/authorize")
+                    .SetPushedAuthorizationEndpointUris("connect/par")
+                    .AllowClientCredentialsFlow()
+                    .AllowAuthorizationCodeFlow()
+                    .RequireProofKeyForCodeExchange()
+                    .RequirePushedAuthorizationRequests();
 
                 ConfigureCertificates(options, settings.Certificates, useDevelopmentCertificates);
 
                 var aspNetCoreBuilder = options
                     .UseAspNetCore()
-                    .EnableTokenEndpointPassthrough();
+                    .EnableTokenEndpointPassthrough()
+                    .EnableAuthorizationEndpointPassthrough();
 
                 if (useDevelopmentCertificates)
                     aspNetCoreBuilder.DisableTransportSecurityRequirement();
             });
+
+        return services;
+    }
+
+    private static IServiceCollection AddOpenIddictValidation(this IServiceCollection services)
+    {
+        services.AddOpenIddict()
+            .AddValidation(options =>
+            {
+                options.UseLocalServer();
+                options.UseAspNetCore();
+            });
+
+        return services;
     }
 
     private static void ConfigureCertificates(
