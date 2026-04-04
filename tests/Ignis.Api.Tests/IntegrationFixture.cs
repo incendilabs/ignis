@@ -12,7 +12,13 @@ public sealed class IntegrationFixture : IAsyncLifetime
         .WithImage("mongo:8")
         .Build();
 
-    public IgnisApiFactory Factory { get; private set; } = null!;
+    private IgnisApiFactory? _factory;
+    private IgnisApiFactory? _externalAuthProviderFactory;
+
+    public IgnisApiFactory Factory => _factory
+        ?? throw new InvalidOperationException("Fixture not initialized. Ensure InitializeAsync has run.");
+    public IgnisApiFactory ExternalAuthProviderFactory => _externalAuthProviderFactory
+        ?? throw new InvalidOperationException("Fixture not initialized. Ensure InitializeAsync has run.");
 
     private static string BuildConnectionString(string raw)
     {
@@ -40,6 +46,10 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__Clients__0__AllowedGrantTypes__0",
         "AuthSettings__Clients__0__AllowedGrantTypes__1",
         "AuthSettings__Clients__0__RedirectUris__0",
+        "AuthSettings__ExternalProviders__0__Name",
+        "AuthSettings__ExternalProviders__0__Type",
+        "AuthSettings__ExternalProviders__0__ClientId",
+        "AuthSettings__ExternalProviders__0__ClientSecret",
     ];
 
     public async ValueTask InitializeAsync()
@@ -56,14 +66,26 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedGrantTypes__1", "authorization_code");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__RedirectUris__0", "http://localhost/callback");
 
-        Factory = new IgnisApiFactory(connectionString);
+        // Create Factory without ExternalProviders.
+        _factory = new IgnisApiFactory(connectionString);
+        _ = _factory.Server; // Force initialization before changing env vars.
+
+        // WebApplicationFactory + minimal hosting: env vars are the only config source
+        // that builder.Configuration.Bind() sees, since ConfigureAppConfiguration runs
+        // too late. See https://github.com/dotnet/aspnetcore/issues/37680
+        Environment.SetEnvironmentVariable("AuthSettings__ExternalProviders__0__Name", "GitHub");
+        Environment.SetEnvironmentVariable("AuthSettings__ExternalProviders__0__Type", "GitHub");
+        Environment.SetEnvironmentVariable("AuthSettings__ExternalProviders__0__ClientId", "test-github-id");
+        Environment.SetEnvironmentVariable("AuthSettings__ExternalProviders__0__ClientSecret", "test-github-secret");
+        _externalAuthProviderFactory = new IgnisApiFactory(connectionString);
     }
 
     public async ValueTask DisposeAsync()
     {
         foreach (var key in EnvVarKeys)
             Environment.SetEnvironmentVariable(key, null);
-        Factory.Dispose();
+        _factory?.Dispose();
+        _externalAuthProviderFactory?.Dispose();
         await _mongo.DisposeAsync();
     }
 }

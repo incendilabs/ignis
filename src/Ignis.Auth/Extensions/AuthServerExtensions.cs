@@ -1,10 +1,17 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 
 using Ignis.Auth;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using MongoDB.Driver;
 
@@ -25,16 +32,11 @@ public static class AuthServerExtensions
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.ConnectionString);
 
-        services.Configure<AuthSettings>(options =>
-        {
-            options.ConnectionString = settings.ConnectionString;
-            options.Clients = settings.Clients;
-            options.Endpoints = settings.Endpoints;
-            options.Certificates = settings.Certificates;
-        });
+        services.AddSingleton(Options.Create(settings));
 
         services
             .AddSessionCookieAuthentication(settings.Endpoints.LoginPath)
+            .AddExternalProviders(settings.ExternalProviders)
             .AddOpenIddictServer(settings, useDevelopmentCertificates)
             .AddOpenIddictValidation();
 
@@ -62,6 +64,68 @@ public static class AuthServerExtensions
             });
 
         return services;
+    }
+
+    private static IServiceCollection AddExternalProviders(
+        this IServiceCollection services,
+        List<ExternalProviderSettings> providers)
+    {
+        foreach (var provider in providers)
+        {
+            switch (provider.Type)
+            {
+                case ExternalProviderType.GitHub:
+                    services.AddGitHubOAuth(provider);
+                    break;
+                case ExternalProviderType.OIDC:
+                    services.AddOidcProvider(provider);
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unsupported external provider type '{provider.Type}' for provider '{provider.Name}'.");
+            }
+        }
+
+        return services;
+    }
+
+    private static void AddGitHubOAuth(this IServiceCollection services, ExternalProviderSettings provider)
+    {
+        services.AddAuthentication()
+            .AddOAuth(provider.Name, options =>
+            {
+                var endpoints = WellKnownOAuthEndpoints.GitHub;
+                options.ClientId = provider.ClientId;
+                options.ClientSecret = provider.ClientSecret;
+                options.AuthorizationEndpoint = endpoints.AuthorizationEndpoint;
+                options.TokenEndpoint = endpoints.TokenEndpoint;
+                options.UserInformationEndpoint = endpoints.UserInformationEndpoint;
+                options.CallbackPath = $"/connect/login-callback-{provider.Name.ToLowerInvariant()}";
+                options.SignInScheme = AuthConstants.SessionScheme;
+
+                options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+                options.ClaimActions.MapJsonKey(ClaimTypes.Name, "name");
+                options.ClaimActions.MapJsonKey("urn:github:avatar", "avatar_url");
+
+                options.Events.OnCreatingTicket = async context =>
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
+                    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Ignis.Auth", "0.1.0"));
+                    using var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
+                    response.EnsureSuccessStatusCode();
+                    var user = await response.Content.ReadFromJsonAsync<JsonElement>(context.HttpContext.RequestAborted);
+                    context.RunClaimActions(user);
+                };
+            });
+    }
+
+    private static void AddOidcProvider(this IServiceCollection services, ExternalProviderSettings provider)
+    {
+        // OpenID Connect providers will be supported in a future version.
+        throw new NotSupportedException(
+            $"OpenID Connect provider '{provider.Name}' is not yet supported. Currently only 'GitHub' is available as a built-in provider.");
     }
 
     private static IServiceCollection AddOpenIddictServer(
