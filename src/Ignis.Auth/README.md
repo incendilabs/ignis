@@ -57,6 +57,12 @@ rm certs/*.pem
 
 The `certs/` directory is gitignored. Mount via volume or secrets in production.
 
+## External identity providers
+
+The authorization code flow requires an external identity provider for user login. Providers are configured via `ExternalProviders` in `AuthSettings` with a `Type` enum (`GitHub`, `OIDC`).
+
+See [GitHub Authentication Setup](../../docs/github-authentication.md) for a complete guide.
+
 ## Client sync
 
 Clients in `AuthSettings.Clients` are synced to MongoDB on startup — created, updated, or removed to match configuration.
