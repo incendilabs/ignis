@@ -63,4 +63,5 @@ public class ClientDefinition
     public List<string> AllowedGrantTypes { get; set; } = [];
     public List<string> RedirectUris { get; set; } = [];
     public List<string> PostLogoutRedirectUris { get; set; } = [];
+    public List<string> AllowedScopes { get; set; } = [];
 }

@@ -4,11 +4,10 @@ using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
-using Ignis.Auth;
+using Ignis.Auth.Authorization;
 
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -41,6 +40,9 @@ public static class AuthServerExtensions
             .AddOpenIddictValidation();
 
         services.AddTransient<AuthorizationHandler>();
+
+        services.AddSingleton<IAuthorizationPolicyProvider, ScopeAuthorizationPolicyProvider>();
+        services.AddSingleton<IAuthorizationHandler, ScopeAuthorizationHandler>();
 
         return services;
     }
@@ -149,7 +151,8 @@ public static class AuthServerExtensions
                     .AllowClientCredentialsFlow()
                     .AllowAuthorizationCodeFlow()
                     .RequireProofKeyForCodeExchange()
-                    .RequirePushedAuthorizationRequests();
+                    .RequirePushedAuthorizationRequests()
+                    .RegisterScopes(MaintenanceScopes.All.ToArray());
 
                 ConfigureCertificates(options, settings.Certificates, useDevelopmentCertificates);
 

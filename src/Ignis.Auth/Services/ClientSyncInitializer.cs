@@ -132,6 +132,9 @@ public class ClientSyncInitializer
             }
         }
 
+        foreach (var scope in client.AllowedScopes)
+            descriptor.Permissions.Add(Permissions.Prefixes.Scope + scope);
+
         return descriptor;
     }
 

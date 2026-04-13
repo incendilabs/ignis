@@ -46,6 +46,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__Clients__0__AllowedGrantTypes__0",
         "AuthSettings__Clients__0__AllowedGrantTypes__1",
         "AuthSettings__Clients__0__RedirectUris__0",
+        "AuthSettings__Clients__0__AllowedScopes__0",
         "AuthSettings__ExternalProviders__0__Name",
         "AuthSettings__ExternalProviders__0__Type",
         "AuthSettings__ExternalProviders__0__ClientId",
@@ -65,6 +66,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedGrantTypes__0", "client_credentials");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedGrantTypes__1", "authorization_code");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__RedirectUris__0", "http://localhost/callback");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__0", "maintenance/database.destructive");
 
         // Create Factory without ExternalProviders.
         _factory = new IgnisApiFactory(connectionString);
