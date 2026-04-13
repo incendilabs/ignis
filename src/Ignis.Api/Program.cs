@@ -1,3 +1,5 @@
+using Ignis.Api.Hubs;
+using Ignis.Api.Services.Operations;
 using Ignis.Auth;
 using Ignis.Auth.Extensions;
 
@@ -52,6 +54,10 @@ builder.Services.AddMongoFhirStore(storeSettings);
 // Register Spark FHIR engine (also registers controllers + FHIR formatters)
 builder.Services.AddFhir(sparkSettings);
 
+// Maintenance services and operation notifications
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IOperationProgressNotifier, SignalROperationProgressNotifier>();
+
 builder.Services.AddControllers();
 
 // OpenAPI document generation
@@ -74,6 +80,7 @@ app.UseAuthorization();
 
 await app.SyncOAuthClientsAsync();
 app.MapControllers();
+app.MapHub<OperationProgressHub>("/hubs/operations");
 app.MapGet("/healthz", () => Results.Ok("ok"));
 
 app.Run();
