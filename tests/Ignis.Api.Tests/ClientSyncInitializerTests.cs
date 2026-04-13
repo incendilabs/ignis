@@ -2,6 +2,8 @@ using System.Net;
 
 using FluentAssertions;
 
+using Ignis.Auth.Authorization;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -81,15 +83,20 @@ public class ClientSyncInitializerTests : IAsyncLifetime
     }
 
     private static async Task<HttpStatusCode> RequestToken(
-        HttpClient client, string clientId, string clientSecret)
+        HttpClient client, string clientId, string clientSecret, string? scope = null)
     {
+        var form = new Dictionary<string, string>
+        {
+            ["grant_type"] = "client_credentials",
+            ["client_id"] = clientId,
+            ["client_secret"] = clientSecret,
+        };
+
+        if (scope is not null)
+            form["scope"] = scope;
+
         var response = await client.PostAsync("/connect/token",
-            new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["grant_type"] = "client_credentials",
-                ["client_id"] = clientId,
-                ["client_secret"] = clientSecret,
-            }), CT);
+            new FormUrlEncodedContent(form), CT);
 
         return response.StatusCode;
     }
@@ -110,6 +117,65 @@ public class ClientSyncInitializerTests : IAsyncLifetime
                 using var client = factory.CreateClient();
                 var status = await RequestToken(client, "sync-client-a", "secret-a");
                 status.Should().Be(HttpStatusCode.OK);
+            }
+        }
+        finally
+        {
+            ClearEnvVars(envVars);
+        }
+    }
+
+    [Fact]
+    public async Task Sync_AllowsConfiguredMaintenanceScopes()
+    {
+        var (factory, envVars) = CreateApp(new Dictionary<string, string?>
+        {
+            ["AuthSettings:Clients:0:ClientId"] = "sync-scoped",
+            ["AuthSettings:Clients:0:ClientSecret"] = "secret-scoped",
+            ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
+            ["AuthSettings:Clients:0:AllowedScopes:0"] = MaintenanceScopes.DatabaseDestructive,
+        });
+        try
+        {
+            await using (factory)
+            {
+                using var client = factory.CreateClient();
+                var status = await RequestToken(
+                    client,
+                    "sync-scoped",
+                    "secret-scoped",
+                    MaintenanceScopes.DatabaseDestructive);
+
+                status.Should().Be(HttpStatusCode.OK);
+            }
+        }
+        finally
+        {
+            ClearEnvVars(envVars);
+        }
+    }
+
+    [Fact]
+    public async Task Sync_RejectsMaintenanceScopesNotAllowedForClient()
+    {
+        var (factory, envVars) = CreateApp(new Dictionary<string, string?>
+        {
+            ["AuthSettings:Clients:0:ClientId"] = "sync-unscoped",
+            ["AuthSettings:Clients:0:ClientSecret"] = "secret-unscoped",
+            ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
+        });
+        try
+        {
+            await using (factory)
+            {
+                using var client = factory.CreateClient();
+                var status = await RequestToken(
+                    client,
+                    "sync-unscoped",
+                    "secret-unscoped",
+                    MaintenanceScopes.DatabaseDestructive);
+
+                status.Should().Be(HttpStatusCode.BadRequest);
             }
         }
         finally
