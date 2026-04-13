@@ -67,8 +67,9 @@ public sealed class MaintenanceService(
         Guid operationId,
         IOperationProgressNotifier notifier) : IIndexBuildProgressReporter
     {
+        // Spark reports progress as a percentage (0-100).
         public Task ReportProgressAsync(int progress, string message) =>
-            notifier.ProgressAsync(operationId, message, progress);
+            notifier.ProgressAsync(operationId, message, new OperationProgress(progress, 100));
 
         public Task ReportErrorAsync(string message) =>
             notifier.ErrorAsync(operationId, message);
