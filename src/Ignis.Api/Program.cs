@@ -1,11 +1,16 @@
 using Ignis.Auth;
 using Ignis.Auth.Extensions;
 
+using Serilog;
+
 using Spark.Engine;
 using Spark.Engine.Extensions;
 using Spark.Mongo.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration));
 
 // Bind Spark FHIR settings from configuration
 var sparkSettings = new SparkSettings();
@@ -60,6 +65,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors();
