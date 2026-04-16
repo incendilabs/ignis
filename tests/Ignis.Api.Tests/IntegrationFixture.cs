@@ -1,3 +1,10 @@
+using System.Text.Json;
+
+using Ignis.Auth.Authorization;
+
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR.Client;
+
 using MongoDB.Driver;
 
 using Testcontainers.MongoDb;
@@ -47,6 +54,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__Clients__0__AllowedGrantTypes__1",
         "AuthSettings__Clients__0__RedirectUris__0",
         "AuthSettings__Clients__0__AllowedScopes__0",
+        "AuthSettings__Clients__0__AllowedScopes__1",
         "AuthSettings__ExternalProviders__0__Name",
         "AuthSettings__ExternalProviders__0__Type",
         "AuthSettings__ExternalProviders__0__ClientId",
@@ -67,6 +75,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedGrantTypes__1", "authorization_code");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__RedirectUris__0", "http://localhost/callback");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__0", "maintenance/database.destructive");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__1", OperationsScopes.Read);
 
         // Create Factory without ExternalProviders.
         _factory = new IgnisApiFactory(connectionString);
@@ -81,6 +90,43 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__ExternalProviders__0__ClientSecret", "test-github-secret");
         _externalAuthProviderFactory = new IgnisApiFactory(connectionString);
     }
+
+    public async Task<string> GetClientCredentialsTokenAsync(
+        CancellationToken cancellationToken,
+        string? scope = null)
+    {
+        var form = new Dictionary<string, string>
+        {
+            ["grant_type"] = "client_credentials",
+            ["client_id"] = "test-client",
+            ["client_secret"] = "test-secret",
+        };
+
+        if (scope is not null)
+            form["scope"] = scope;
+
+        using var client = Factory.CreateClient();
+        var response = await client.PostAsync("/connect/token",
+            new FormUrlEncodedContent(form), cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        return json.RootElement.GetProperty("access_token").GetString()
+            ?? throw new InvalidOperationException("No access_token in response.");
+    }
+
+    public HubConnection BuildHubConnection(string relativePath, string token) =>
+        new HubConnectionBuilder()
+            .WithUrl(
+                new Uri(Factory.Server.BaseAddress, relativePath),
+                options =>
+                {
+                    options.HttpMessageHandlerFactory = _ => Factory.Server.CreateHandler();
+                    options.Transports = HttpTransportType.LongPolling;
+                    options.AccessTokenProvider = () => Task.FromResult<string?>(token);
+                })
+            .Build();
 
     public async ValueTask DisposeAsync()
     {
