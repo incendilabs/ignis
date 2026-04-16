@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 
 using FluentAssertions;
@@ -14,8 +15,10 @@ using Task = System.Threading.Tasks.Task;
 namespace Ignis.Api.Tests;
 
 [Collection("IntegrationTests")]
-public class FhirControllerTests : IClassFixture<IntegrationFixture>
+public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLifetime
 {
+    private readonly IntegrationFixture _fixture;
+    private readonly HttpClient _anonymousClient;
     private readonly HttpClient _client;
 
     private readonly FhirJsonSerializer _serializer = new();
@@ -23,17 +26,37 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>
 
     public FhirControllerTests(IntegrationFixture fixture)
     {
+        _fixture = fixture;
+        _anonymousClient = fixture.Factory.CreateClient();
         _client = fixture.Factory.CreateClient();
     }
 
+    public async ValueTask InitializeAsync()
+    {
+        var token = await _fixture.GetClientCredentialsTokenAsync(CT);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+    }
+
+    public ValueTask DisposeAsync() => default;
+
     private static CancellationToken CT => TestContext.Current.CancellationToken;
 
-    // Metadata
+    // Auth enforcement
+
+    [Fact]
+    public async Task FhirEndpoint_WithoutAuth_ReturnsUnauthorized()
+    {
+        var response = await _anonymousClient.GetAsync("/fhir/Patient", CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // Metadata (AllowAnonymous)
 
     [Fact]
     public async Task Healthz_ReturnsOk()
     {
-        var response = await _client.GetAsync("/healthz", CT);
+        var response = await _anonymousClient.GetAsync("/healthz", CT);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -41,7 +64,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>
     [Fact]
     public async Task Metadata_ReturnsCapabilityStatement()
     {
-        var response = await _client.GetAsync("/fhir/metadata", CT);
+        var response = await _anonymousClient.GetAsync("/fhir/metadata", CT);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 

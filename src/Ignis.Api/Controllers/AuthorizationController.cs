@@ -1,7 +1,7 @@
 using Ignis.Auth;
 
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -9,6 +9,7 @@ namespace Ignis.Api.Controllers;
 
 [ApiController]
 [Route("connect")]
+[AllowAnonymous]
 public class AuthorizationController(
     AuthorizationHandler handler,
     IAuthenticationSchemeProvider schemeProvider,
