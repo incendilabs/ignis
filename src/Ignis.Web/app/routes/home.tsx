@@ -1,10 +1,10 @@
-import { Container } from "@/ui/container";
-import { Header } from "@/ui/header";
-import { Heading } from "@/ui/heading";
-import { LinkCard } from "@/ui/link-card";
-import { Main } from "@/ui/main";
-import { Section } from "@/ui/section";
-import { Text } from "@/ui/text";
+import { Card } from "@eventuras/ratio-ui/core/Card";
+import { Container } from "@eventuras/ratio-ui/layout/Container";
+import { Heading } from "@eventuras/ratio-ui/core/Heading";
+import { Link } from "@eventuras/ratio-ui/core/Link";
+import { Panel } from "@eventuras/ratio-ui/core/Panel";
+import { Section } from "@eventuras/ratio-ui/layout/Section";
+import { Text } from "@eventuras/ratio-ui/core/Text";
 
 export function meta() {
   return [
@@ -15,50 +15,46 @@ export function meta() {
 
 export default function Home() {
   return (
-    <Main>
-      <Container maxWidth="3xl">
-        {/* Hero Section */}
-        <Header className="mb-12">
+    <main className="py-16">
+      <Container className="max-w-3xl">
+        <header className="mb-12">
           <Heading className="mb-3">Ignis</Heading>
-          <Text variant="lead">FHIR experiments and prototyping</Text>
-        </Header>
+          <Text size="lg">FHIR experiments and prototyping</Text>
+        </header>
 
-        {/* About */}
-        <Container maxWidth="3xl" className="mb-12">
+        <Panel variant="callout" status="info" className="mb-12">
           <Text>
             Ignis is a platform for experimenting with FHIR (Fast Healthcare Interoperability Resources).
             This project builds on{" "}
-            <a
+            <Link
               href="https://github.com/firelyteam/spark"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 dark:text-blue-400 hover:underline"
+              componentProps={{ target: "_blank", rel: "noopener noreferrer" }}
             >
               Firely Spark
-            </a>
+            </Link>
             , an open-source FHIR server implementation.
           </Text>
-        </Container>
+        </Panel>
 
-        {/* Resources */}
         <Section>
           <Heading as="h2" className="mb-4">
             Resources
           </Heading>
           <div className="space-y-3">
             {resources.map((resource) => (
-              <LinkCard
-                key={resource.name}
-                href={resource.url}
-                title={resource.name}
-                description={resource.description}
-                external
-              />
+              <Card key={resource.name} hoverEffect>
+                <Link href={resource.url} linkOverlay componentProps={{ target: "_blank", rel: "noopener noreferrer" }}>
+                  <span className="font-medium">{resource.name}</span>
+                </Link>
+                {resource.description && (
+                  <Text size="sm" variant="muted">{resource.description}</Text>
+                )}
+              </Card>
             ))}
           </div>
         </Section>
       </Container>
-    </Main>
+    </main>
   );
 }
 

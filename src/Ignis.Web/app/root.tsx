@@ -9,21 +9,12 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import "@eventuras/ratio-ui/ratio-ui.css";
 import { ThemeProvider } from "./contexts/theme-provider";
-import { Navbar } from "@/ui/navbar";
+import { Navbar } from "@/components/ui/navbar";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/images/ignis-logo.png", type: "image/png" },
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -46,7 +37,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           }}
         />
       </head>
-      <body className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+      <body className="min-h-screen">
         {children}
         <ScrollRestoration />
         <Scripts />
