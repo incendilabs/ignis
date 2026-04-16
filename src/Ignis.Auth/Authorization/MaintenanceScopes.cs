@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Ignis.Auth.Authorization;
 
 /// <summary>
@@ -9,7 +11,7 @@ public static class MaintenanceScopes
     public const string DatabaseWrite = "maintenance/database.write";
     public const string DatabaseDestructive = "maintenance/database.destructive";
 
-    public static IReadOnlyList<string> All { get; } =
+    public static ImmutableArray<string> All { get; } =
     [
         DatabaseRead,
         DatabaseWrite,
