@@ -152,7 +152,7 @@ public static class AuthServerExtensions
                     .AllowAuthorizationCodeFlow()
                     .RequireProofKeyForCodeExchange()
                     .RequirePushedAuthorizationRequests()
-                    .RegisterScopes(MaintenanceScopes.All.ToArray());
+                    .RegisterScopes(KnownScopes.All.ToArray());
 
                 ConfigureCertificates(options, settings.Certificates, useDevelopmentCertificates);
 
