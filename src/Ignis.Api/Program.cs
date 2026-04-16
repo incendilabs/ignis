@@ -3,6 +3,10 @@ using Ignis.Api.Services.Operations;
 using Ignis.Auth;
 using Ignis.Auth.Extensions;
 
+using Microsoft.AspNetCore.Authorization;
+
+using OpenIddict.Validation.AspNetCore;
+
 using Serilog;
 
 using Spark.Engine;
@@ -58,6 +62,12 @@ builder.Services.AddFhir(sparkSettings);
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IOperationProgressNotifier, SignalROperationProgressNotifier>();
 
+builder.Services.AddAuthorizationBuilder()
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder()
+        .AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+        .RequireAuthenticatedUser()
+        .Build());
+
 builder.Services.AddControllers();
 
 // OpenAPI document generation
@@ -68,7 +78,7 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseSerilogRequestLogging();
@@ -81,6 +91,6 @@ app.UseAuthorization();
 await app.SyncOAuthClientsAsync();
 app.MapControllers();
 app.MapHub<OperationProgressHub>("/hubs/operations");
-app.MapGet("/healthz", () => Results.Ok("ok"));
+app.MapGet("/healthz", () => Results.Ok("ok")).AllowAnonymous();
 
 app.Run();

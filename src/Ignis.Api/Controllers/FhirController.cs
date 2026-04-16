@@ -10,6 +10,7 @@ using System.Net;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
@@ -189,6 +190,7 @@ public class FhirController : ControllerBase
 
     /// <summary>Get the server's CapabilityStatement (conformance metadata).</summary>
     [HttpGet, Route("metadata"), Tags("System")]
+    [AllowAnonymous]
     public async Task<FhirResponse> Metadata()
     {
         return await _fhirService.CapabilityStatementAsync(_settings.Version).ConfigureAwait(false);
@@ -196,6 +198,7 @@ public class FhirController : ControllerBase
 
     /// <summary>Get the server's CapabilityStatement via HTTP OPTIONS.</summary>
     [HttpOptions, Route(""), Tags("System")]
+    [AllowAnonymous]
     public async Task<FhirResponse> Options()
     {
         return await _fhirService.CapabilityStatementAsync(_settings.Version).ConfigureAwait(false);
