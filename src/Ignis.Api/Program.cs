@@ -76,10 +76,7 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi().AllowAnonymous();
-}
+app.MapOpenApi().AllowAnonymous();
 
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
