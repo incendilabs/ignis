@@ -80,6 +80,8 @@ app.MapOpenApi().AllowAnonymous();
 
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseRouting();
 app.UseCors();
 app.UseAuthentication();

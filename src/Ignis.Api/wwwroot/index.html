@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ignis API</title>
+    <style>
+      body {
+        background: radial-gradient(
+          circle,
+          #1b2838 0%,
+          #17212b 50%,
+          #0a141f 100%
+        );
+        color: white;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        background-color: green;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        margin-bottom: 20px;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.5);
+          opacity: 0.7;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .circle {
+          animation: none;
+        }
+      }
+
+      .doc-link {
+        color: #4da6ff;
+        display: block;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="circle" aria-hidden="true"></div>
+    <h1>Ignis API is running...</h1>
+    <a href="/openapi/v1.json" class="doc-link">OpenAPI</a>
+  </body>
+</html>
