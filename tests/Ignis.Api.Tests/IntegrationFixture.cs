@@ -59,6 +59,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__ExternalProviders__0__Type",
         "AuthSettings__ExternalProviders__0__ClientId",
         "AuthSettings__ExternalProviders__0__ClientSecret",
+        "FeatureManagement__AllowClearStore",
     ];
 
     public async ValueTask InitializeAsync()
@@ -68,6 +69,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
 
         Environment.SetEnvironmentVariable("StoreSettings__ConnectionString", connectionString);
         Environment.SetEnvironmentVariable("AuthSettings__ConnectionString", connectionString);
+        Environment.SetEnvironmentVariable("FeatureManagement__AllowClearStore", "true");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientId", "test-client");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientSecret", "test-secret");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__DisplayName", "Test Client");
