@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026, Incendi <info@incendi.no>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;

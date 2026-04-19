@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026, Incendi <info@incendi.no>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
