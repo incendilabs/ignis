@@ -1,5 +1,6 @@
 using Ignis.Api.Configuration;
 using Ignis.Api.Hubs;
+using Ignis.Api.Services.Maintenance;
 using Ignis.Api.Services.Operations;
 using Ignis.Auth;
 using Ignis.Auth.Extensions;
@@ -65,6 +66,7 @@ builder.Services.AddFhir(sparkSettings);
 // Maintenance services and operation notifications
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IOperationProgressNotifier, SignalROperationProgressNotifier>();
+builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()

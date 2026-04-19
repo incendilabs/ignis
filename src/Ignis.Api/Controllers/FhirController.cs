@@ -235,7 +235,10 @@ public class FhirController : ControllerBase
 
     // ============= Operations
 
-    /// <summary>Execute a server-level operation by name.</summary>
+    /// <summary>
+    /// Default handler for system-level operations. Returns 404 for any
+    /// operation not claimed by a more specific route.
+    /// </summary>
     [HttpPost, Route("${operation}"), Tags("Operations")]
     public FhirResponse ServerOperation(string operation)
     {
