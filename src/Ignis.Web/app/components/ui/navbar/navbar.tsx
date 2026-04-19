@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026, Incendi <info@incendi.no>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 import { Link } from "react-router";
 import { Button } from "@eventuras/ratio-ui/core/Button";
 import { Navbar as RatioNavbar } from "@eventuras/ratio-ui/core/Navbar";

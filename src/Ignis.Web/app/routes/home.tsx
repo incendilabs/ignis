@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026, Incendi <info@incendi.no>
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 import { Card } from "@eventuras/ratio-ui/core/Card";
 import { Container } from "@eventuras/ratio-ui/layout/Container";
 import { Heading } from "@eventuras/ratio-ui/core/Heading";
