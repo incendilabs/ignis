@@ -1,3 +1,4 @@
+using Ignis.Api.Configuration;
 using Ignis.Api.Hubs;
 using Ignis.Api.Services.Operations;
 using Ignis.Auth;
@@ -29,6 +30,9 @@ builder.Configuration.Bind("StoreSettings", storeSettings);
 // Bind Auth settings
 var authSettings = new AuthSettings();
 builder.Configuration.Bind("AuthSettings", authSettings);
+
+// Bind feature flags
+builder.Services.Configure<FeatureSettings>(builder.Configuration.GetSection("FeatureManagement"));
 
 builder.Services
     .AddIgnisAuthServer(authSettings, builder.Environment.IsDevelopment())
