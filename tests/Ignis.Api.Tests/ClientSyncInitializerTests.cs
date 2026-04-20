@@ -23,9 +23,7 @@ namespace Ignis.Api.Tests;
 [Collection("IntegrationTests")]
 public class ClientSyncInitializerTests : IAsyncLifetime
 {
-    private readonly MongoDbContainer _mongo = new MongoDbBuilder()
-        .WithImage("mongo:8")
-        .Build();
+    private readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8").Build();
 
     private string _connectionString = "";
 
