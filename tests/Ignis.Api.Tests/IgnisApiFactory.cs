@@ -56,6 +56,6 @@ public class IgnisApiFactory : WebApplicationFactory<Program>
             _configureServices?.Invoke(services);
         });
 
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment("Test");
     }
 }

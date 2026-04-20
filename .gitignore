@@ -58,5 +58,5 @@ infra/helm/charts/*.tgz
 # Certificates
 certs/
   
-# Ignore appsettings files for development
-src/Ignis.Api/appsettings.Development.json
+# Per-developer local overrides (loaded only in Development)
+appsettings.local.json

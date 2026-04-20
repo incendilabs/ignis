@@ -23,6 +23,11 @@ using Spark.Mongo.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true);
+}
+
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 
@@ -42,7 +47,7 @@ builder.Configuration.Bind("AuthSettings", authSettings);
 builder.Services.Configure<FeatureSettings>(builder.Configuration.GetSection("FeatureManagement"));
 
 builder.Services
-    .AddIgnisAuthServer(authSettings, builder.Environment.IsDevelopment())
+    .AddIgnisAuthServer(authSettings, useDevelopmentCertificates: !builder.Environment.IsProduction())
     .AddIgnisClientSync();
 
 // Set up CORS policy

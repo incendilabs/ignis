@@ -76,7 +76,7 @@ public class ClientSyncInitializerTests : IAsyncLifetime
         var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, c) => c.AddInMemoryCollection(baseConfig));
-            builder.UseEnvironment("Development");
+            builder.UseEnvironment("Test");
         });
 
         return (factory, envVars);

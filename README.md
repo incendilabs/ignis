@@ -27,6 +27,23 @@ dotnet run
 
 The API will be available at `https://localhost:5201/fhir` and the OpenAPI document at `https://localhost:5201/openapi/v1.json`.
 
+### Local configuration
+
+Copy `src/Ignis.Api/appsettings.local.example.json` to `src/Ignis.Api/appsettings.local.json` to apply per-developer overrides. The file is loaded only when the environment is `Development` and is gitignored.
+
 ### Kubernetes
 
 See the [infrastructure guide](infra/README.md) for testing Ignis on Kubernetes.
+
+## Production notes
+
+### Structured JSON logging
+
+The API logs to the console via Serilog. To emit one compact JSON object per log line (suitable for log aggregators), set:
+
+```bash
+Serilog__WriteTo__0__Name=Console
+Serilog__WriteTo__0__Args__formatter=Serilog.Formatting.Compact.RenderedCompactJsonFormatter, Serilog.Formatting.Compact
+```
+
+These override the default console sink configured in `appsettings.json`.
