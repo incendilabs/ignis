@@ -21,9 +21,7 @@ namespace Ignis.Api.Tests;
 
 public sealed class IntegrationFixture : IAsyncLifetime
 {
-    private readonly MongoDbContainer _mongo = new MongoDbBuilder()
-        .WithImage("mongo:8")
-        .Build();
+    private readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8").Build();
 
     private IgnisApiFactory? _factory;
     private IgnisApiFactory? _externalAuthProviderFactory;
