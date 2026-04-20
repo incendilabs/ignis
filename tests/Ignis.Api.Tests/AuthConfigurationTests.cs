@@ -60,7 +60,7 @@ public class AuthConfigurationTests : IAsyncLifetime
 
     private WebApplicationFactory<Program> CreateFactory(
         Dictionary<string, string?> config,
-        string environment = "Development")
+        string environment = "Test")
     {
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
