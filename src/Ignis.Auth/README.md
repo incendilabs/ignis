@@ -61,7 +61,7 @@ The `certs/` directory is gitignored. Mount via volume or secrets in production.
 
 The authorization code flow requires an external identity provider for user login. Providers are configured via `ExternalProviders` in `AuthSettings` with a `Type` enum (`GitHub`, `OIDC`).
 
-See [GitHub Authentication Setup](../../docs/github-authentication.md) for a complete guide.
+See [Authentication](../../docs/auth/authentication.md) for the overall flow and [Authenticate with GitHub](../../docs/auth/authenticate-with-github.md) for a complete GitHub setup guide.
 
 ## Client sync
 

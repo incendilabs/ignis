@@ -1,6 +1,6 @@
-# GitHub Authentication Setup
+# Authenticate with GitHub
 
-Guide for configuring GitHub as an external identity provider for the authorization code flow.
+Configure GitHub as an external identity provider for Ignis.Auth. See [Authentication](./authentication.md) for the overall flow and provider-selection behaviour.
 
 ## Prerequisites
 
@@ -59,22 +59,10 @@ AuthSettings__ExternalProviders__0__ClientSecret=<client-secret>
 Start the application and navigate to:
 
 ```text
-https://localhost:5201/connect/login?provider=GitHub
+https://localhost:5201/connect/login
 ```
 
-This should redirect you to GitHub for authentication. After authorizing, you are redirected back and a session cookie is issued.
-
-## How it works
-
-The full authorization code flow with GitHub login:
-
-1. Client initiates PKCE + PAR flow, browser arrives at `/connect/authorize`
-2. No session cookie exists, so the user is redirected to `/connect/login?provider=GitHub`
-3. The login endpoint triggers a GitHub OAuth challenge
-4. User authenticates on GitHub, GitHub redirects to `/connect/login-callback-github`
-5. ASP.NET Core exchanges the code, fetches user info from GitHub's API, and issues a session cookie
-6. User is redirected back to `/connect/authorize`, which now finds a valid session and issues an authorization code
-7. Client exchanges the authorization code for an access token at `/connect/token`
+With GitHub configured as the only external provider, the endpoint auto-selects it and redirects to GitHub for authentication. After authorizing, you are redirected back and a session cookie is issued. Pass `?provider=GitHub` explicitly when multiple providers are configured.
 
 ## Mapped claims
 

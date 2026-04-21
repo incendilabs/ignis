@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+using System.Text;
+
+using Ignis.Api.Services.Auth;
 using Ignis.Auth;
 
 using Microsoft.AspNetCore.Authentication;
@@ -24,11 +27,36 @@ public class AuthorizationController(
     /// <summary>Login via external identity provider.</summary>
     [HttpGet("login")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> Login(string provider, string returnUrl = "/")
+    public async Task<IActionResult> Login(string? provider = null, string returnUrl = "/")
     {
+        var configured = authSettings.Value.ExternalProviders;
+
+        if (configured.Count == 0)
+            return Problem(
+                title: "No external identity providers are configured.",
+                detail: "AuthSettings:ExternalProviders must include at least one provider.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            if (configured.Count == 1)
+            {
+                provider = configured[0].Name;
+            }
+            else
+            {
+                return Content(
+                    LoginPageRenderer.RenderProviderSelection(configured, returnUrl),
+                    "text/html",
+                    Encoding.UTF8);
+            }
+        }
+
         var scheme = await schemeProvider.GetSchemeAsync(provider);
         if (scheme is null)
-            return BadRequest($"Unknown authentication provider '{provider}'.");
+            return Problem(
+                title: $"Unknown authentication provider '{provider}'.",
+                statusCode: StatusCodes.Status400BadRequest);
 
         var redirectUri = GetAllowedReturnUrl(returnUrl);
 
