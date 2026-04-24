@@ -18,10 +18,19 @@ import "./app.css";
 import "@eventuras/ratio-ui/ratio-ui.css";
 import { ThemeProvider } from "./contexts/theme-provider";
 import { Navbar } from "@/components/ui/navbar";
+import * as authConfig from "@/features/auth/config.server";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/images/ignis-logo.png", type: "image/png" },
 ];
+
+export function loader() {
+  return {
+    features: {
+      auth: authConfig.isEnabled(),
+    },
+  };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -52,10 +61,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <ThemeProvider>
-      <Navbar />
+      <Navbar features={loaderData.features} />
       <main className="min-h-[calc(100vh-4rem)]">
         <Outlet />
       </main>

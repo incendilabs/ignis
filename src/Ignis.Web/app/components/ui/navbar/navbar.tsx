@@ -4,26 +4,38 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { Link } from "react-router";
+import { Link as RouterLink } from "react-router";
 import { Button } from "@eventuras/ratio-ui/core/Button";
+import { Link } from "@eventuras/ratio-ui/core/Link";
 import { Navbar as RatioNavbar } from "@eventuras/ratio-ui/core/Navbar";
 import { useTheme } from "@/contexts/theme-provider";
 
-export function Navbar() {
+interface NavbarProps {
+  features: {
+    auth: boolean;
+  };
+}
+
+export function Navbar({ features }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <RatioNavbar sticky bgColor="bg-[#1F2244]" bgDark>
       <RatioNavbar.Brand>
-        <Link
+        <RouterLink
           to="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity no-underline"
         >
           <img src="/images/ignis-logo.png" alt="Ignis" className="h-8 w-8" />
           <span className="text-xl">Ignis</span>
-        </Link>
+        </RouterLink>
       </RatioNavbar.Brand>
       <RatioNavbar.Content className="justify-end">
+        {features.auth && (
+          <Link href="/auth/login" variant="button-text" onDark>
+            Login
+          </Link>
+        )}
         <Button
           variant="text"
           onDark
