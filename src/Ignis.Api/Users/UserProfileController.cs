@@ -23,10 +23,9 @@ public class UserProfileController : ControllerBase
     /// required and read from the <c>sub</c> claim (falling back to
     /// <see cref="ClaimTypes.NameIdentifier"/>); if absent the request
     /// is rejected with <see cref="ControllerBase.Unauthorized()"/>.
-    /// Optional profile fields prefer the OIDC-standard claim names
-    /// (<c>name</c>, <c>email</c>, <c>picture</c>) and fall back to
-    /// the <see cref="ClaimTypes"/> URIs set by external providers;
-    /// claims neither source exposed come back as <c>null</c>.
+    /// Identity fields (<c>Name</c>, <c>Email</c>, <c>AvatarUrl</c>)
+    /// currently read from the access token and will return <c>null</c>
+    /// until a server-side user is added.
     /// </summary>
     [HttpGet, Tags("User")]
     public ActionResult<UserProfile> Get()
@@ -44,14 +43,16 @@ public class UserProfileController : ControllerBase
             .Distinct()
             .ToArray();
 
+        // Name/Email/AvatarUrl will be null until identity is sourced
+        // from a server-side user store; access tokens intentionally
+        // don't carry these claims
         return new UserProfile(
             Subject: subject,
             Name: User.FindFirst(OpenIddictConstants.Claims.Name)?.Value
                 ?? User.FindFirst(ClaimTypes.Name)?.Value,
             Email: User.FindFirst(OpenIddictConstants.Claims.Email)?.Value
                 ?? User.FindFirst(ClaimTypes.Email)?.Value,
-            AvatarUrl: User.FindFirst(OpenIddictConstants.Claims.Picture)?.Value
-                ?? User.FindFirst("urn:github:avatar")?.Value,
+            AvatarUrl: User.FindFirst(OpenIddictConstants.Claims.Picture)?.Value,
             Scopes: scopes);
     }
 }

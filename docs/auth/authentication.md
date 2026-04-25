@@ -57,3 +57,12 @@ Pass `?provider=<name>` to bypass the selection page when multiple providers are
 - [GitHub](./authenticate-with-github.md) — OAuth App with `id`, `name`, and `avatar_url` claim mapping.
 
 OpenID Connect providers are planned but not yet supported.
+
+## Claims and scopes mapping
+
+| Claim     | Scope     | Access token | ID token | `/userprofile` | Source                  |
+| --------- | --------- | ------------ | -------- | -------------- | ----------------------- |
+| `sub`     | (always)  | ✓            | ✓        | `Subject`      | authenticated principal |
+| `name`    | `profile` | ✗            | ✓        | (null)         | GitHub `name`           |
+| `picture` | `profile` | ✗            | ✓        | (null)         | GitHub `avatar_url`     |
+| `email`   | `email`   | ✗            | ✓        | (null)         | GitHub `email`          |

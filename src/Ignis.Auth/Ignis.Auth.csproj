@@ -15,4 +15,8 @@
     <PackageReference Include="OpenIddict.MongoDb" Version="7.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ignis.Api.Tests" />
+  </ItemGroup>
+
 </Project>
