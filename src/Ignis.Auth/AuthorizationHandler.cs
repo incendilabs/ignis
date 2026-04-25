@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+using System.Collections.Immutable;
 using System.Security.Claims;
 
 using Microsoft.AspNetCore;
@@ -25,6 +26,27 @@ namespace Ignis.Auth;
 public class AuthorizationHandler
 {
     private readonly IOpenIddictApplicationManager _applicationManager;
+
+    private sealed record ScopeClaimMapping(
+        string? Scope,    // null = always emitted, not gated by a scope
+        string Claim,
+        string[] Sources,
+        string[] Destinations);
+
+    /// <summary>
+    /// Claim mappings for identity claims emitted by the authorization
+    /// endpoint. To add a new scope/claim: append a row here.
+    /// </summary>
+    private static readonly ScopeClaimMapping[] IdentityClaimMappings =
+    [
+        new(null,           Claims.Subject, [Claims.Subject, ClaimTypes.NameIdentifier], [Destinations.AccessToken, Destinations.IdentityToken]),
+        new(Scopes.Profile, Claims.Name,    [Claims.Name, ClaimTypes.Name],              [Destinations.IdentityToken]),
+        new(Scopes.Profile, Claims.Picture, [Claims.Picture],                            [Destinations.IdentityToken]),
+        new(Scopes.Email,   Claims.Email,   [Claims.Email, ClaimTypes.Email],            [Destinations.IdentityToken]),
+    ];
+
+    private static readonly Dictionary<string, string[]> ClaimDestinations =
+        IdentityClaimMappings.ToDictionary(m => m.Claim, m => m.Destinations);
 
     public AuthorizationHandler(IOpenIddictApplicationManager applicationManager)
     {
@@ -52,26 +74,23 @@ public class AuthorizationHandler
                 });
         }
 
-        var subject = result.Principal.FindFirst(Claims.Subject)?.Value ??
-            result.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var identity = new ClaimsIdentity(
+            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+            Claims.Name, Claims.Role);
 
-        if (string.IsNullOrEmpty(subject))
+        var requestedScopes = request.GetScopes();
+        identity.SetScopes(requestedScopes);
+
+        AddIdentityClaims(identity, result.Principal, requestedScopes);
+
+        // sub is required — bail if the session principal didn't supply it.
+        if (string.IsNullOrEmpty(identity.FindFirst(Claims.Subject)?.Value))
         {
             return ForbidWithError(Errors.InvalidRequest,
                 "The authenticated session is missing the required subject claim.");
         }
 
-        var identity = new ClaimsIdentity(
-            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-            Claims.Name, Claims.Role);
-
-        identity.SetClaim(Claims.Subject, subject);
-        identity.SetClaim(Claims.Name,
-            result.Principal.FindFirst(Claims.Name)?.Value ??
-            result.Principal.Identity?.Name);
-
-        identity.SetScopes(request.GetScopes());
-        identity.SetDestinations(_ => [Destinations.AccessToken]);
+        identity.SetDestinations(claim => GetDestinationsFor(claim.Type));
 
         return new SignInResult(
             OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -135,6 +154,39 @@ public class AuthorizationHandler
             OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
             new ClaimsPrincipal(identity));
     }
+
+    /// <summary>
+    /// Copies scope-gated identity claims from the session principal
+    /// onto the OpenIddict identity. See <see cref="IdentityClaimMappings"/>
+    /// for the full mapping. Exposed as internal for unit tests.
+    /// </summary>
+    internal static void AddIdentityClaims(
+        ClaimsIdentity target,
+        ClaimsPrincipal source,
+        ImmutableArray<string> requestedScopes)
+    {
+        foreach (var mapping in IdentityClaimMappings)
+        {
+            var scope = mapping.Scope;
+            var alwaysEmitted = scope is null;
+            var scopeRequested = scope is not null && requestedScopes.Contains(scope);
+            if (!alwaysEmitted && !scopeRequested) continue;
+
+            var value = mapping.Sources
+                .Select(s => source.FindFirst(s)?.Value)
+                .FirstOrDefault(v => !string.IsNullOrEmpty(v));
+            if (!string.IsNullOrEmpty(value))
+                target.SetClaim(mapping.Claim, value);
+        }
+    }
+
+    /// <summary>
+    /// Returns the destinations a claim should be emitted to, derived
+    /// from <see cref="IdentityClaimMappings"/>. Anything not in the table
+    /// (roles, custom resource claims) stays in the access token only.
+    /// </summary>
+    internal static string[] GetDestinationsFor(string claimType) =>
+        ClaimDestinations.GetValueOrDefault(claimType, [Destinations.AccessToken]);
 
     private static ForbidResult ForbidWithError(string error, string description) =>
         new([OpenIddictServerAspNetCoreDefaults.AuthenticationScheme],

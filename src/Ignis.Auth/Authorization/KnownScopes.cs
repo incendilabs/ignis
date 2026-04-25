@@ -6,6 +6,8 @@
 
 using System.Collections.Immutable;
 
+using static OpenIddict.Abstractions.OpenIddictConstants;
+
 namespace Ignis.Auth.Authorization;
 
 /// <summary>
@@ -17,6 +19,9 @@ public static class KnownScopes
 {
     public static ImmutableArray<string> All { get; } =
     [
+        Scopes.OpenId,
+        Scopes.Profile,
+        Scopes.Email,
         ..MaintenanceScopes.All,
         ..OperationsScopes.All,
     ];
