@@ -11,4 +11,5 @@ export default [
   route("healthz", "routes/healthz.ts"),
   route("auth/login", "features/auth/routes/login.tsx"),
   route("auth/callback", "features/auth/routes/callback.tsx"),
+  route("admin", "features/admin/routes/index.tsx"),
 ] satisfies RouteConfig;
