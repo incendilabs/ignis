@@ -18,6 +18,7 @@ import "./app.css";
 import "@eventuras/ratio-ui/ratio-ui.css";
 import { ThemeProvider } from "./contexts/theme-provider";
 import { Navbar } from "@/components/ui/navbar";
+import * as adminConfig from "@/features/admin/config.server";
 import * as authConfig from "@/features/auth/config.server";
 
 export const links: Route.LinksFunction = () => [
@@ -28,6 +29,7 @@ export function loader() {
   return {
     features: {
       auth: authConfig.isEnabled(),
+      admin: adminConfig.isEnabled(),
     },
   };
 }

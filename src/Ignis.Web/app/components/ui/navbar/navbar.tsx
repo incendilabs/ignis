@@ -13,6 +13,7 @@ import { useTheme } from "@/contexts/theme-provider";
 interface NavbarProps {
   features: {
     auth: boolean;
+    admin: boolean;
   };
 }
 
@@ -31,6 +32,11 @@ export function Navbar({ features }: NavbarProps) {
         </RouterLink>
       </RatioNavbar.Brand>
       <RatioNavbar.Content className="justify-end">
+        {features.admin && (
+          <Link href="/admin" variant="button-text" onDark>
+            Admin
+          </Link>
+        )}
         {features.auth && (
           <Link href="/auth/login" variant="button-text" onDark>
             Login
