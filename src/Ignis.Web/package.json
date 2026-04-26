@@ -7,6 +7,8 @@
     "dev": "react-router dev",
     "lint": "react-router typegen && eslint .",
     "start": "react-router-serve ./build/server/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
@@ -31,6 +33,7 @@
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.21.0",
     "vite": "^7.1.7",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.1.5"
   }
 }
