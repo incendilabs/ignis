@@ -5,11 +5,12 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
-    "lint": "react-router typegen && eslint .",
+    "lint": "npm run paraglide:compile && react-router typegen && eslint .",
+    "paraglide:compile": "paraglide-js compile --project ./app/i18n/project.inlang --outdir ./app/i18n/paraglide --emit-ts-declarations --strategy url cookie preferredLanguage baseLocale",
     "start": "react-router-serve ./build/server/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "npm run paraglide:compile && react-router typegen && tsc"
   },
   "dependencies": {
     "@eventuras/fides-auth": "^0.5.0",
@@ -23,6 +24,9 @@
     "react-router": "7.12.0"
   },
   "devDependencies": {
+    "@inlang/paraglide-js": "^2.16.1",
+    "@inlang/plugin-m-function-matcher": "^2.2.5",
+    "@inlang/plugin-message-format": "^4.4.0",
     "@react-router/dev": "7.12.0",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^22",

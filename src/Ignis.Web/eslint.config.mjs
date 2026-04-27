@@ -25,6 +25,7 @@ export default defineConfig(
       "build/**",
       ".react-router/**",
       "node_modules/**",
+      "app/i18n/paraglide/**",
       "*.gen.ts",
     ],
   },

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "app_name": "Ignis",
+  "home_about": "Ignis er en plattform for eksperimentering med FHIR (Fast Healthcare Interoperability Resources). Prosjektet bygger på Spark, en åpen kildekode FHIR-server.",
+  "home_subtitle": "FHIR-eksperimenter og prototyping",
+  "home_title": "Ignis FHIR-sandkasse",
+  "nav_login": "Logg inn"
+}
