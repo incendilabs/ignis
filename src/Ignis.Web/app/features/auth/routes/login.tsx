@@ -7,8 +7,12 @@
 import { buildPKCEOptions, discoverAndBuildAuthorizationUrl } from "@eventuras/fides-auth/oauth";
 import { redirect } from "react-router";
 
+import { Logger } from "@/logger";
+
 import { isEnabled, oauth } from "../config.server";
 import { oauthStateCookie, oauthVerifierCookie } from "../cookies.server";
+
+const logger = Logger.create({ namespace: "auth:login" });
 
 export async function loader() {
   if (!isEnabled()) return redirect("/");
@@ -23,7 +27,7 @@ export async function loader() {
 
     return redirect(authorizeUrl.toString(), { headers });
   } catch (error) {
-    console.error("Failed to start OAuth flow:", error);
+    logger.error({ error }, "Failed to start OAuth flow");
     throw new Error("Authorization server unavailable");
   }
 }
