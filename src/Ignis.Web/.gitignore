@@ -6,3 +6,6 @@
 # React Router
 /.react-router/
 /build/
+
+# Paraglide (auto-generated; the directory also has its own .gitignore)
+/app/i18n/paraglide/

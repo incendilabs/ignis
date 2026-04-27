@@ -12,6 +12,8 @@ import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Section } from "@eventuras/ratio-ui/layout/Section";
 import { Text } from "@eventuras/ratio-ui/core/Text";
 
+import { m } from "@/i18n/paraglide/messages";
+
 export function meta() {
   return [
     { title: "Ignis - FHIR Experimentation Platform" },
@@ -24,22 +26,12 @@ export default function Home() {
     <main className="py-16">
       <Container className="max-w-3xl">
         <header className="mb-12">
-          <Heading className="mb-3">Ignis</Heading>
-          <Text size="lg">FHIR experiments and prototyping</Text>
+          <Heading className="mb-3">{m.home_title()}</Heading>
+          <Text size="lg">{m.home_subtitle()}</Text>
         </header>
 
         <Panel variant="callout" status="info" className="mb-12">
-          <Text>
-            Ignis is a platform for experimenting with FHIR (Fast Healthcare Interoperability Resources).
-            This project builds on{" "}
-            <Link
-              href="https://github.com/firelyteam/spark"
-              componentProps={{ target: "_blank", rel: "noopener noreferrer" }}
-            >
-              Firely Spark
-            </Link>
-            , an open-source FHIR server implementation.
-          </Text>
+          <Text>{m.home_about()}</Text>
         </Panel>
 
         <Section>
@@ -66,7 +58,7 @@ export default function Home() {
 
 const resources = [
   {
-    name: "Firely Spark",
+    name: "Spark FHIR server",
     description: "Open-source FHIR server - the foundation of Ignis",
     url: "https://github.com/firelyteam/spark",
   },
