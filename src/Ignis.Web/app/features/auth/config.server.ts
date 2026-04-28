@@ -14,7 +14,7 @@ export function isEnabled(): boolean {
 }
 
 export function oauth(): OAuthConfig {
-  const scopes = ["openid", adminScopes.operationsRead];
+  const scopes = ["openid", "profile", "email", adminScopes.operationsRead];
   const appUrl = env("IGNIS_WEB_APP_URL", { default: "http://localhost:5202" });
   return {
     issuer: env("IGNIS_AUTH_ISSUER"),
