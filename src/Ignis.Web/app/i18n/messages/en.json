@@ -1,5 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "admin_signed_in": "You are signed in.",
+  "admin_title": "Admin",
   "app_name": "Ignis",
   "home_about": "Ignis is a platform for experimenting with FHIR (Fast Healthcare Interoperability Resources). This project builds on Spark, an open-source FHIR server implementation.",
   "home_subtitle": "FHIR experiments and prototyping",
