@@ -160,6 +160,15 @@ public static class AuthServerExtensions
                     .RequirePushedAuthorizationRequests()
                     .RegisterScopes(KnownScopes.All.ToArray());
 
+                if (!string.IsNullOrWhiteSpace(settings.Issuer))
+                {
+                    if (!Uri.TryCreate(settings.Issuer.Trim(), UriKind.Absolute, out var issuer))
+                        throw new ArgumentException(
+                            $"AuthSettings:Issuer must be an absolute URI (got '{settings.Issuer}').",
+                            nameof(settings));
+                    options.SetIssuer(issuer);
+                }
+
                 ConfigureCertificates(options, settings.Certificates, useDevelopmentCertificates);
 
                 var aspNetCoreBuilder = options
