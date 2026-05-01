@@ -58,4 +58,27 @@ public class MaintenanceController(
 
         return Respond.WithResource(outcome);
     }
+
+    /// <summary>
+    /// Rebuilds the search index from current store contents.
+    /// Requires the <c>maintenance/database.write</c> scope.
+    /// </summary>
+    [HttpPost("$rebuild-index"), Tags("Operations")]
+    [Authorize(Policy = MaintenancePolicies.DatabaseWrite)]
+    public async Task<FhirResponse> RebuildIndex()
+    {
+        var operationId = Guid.NewGuid();
+        logger.LogInformation(
+            "Index rebuild requested by {Subject} (operation {OperationId}).",
+            User.FindFirst(OpenIddictConstants.Claims.Subject)?.Value ?? "unknown",
+            operationId);
+
+        await maintenanceService.RebuildIndexAsync(operationId);
+
+        var outcome = new OperationOutcome()
+            .WithOperationId(operationId)
+            .AddInformationIssue("Index rebuilt.");
+
+        return Respond.WithResource(outcome);
+    }
 }

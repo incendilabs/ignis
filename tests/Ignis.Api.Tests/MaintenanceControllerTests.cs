@@ -123,4 +123,41 @@ public class MaintenanceControllerTests : IClassFixture<IntegrationFixture>
         hubOperationId.Should().Be(responseOperationId);
         message.Should().Be("Store cleared.");
     }
+
+    [Fact]
+    public async Task RebuildIndex_WithoutAuth_ReturnsUnauthorized()
+    {
+        using var client = _fixture.Factory.CreateClient();
+
+        var response = await client.PostAsync("/fhir/$rebuild-index", null, CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task RebuildIndex_WithTokenWithoutWriteScope_ReturnsForbidden()
+    {
+        using var client = _fixture.Factory.CreateClient();
+
+        var token = await _fixture.GetClientCredentialsTokenAsync(CT, MaintenanceScopes.DatabaseRead);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.PostAsync("/fhir/$rebuild-index", null, CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task RebuildIndex_WithWriteScope_ReturnsOk()
+    {
+        using var client = _fixture.Factory.CreateClient();
+
+        var token = await _fixture.GetClientCredentialsTokenAsync(
+            CT, MaintenanceScopes.DatabaseWrite);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.PostAsync("/fhir/$rebuild-index", null, CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
 }
