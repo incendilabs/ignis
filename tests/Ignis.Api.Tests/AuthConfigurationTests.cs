@@ -7,6 +7,7 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 
 using FluentAssertions;
 
@@ -54,6 +55,37 @@ public class AuthConfigurationTests : IAsyncLifetime
     {
         foreach (var key in vars.Keys)
             Environment.SetEnvironmentVariable(key, null);
+    }
+
+    /// <summary>
+    /// Builds the boilerplate config a test needs to spin up the API with a
+    /// single client_credentials client. Returns env-var and in-memory dicts
+    /// that the caller can extend with test-specific keys before passing to
+    /// <see cref="SetEnvVars"/> / <see cref="CreateFactory"/>.
+    /// </summary>
+    private (Dictionary<string, string?> envVars, Dictionary<string, string?> appConfig) BaseClientCredentialsConfig(
+        string clientId, string clientSecret)
+    {
+        var envVars = new Dictionary<string, string?>
+        {
+            ["StoreSettings__ConnectionString"] = _connectionString,
+            ["AuthSettings__ConnectionString"] = _connectionString,
+            ["AuthSettings__Clients__0__ClientId"] = clientId,
+            ["AuthSettings__Clients__0__ClientSecret"] = clientSecret,
+            ["AuthSettings__Clients__0__AllowedGrantTypes__0"] = "client_credentials",
+        };
+        var appConfig = new Dictionary<string, string?>
+        {
+            ["StoreSettings:ConnectionString"] = _connectionString,
+            ["SparkSettings:Endpoint"] = "https://localhost/fhir",
+            ["SparkSettings:FhirRelease"] = "R4",
+            ["SparkSettings:UseAsynchronousIO"] = "true",
+            ["AuthSettings:ConnectionString"] = _connectionString,
+            ["AuthSettings:Clients:0:ClientId"] = clientId,
+            ["AuthSettings:Clients:0:ClientSecret"] = clientSecret,
+            ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
+        };
+        return (envVars, appConfig);
     }
 
     private WebApplicationFactory<Program> CreateFactory(
@@ -194,6 +226,60 @@ public class AuthConfigurationTests : IAsyncLifetime
         {
             File.Delete(signingCertPath);
             File.Delete(encryptionCertPath);
+        }
+    }
+
+    [Fact]
+    public async Task DiscoveryDocument_AdvertisesConfiguredIssuer()
+    {
+        var configuredIssuer = "https://issuer.example.test";
+        var (envVars, appConfig) = BaseClientCredentialsConfig("issuer-client", "issuer-secret");
+        envVars["AuthSettings__Issuer"] = configuredIssuer;
+        appConfig["AuthSettings:Issuer"] = configuredIssuer;
+
+        SetEnvVars(envVars);
+        try
+        {
+            await using var factory = CreateFactory(appConfig);
+            using var client = factory.CreateClient();
+
+            var response = await client.GetAsync("/.well-known/openid-configuration", CT);
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(CT));
+            // .NET Uri normalization appends a trailing slash to authority-only URIs,
+            // so the advertised issuer ends with '/' regardless of how it was configured.
+            json.RootElement.GetProperty("issuer").GetString()
+                .Should().Be(configuredIssuer + "/");
+        }
+        finally
+        {
+            ClearEnvVars(envVars);
+        }
+    }
+
+    [Fact]
+    public void Startup_Fails_WhenIssuerIsNotAbsoluteUri()
+    {
+        var (envVars, appConfig) = BaseClientCredentialsConfig("issuer-client", "issuer-secret");
+        envVars["AuthSettings__Issuer"] = "not-a-valid-uri";
+        appConfig["AuthSettings:Issuer"] = "not-a-valid-uri";
+
+        SetEnvVars(envVars);
+        try
+        {
+            var act = () =>
+            {
+                using var factory = CreateFactory(appConfig);
+                factory.CreateClient();
+            };
+
+            act.Should().Throw<ArgumentException>()
+                .WithMessage("*AuthSettings:Issuer*");
+        }
+        finally
+        {
+            ClearEnvVars(envVars);
         }
     }
 

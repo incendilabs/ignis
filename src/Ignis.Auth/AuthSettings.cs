@@ -9,6 +9,14 @@ namespace Ignis.Auth;
 public class AuthSettings
 {
     public string ConnectionString { get; set; } = "";
+    /// <summary>
+    /// Public-facing issuer URL for OpenID Connect metadata. Set this when
+    /// the API runs behind a reverse proxy or tunnel that terminates TLS,
+    /// so the discovery document advertises the external URL rather than
+    /// the internal request URL. Leave empty to let OpenIddict derive it
+    /// from the incoming request.
+    /// </summary>
+    public string? Issuer { get; set; }
     public List<ClientDefinition> Clients { get; set; } = [];
     public AuthEndpointSettings Endpoints { get; set; } = new();
     public AuthCertificateSettings Certificates { get; set; } = new();
