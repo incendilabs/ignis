@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Done
 
 ## Context
 
@@ -30,16 +30,25 @@ public Task RebuildIndex();
 public Task ResetStore();
 ```
 
+### Subject identifier
+
+The canonical subject format is **`<provider>:<provider-user-id>`** — provider name lowercased, followed by a colon and the user's stable identifier as the provider returns it.
+
+| Provider | Source                    | Example sub  |
+| -------- | ------------------------- | ------------ |
+| GitHub   | numeric `id` from `/user` | `github:123` |
+
+Prefixing keeps the subject globally unique across providers, makes audit logs self-documenting, and lets the `Users` lookup table key on a single column rather than a `(provider, id)` tuple.
+
 ### Scope assignments
 
 User-to-scope assignments live under `AuthSettings`, starting config-driven. ADR-0001 envisions later moving these to MongoDB via claims transformation; this ADR is the simpler first step.
 
 ```jsonc
 "AuthSettings": {
-  "AllowedScopes": [
+  "Users": [
     {
-      "Provider": "GitHub",
-      "ProviderUserId": "skodde",
+      "Subject": "github:123",
       "Scopes": [
         "maintenance/database.read",
         "maintenance/database.write",
@@ -47,15 +56,14 @@ User-to-scope assignments live under `AuthSettings`, starting config-driven. ADR
       ]
     },
     {
-      "Provider": "GitHub",
-      "ProviderUserId": "losen",
+      "Subject": "github:321",
       "Scopes": ["maintenance/database.read"]
     }
   ]
 }
 ```
 
-When issuing a token, the authorization server intersects the signed-in user's entry in `AllowedScopes` with the scopes the client requested; the result becomes the token's `scope`, or empty (no access) if there is no match on either side.
+When issuing a token, the authorization server intersects the signed-in user's entry in `Users` with the scopes the client requested; the result becomes the token's `scope`, or empty (no access) if there is no match on either side.
 
 A role layer (named bundles like `SystemAdmin`, `DatabaseOperator`) can be added later when the same scopes start repeating across many entries — token issuance would then resolve roles to scopes first, but the intersection step stays the same.
 
@@ -75,3 +83,8 @@ The three maintenance levels mirror real blast radius: reversible read, reversib
 ### Negative
 
 - No role indirection yet, so common scope bundles will be duplicated across users
+
+## Changelog
+
+- 2026-04-07 ([3de0a8d](https://github.com/incendilabs/ignis/commit/3de0a8d)) — Initial draft.
+- 2026-04-28 (this PR) — Added _Subject identifier_ section defining the canonical `<provider>:<provider-user-id>` format; replaced the `(Provider, ProviderUserId)` tuple with a `Users` collection keyed on a prefixed `Subject`
