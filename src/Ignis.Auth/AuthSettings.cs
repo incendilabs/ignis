@@ -21,6 +21,14 @@ public class AuthSettings
     public AuthEndpointSettings Endpoints { get; set; } = new();
     public AuthCertificateSettings Certificates { get; set; } = new();
     public List<ExternalProviderSettings> ExternalProviders { get; set; } = [];
+    public List<UserScopeAssignment> Users { get; set; } = [];
+}
+
+public class UserScopeAssignment
+{
+    /// <summary>Canonical subject identifier in the form <c>provider:provider-user-id</c>.</summary>
+    public string Subject { get; set; } = "";
+    public List<string> Scopes { get; set; } = [];
 }
 
 public class AuthCertificateSettings

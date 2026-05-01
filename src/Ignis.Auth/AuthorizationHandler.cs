@@ -11,6 +11,8 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
@@ -26,6 +28,8 @@ namespace Ignis.Auth;
 public class AuthorizationHandler
 {
     private readonly IOpenIddictApplicationManager _applicationManager;
+    private readonly AuthSettings _settings;
+    private readonly ILogger<AuthorizationHandler> _logger;
 
     private sealed record ScopeClaimMapping(
         string? Scope,    // null = always emitted, not gated by a scope
@@ -48,9 +52,14 @@ public class AuthorizationHandler
     private static readonly Dictionary<string, string[]> ClaimDestinations =
         IdentityClaimMappings.ToDictionary(m => m.Claim, m => m.Destinations);
 
-    public AuthorizationHandler(IOpenIddictApplicationManager applicationManager)
+    public AuthorizationHandler(
+        IOpenIddictApplicationManager applicationManager,
+        IOptions<AuthSettings> settings,
+        ILogger<AuthorizationHandler> logger)
     {
         _applicationManager = applicationManager;
+        _settings = settings.Value;
+        _logger = logger;
     }
 
     public async Task<IActionResult> AuthorizeAsync(HttpContext httpContext)
@@ -74,22 +83,40 @@ public class AuthorizationHandler
                 });
         }
 
-        var identity = new ClaimsIdentity(
-            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-            Claims.Name, Claims.Role);
-
-        var requestedScopes = request.GetScopes();
-        identity.SetScopes(requestedScopes);
-
-        AddIdentityClaims(identity, result.Principal, requestedScopes);
-
-        // sub is required — bail if the session principal didn't supply it.
-        if (string.IsNullOrEmpty(identity.FindFirst(Claims.Subject)?.Value))
+        var subject = result.Principal.FindFirst(Claims.Subject)?.Value
+            ?? result.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(subject))
         {
+            _logger.LogError("Authenticated session is missing the required subject claim.");
             return ForbidWithError(Errors.InvalidRequest,
                 "The authenticated session is missing the required subject claim.");
         }
 
+        var userEntry = _settings.Users
+            .FirstOrDefault(a => string.Equals(a.Subject, subject, StringComparison.Ordinal));
+        if (userEntry is null)
+        {
+            _logger.LogWarning(
+                "Subject {Subject} has no entry in AuthSettings.Users; all requested scopes will be dropped.",
+                subject);
+        }
+
+        var userAllowed = userEntry?.Scopes ?? [];
+        var requestedScopes = request.GetScopes();
+        var grantedScopes = requestedScopes
+            .Where(userAllowed.Contains)
+            .ToImmutableArray();
+
+        _logger.LogInformation(
+            "Issued authorization for {Subject}. Requested: {Requested}. Granted: {Granted}.",
+            subject, requestedScopes, grantedScopes);
+
+        var identity = new ClaimsIdentity(
+            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+            Claims.Name, Claims.Role);
+
+        identity.SetScopes(grantedScopes);
+        AddIdentityClaims(identity, result.Principal, grantedScopes);
         identity.SetDestinations(claim => GetDestinationsFor(claim.Type));
 
         return new SignInResult(
