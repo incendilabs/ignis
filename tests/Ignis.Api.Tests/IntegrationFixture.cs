@@ -62,6 +62,8 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__Clients__0__AllowedScopes__2",
         "AuthSettings__Clients__0__AllowedScopes__3",
         "AuthSettings__Clients__0__AllowedScopes__4",
+        "AuthSettings__Clients__0__AllowedScopes__5",
+        "AuthSettings__Clients__0__AllowedScopes__6",
         "AuthSettings__Users__0__Subject",
         "AuthSettings__Users__0__Scopes__0",
         "AuthSettings__Users__0__Scopes__1",
@@ -92,6 +94,8 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__2", "openid");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__3", "profile");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__4", "email");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__5", MaintenanceScopes.DatabaseRead);
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__6", MaintenanceScopes.DatabaseWrite);
 
         Environment.SetEnvironmentVariable("AuthSettings__Users__0__Subject", "test-user-id");
         Environment.SetEnvironmentVariable("AuthSettings__Users__0__Scopes__0", "openid");
