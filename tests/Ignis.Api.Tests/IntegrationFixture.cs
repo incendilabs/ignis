@@ -59,6 +59,13 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__Clients__0__RedirectUris__0",
         "AuthSettings__Clients__0__AllowedScopes__0",
         "AuthSettings__Clients__0__AllowedScopes__1",
+        "AuthSettings__Clients__0__AllowedScopes__2",
+        "AuthSettings__Clients__0__AllowedScopes__3",
+        "AuthSettings__Clients__0__AllowedScopes__4",
+        "AuthSettings__Users__0__Subject",
+        "AuthSettings__Users__0__Scopes__0",
+        "AuthSettings__Users__0__Scopes__1",
+        "AuthSettings__Users__0__Scopes__2",
         "AuthSettings__ExternalProviders__0__Name",
         "AuthSettings__ExternalProviders__0__Type",
         "AuthSettings__ExternalProviders__0__ClientId",
@@ -82,6 +89,14 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__RedirectUris__0", "http://localhost/callback");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__0", "maintenance/database.destructive");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__1", OperationsScopes.Read);
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__2", "openid");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__3", "profile");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__4", "email");
+
+        Environment.SetEnvironmentVariable("AuthSettings__Users__0__Subject", "test-user-id");
+        Environment.SetEnvironmentVariable("AuthSettings__Users__0__Scopes__0", "openid");
+        Environment.SetEnvironmentVariable("AuthSettings__Users__0__Scopes__1", "profile");
+        Environment.SetEnvironmentVariable("AuthSettings__Users__0__Scopes__2", "email");
 
         // Create Factory without ExternalProviders.
         _factory = new IgnisApiFactory(connectionString);

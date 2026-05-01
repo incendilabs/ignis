@@ -243,6 +243,89 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task AuthCodeFlow_WithUserInUsersConfig_GrantsRequestedScopes()
+    {
+        // Fixture configures Users entry: test-user-id → [openid, profile, email].
+        var token = await RunAuthCodeFlow(scope: "openid profile email");
+
+        token.GetProperty("scope").GetString()
+            .Should().Be("openid profile email");
+    }
+
+    [Fact]
+    public async Task AuthCodeFlow_RequestingScopesNotInUsersEntry_DropsExcess()
+    {
+        // test-user-id is allowed openid/profile/email but not operations.read.
+        var token = await RunAuthCodeFlow(scope: "openid profile operations.read");
+
+        token.GetProperty("scope").GetString()
+            .Should().Be("openid profile");
+    }
+
+    [Fact]
+    public async Task AuthCodeFlow_SubjectNotInUsersConfig_DropsAllAccessScopes()
+    {
+        // Stranger has no Users entry. The client itself is allowed operations.read,
+        // but intersection with the empty user-allowed set drops it. (OpenIddict
+        // preserves openid for ID-token issuance regardless of intersection.)
+        var token = await RunAuthCodeFlow(subject: "unknown-subject", scope: "openid operations.read");
+
+        var grantedScope = token.TryGetProperty("scope", out var scopeProp) ? scopeProp.GetString() ?? "" : "";
+        grantedScope.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Should().NotContain("operations.read");
+    }
+
+    private async Task<JsonElement> RunAuthCodeFlow(string scope, string subject = "test-user-id")
+    {
+        using var client = _fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = true,
+        });
+
+        var loginResponse = await client.GetAsync($"/test-login?subject={Uri.EscapeDataString(subject)}", CT);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var (codeVerifier, codeChallenge) = GeneratePkce();
+        var parResponse = await client.PostAsync("/connect/par",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["response_type"] = "code",
+                ["client_id"] = "test-client",
+                ["client_secret"] = "test-secret",
+                ["redirect_uri"] = "http://localhost/callback",
+                ["scope"] = scope,
+                ["code_challenge"] = codeChallenge,
+                ["code_challenge_method"] = "S256",
+            }), CT);
+        parResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var requestUri = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync(CT))
+            .RootElement.GetProperty("request_uri").GetString();
+
+        var authorizeResponse = await client.GetAsync(
+            $"/connect/authorize?client_id=test-client&request_uri={Uri.EscapeDataString(requestUri!)}", CT);
+        authorizeResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+
+        var code = HttpUtility.ParseQueryString(authorizeResponse.Headers.Location!.Query)["code"];
+        code.Should().NotBeNullOrEmpty();
+
+        var tokenResponse = await client.PostAsync("/connect/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "authorization_code",
+                ["code"] = code!,
+                ["redirect_uri"] = "http://localhost/callback",
+                ["client_id"] = "test-client",
+                ["client_secret"] = "test-secret",
+                ["code_verifier"] = codeVerifier,
+            }), CT);
+        tokenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync(CT)).RootElement;
+    }
+
     private static (string codeVerifier, string codeChallenge) GeneratePkce()
     {
         var verifierBytes = new byte[32];

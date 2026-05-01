@@ -99,6 +99,8 @@ public static class AuthServerExtensions
 
     private static void AddGitHubOAuth(this IServiceCollection services, ExternalProviderSettings provider)
     {
+        // Renaming provided name, means prefix is changed, and requires updating existing user entries.
+        var providerPrefix = provider.Name.ToLowerInvariant();
         services.AddAuthentication()
             .AddOAuth(provider.Name, options =>
             {
@@ -108,10 +110,14 @@ public static class AuthServerExtensions
                 options.AuthorizationEndpoint = endpoints.AuthorizationEndpoint;
                 options.TokenEndpoint = endpoints.TokenEndpoint;
                 options.UserInformationEndpoint = endpoints.UserInformationEndpoint;
-                options.CallbackPath = $"/connect/login-callback-{provider.Name.ToLowerInvariant()}";
+                options.CallbackPath = $"/connect/login-callback-{providerPrefix}";
                 options.SignInScheme = AuthConstants.SessionScheme;
 
-                options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+                options.ClaimActions.MapCustomJson(
+                    ClaimTypes.NameIdentifier,
+                    user => user.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.Number
+                        ? $"{providerPrefix}:{id.GetInt64()}"
+                        : null);
                 options.ClaimActions.MapJsonKey(ClaimTypes.Name, "name");
                 options.ClaimActions.MapJsonKey("urn:github:avatar", "avatar_url");
 

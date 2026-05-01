@@ -33,9 +33,10 @@ internal sealed class TestLoginStartupFilter : IStartupFilter
                     return;
                 }
 
+                var subject = context.Request.Query["subject"].FirstOrDefault() ?? "test-user-id";
                 var claims = new List<Claim>
                 {
-                    new(ClaimTypes.NameIdentifier, "test-user-id"),
+                    new(ClaimTypes.NameIdentifier, subject),
                     new(ClaimTypes.Name, "Test User"),
                 };
                 var identity = new ClaimsIdentity(claims, AuthConstants.SessionScheme);
