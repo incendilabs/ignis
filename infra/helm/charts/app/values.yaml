@@ -14,6 +14,12 @@ api:
   sparkSettings:
     endpoint: "http://ignis-api:8080/fhir"
     fhirRelease: "R4"
+  authSettings:
+    # Public-facing issuer URL advertised in the OIDC discovery document.
+    # Set when the API runs behind a Gateway / proxy that terminates TLS;
+    # otherwise OpenIddict derives it from Request.Host (the in-cluster
+    # pod hostname) and the metadata becomes unusable to external clients.
+    issuer: ""
   # Set to true when a trusted reverse proxy / Gateway fronts the pod so
   # ASP.NET Core honours X-Forwarded-* (needed for OAuth redirect URLs
   # behind TLS termination). Leave false if the pod is reachable by

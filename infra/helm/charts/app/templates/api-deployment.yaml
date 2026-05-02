@@ -42,6 +42,10 @@ spec:
               value: {{ .Values.api.sparkSettings.endpoint | quote }}
             - name: SparkSettings__FhirRelease
               value: {{ .Values.api.sparkSettings.fhirRelease | quote }}
+            {{- if .Values.api.authSettings.issuer }}
+            - name: AuthSettings__Issuer
+              value: {{ .Values.api.authSettings.issuer | quote }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.api.existingSecret | default (include "app.api.fullname" .) }}
