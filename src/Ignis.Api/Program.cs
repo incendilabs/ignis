@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-using System.Net;
-
 using Ignis.Api.Configuration;
 using Ignis.Api.Extensions;
 using Ignis.Api.Hubs;
@@ -15,7 +13,6 @@ using Ignis.Auth;
 using Ignis.Auth.Extensions;
 
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.HttpOverrides;
 
 using OpenIddict.Validation.AspNetCore;
 
@@ -50,40 +47,11 @@ builder.Configuration.Bind("AuthSettings", authSettings);
 // Bind feature flags
 builder.Services.Configure<FeatureSettings>(builder.Configuration.GetSection("FeatureManagement"));
 
+// Bind forwarded headers settings 
+// Middleware is only added if at least one of KnownProxies or KnownNetworks are configured.
 var forwardedHeadersSettings = new ForwardedHeadersSettings();
 builder.Configuration.Bind("ForwardedHeaders", forwardedHeadersSettings);
-var forwardedHeadersEnabled = forwardedHeadersSettings.KnownProxies.Count > 0
-    || forwardedHeadersSettings.KnownNetworks.Count > 0;
-if (forwardedHeadersEnabled)
-{
-    var trustedProxies = new List<IPAddress>();
-    foreach (var proxy in forwardedHeadersSettings.KnownProxies)
-    {
-        if (!IPAddress.TryParse(proxy, out var ip))
-            throw new ArgumentException(
-                $"ForwardedHeaders:KnownProxies contains an invalid IP address (got '{proxy}').",
-                nameof(forwardedHeadersSettings));
-        trustedProxies.Add(ip);
-    }
-    var trustedNetworks = new List<System.Net.IPNetwork>();
-    foreach (var network in forwardedHeadersSettings.KnownNetworks)
-    {
-        if (!System.Net.IPNetwork.TryParse(network, out var parsed))
-            throw new ArgumentException(
-                $"ForwardedHeaders:KnownNetworks contains an invalid CIDR network (got '{network}').",
-                nameof(forwardedHeadersSettings));
-        trustedNetworks.Add(parsed);
-    }
-
-    builder.Services.Configure<ForwardedHeadersOptions>(options =>
-    {
-        // XForwardedHost is omitted: with permissive AllowedHosts it would enable host-injection.
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
-            | ForwardedHeaders.XForwardedProto;
-        foreach (var ip in trustedProxies) options.KnownProxies.Add(ip);
-        foreach (var net in trustedNetworks) options.KnownIPNetworks.Add(net);
-    });
-}
+builder.Services.ConfigureForwardedHeaders(forwardedHeadersSettings);
 
 builder.Services
     .AddIgnisAuthServer(authSettings, useDevelopmentCertificates: !builder.Environment.IsProduction())
@@ -136,7 +104,7 @@ app.MapOpenApi().AllowAnonymous();
 
 // Must come before any middleware that reads request scheme/host (Serilog,
 // HttpsRedirection, OAuth callback URL building, etc.).
-if (forwardedHeadersEnabled)
+if (forwardedHeadersSettings.IsConfigured)
     app.UseForwardedHeaders();
 
 app.UseSerilogRequestLogging();
