@@ -20,11 +20,14 @@ api:
     # otherwise OpenIddict derives it from Request.Host (the in-cluster
     # pod hostname) and the metadata becomes unusable to external clients.
     issuer: ""
-  # Set to true when a trusted reverse proxy / Gateway fronts the pod so
-  # ASP.NET Core honours X-Forwarded-* (needed for OAuth redirect URLs
-  # behind TLS termination). Leave false if the pod is reachable by
-  # untrusted in-cluster callers.
-  trustForwardedHeaders: false
+  # Trusted-proxy allow-list for the Forwarded Headers Middleware. Required
+  # when the pod sits behind a Gateway / proxy that terminates TLS so the API
+  # honours X-Forwarded-Proto/For (e.g. for OAuth redirect URLs). Set the IP
+  # of the proxy pod or the cluster pod CIDR. Empty lists disable the
+  # middleware entirely.
+  forwardedHeaders:
+    knownProxies: []
+    knownNetworks: []
   externalMongodbConnectionString: ""
   existingSecret: ""
   # Extra volume mounts for the API container (e.g. for certificate files)

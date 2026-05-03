@@ -28,15 +28,13 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: Production
-            # Trust X-Forwarded-* so redirect URLs (e.g. OAuth callbacks)
-            # use the external https scheme instead of the internal http
-            # one the pod sees behind the Gateway. Only enable when the
-            # pod is reachable exclusively through a trusted proxy —
-            # otherwise any in-cluster caller could spoof
-            # X-Forwarded-Proto/Host/For.
-            {{- if .Values.api.trustForwardedHeaders }}
-            - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
-              value: "true"
+            {{- range $index, $proxy := .Values.api.forwardedHeaders.knownProxies }}
+            - name: ForwardedHeaders__KnownProxies__{{ $index }}
+              value: {{ $proxy | quote }}
+            {{- end }}
+            {{- range $index, $network := .Values.api.forwardedHeaders.knownNetworks }}
+            - name: ForwardedHeaders__KnownNetworks__{{ $index }}
+              value: {{ $network | quote }}
             {{- end }}
             - name: SparkSettings__Endpoint
               value: {{ .Values.api.sparkSettings.endpoint | quote }}
