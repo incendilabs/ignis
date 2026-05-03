@@ -21,4 +21,14 @@ public sealed class ForwardedHeadersSettings
 
     /// <summary>CIDR networks (e.g. <c>10.0.0.0/8</c>, <c>fd00::/8</c>).</summary>
     public List<string> KnownNetworks { get; set; } = [];
+
+    public bool IsConfigured
+    {
+        get
+        {
+            var hasTrustedProxy = KnownProxies?.Count > 0;
+            var hasTrustedNetwork = KnownNetworks?.Count > 0;
+            return hasTrustedProxy || hasTrustedNetwork;
+        }
+    }
 }
