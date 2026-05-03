@@ -28,6 +28,6 @@ export async function loader() {
     return redirect(authorizeUrl.toString(), { headers });
   } catch (error) {
     logger.error({ error }, "Failed to start OAuth flow");
-    throw new Error("Authorization server unavailable");
+    throw new Error("Authorization server unavailable", { cause: error });
   }
 }
