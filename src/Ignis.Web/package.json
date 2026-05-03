@@ -25,6 +25,7 @@
     "react-router": "7.14.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@inlang/paraglide-js": "^2.18.0",
     "@inlang/plugin-m-function-matcher": "^2.2.6",
     "@inlang/plugin-message-format": "^4.4.0",
@@ -33,7 +34,7 @@
     "@types/node": "^24",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "eslint": "^9.39.4",
+    "eslint": "^10.3.0",
     "tailwindcss": "^4.2.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.1",
