@@ -284,6 +284,60 @@ public class AuthConfigurationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DiscoveryDocument_HonoursForwardedProto_WhenProxyTrusted()
+    {
+        var (envVars, appConfig) = BaseClientCredentialsConfig("fwd-client", "fwd-secret");
+        // ::1 because TestServer sets RemoteIpAddress to IPv6 loopback.
+        envVars["ForwardedHeaders__KnownProxies__0"] = "::1";
+        appConfig["ForwardedHeaders:KnownProxies:0"] = "::1";
+
+        SetEnvVars(envVars);
+        try
+        {
+            await using var factory = CreateFactory(appConfig);
+            using var client = factory.CreateClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "/.well-known/openid-configuration");
+            request.Headers.Add("X-Forwarded-Proto", "https");
+            var response = await client.SendAsync(request, CT);
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(CT));
+            json.RootElement.GetProperty("issuer").GetString()
+                .Should().StartWith("https://");
+        }
+        finally
+        {
+            ClearEnvVars(envVars);
+        }
+    }
+
+    [Fact]
+    public void Startup_Fails_WhenForwardedHeadersKnownProxyIsInvalid()
+    {
+        var (envVars, appConfig) = BaseClientCredentialsConfig("fwd-client", "fwd-secret");
+        envVars["ForwardedHeaders__KnownProxies__0"] = "not-an-ip";
+        appConfig["ForwardedHeaders:KnownProxies:0"] = "not-an-ip";
+
+        SetEnvVars(envVars);
+        try
+        {
+            var act = () =>
+            {
+                using var factory = CreateFactory(appConfig);
+                factory.CreateClient();
+            };
+
+            act.Should().Throw<ArgumentException>()
+                .WithMessage("*ForwardedHeaders:KnownProxies*not-an-ip*");
+        }
+        finally
+        {
+            ClearEnvVars(envVars);
+        }
+    }
+
+    [Fact]
     public void Startup_Fails_WhenCertificatesMissing_InProduction()
     {
         var envVars = new Dictionary<string, string?>
