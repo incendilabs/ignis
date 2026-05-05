@@ -24,7 +24,7 @@ export function meta() {
 export default function Home() {
   return (
     <main className="py-16">
-      <Container className="max-w-3xl">
+      <Container size="md" paddingX="sm">
         <header className="mb-12">
           <Heading className="mb-3">{m.home_title()}</Heading>
           <Text size="lg">{m.home_subtitle()}</Text>

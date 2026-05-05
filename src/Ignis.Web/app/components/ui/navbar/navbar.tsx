@@ -24,7 +24,7 @@ export function Navbar({ features }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <RatioNavbar sticky bgColor="bg-[#1F2244]" bgDark>
+    <RatioNavbar sticky>
       <RatioNavbar.Brand>
         <RouterLink
           to="/"
@@ -36,19 +36,18 @@ export function Navbar({ features }: NavbarProps) {
       </RatioNavbar.Brand>
       <RatioNavbar.Content className="justify-end">
         {features.admin && (
-          <Link href="/admin" variant="button-text" onDark>
+          <Link href="/admin" variant="button-text">
             Admin
           </Link>
         )}
         {features.auth && (
-          <Link href="/auth/login" variant="button-text" onDark>
+          <Link href="/auth/login" variant="button-text">
             {m.nav_login()}
           </Link>
         )}
         <LanguageSelect className="w-32" />
         <Button
           variant="text"
-          onDark
           onClick={toggleTheme}
           ariaLabel={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
         >
