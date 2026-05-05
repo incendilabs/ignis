@@ -17,6 +17,7 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import "@eventuras/ratio-ui/ratio-ui.css";
+import "@eventuras/ratio-ui/fonts.css";
 import { paraglideMiddleware } from "@/i18n/paraglide/server";
 import { ThemeProvider } from "./contexts/theme-provider";
 import { Navbar } from "@/components/ui/navbar";

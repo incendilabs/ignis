@@ -15,12 +15,12 @@
   "dependencies": {
     "@eventuras/fides-auth": "^0.7.0",
     "@eventuras/logger": "^0.8.1",
-    "@eventuras/ratio-ui": "^1.1.1",
+    "@eventuras/ratio-ui": "^2.1.0",
     "@react-router/node": "7.14.2",
     "@react-router/serve": "7.14.2",
     "isbot": "^5.1.31",
     "react": "^19.2.5",
-    "react-aria-components": "^1.15.1",
+    "react-aria-components": "^1.17.0",
     "react-dom": "^19.2.5",
     "react-router": "7.14.2"
   },
