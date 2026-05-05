@@ -38,5 +38,16 @@ public static class StartupLoggingExtensions
         {
             app.Logger.LogInformation("Forwarded headers: disabled.");
         }
+
+        // ConfigureAllowedHosts in Program.cs guarantees this is non-empty.
+        var allowedHosts = app.Configuration["AllowedHosts"];
+        if (allowedHosts == "*")
+        {
+            app.Logger.LogInformation("AllowedHosts: * (no filtering).");
+        }
+        else
+        {
+            app.Logger.LogInformation("AllowedHosts: {AllowedHosts}.", allowedHosts);
+        }
     }
 }

@@ -29,6 +29,8 @@ if (builder.Environment.IsDevelopment())
     builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true);
 }
 
+builder.ConfigureAllowedHosts();
+
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 

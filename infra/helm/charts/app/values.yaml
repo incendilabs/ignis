@@ -34,8 +34,13 @@ api:
   extraVolumeMounts: []
   # Extra volumes for the API pod (e.g. Kubernetes Secrets)
   extraVolumes: []
-  # Hostnames for API HTTPRoute
+  # Hostnames for API HTTPRoute. Leave empty to keep the API internal-only.
   hostnames: []
+  # Override the AllowedHosts allow-list passed to ASP.NET HostFiltering.
+  # Defaults to `api.hostnames` when empty — tighten only if the public
+  # routing hostnames differ from what Kestrel should accept. Probes are
+  # configured with `Host: localhost`, which is prepended automatically.
+  allowedHosts: []
 
 web:
   enabled: true
@@ -51,7 +56,7 @@ web:
     limits:
       cpu: 200m
       memory: 256Mi
-  # Hostnames for Web HTTPRoute
+  # Hostnames for Web HTTPRoute. Leave empty to keep the Web app internal-only.
   hostnames: []
 
 gateway:
