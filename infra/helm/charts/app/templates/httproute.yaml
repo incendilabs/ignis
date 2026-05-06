@@ -1,4 +1,6 @@
-{{- if .Values.gateway.enabled }}
+{{- $apiRouteEnabled := and .Values.gateway.enabled (gt (len .Values.api.hostnames) 0) }}
+{{- $webRouteEnabled := and .Values.gateway.enabled .Values.web.enabled (gt (len .Values.web.hostnames) 0) }}
+{{- if $apiRouteEnabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -11,12 +13,10 @@ spec:
       {{- if .Values.gateway.namespace }}
       namespace: {{ .Values.gateway.namespace }}
       {{- end }}
-  {{- if .Values.api.hostnames }}
   hostnames:
     {{- range .Values.api.hostnames }}
     - {{ . | quote }}
     {{- end }}
-  {{- end }}
   rules:
     - matches:
         - path:
@@ -25,8 +25,11 @@ spec:
       backendRefs:
         - name: {{ include "app.api.fullname" . }}
           port: 8080
-{{- if .Values.web.enabled }}
+{{- end }}
+{{- if and $apiRouteEnabled $webRouteEnabled }}
 ---
+{{- end }}
+{{- if $webRouteEnabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -39,12 +42,10 @@ spec:
       {{- if .Values.gateway.namespace }}
       namespace: {{ .Values.gateway.namespace }}
       {{- end }}
-  {{- if .Values.web.hostnames }}
   hostnames:
     {{- range .Values.web.hostnames }}
     - {{ . | quote }}
     {{- end }}
-  {{- end }}
   rules:
     - matches:
         - path:
@@ -53,5 +54,4 @@ spec:
       backendRefs:
         - name: {{ include "app.web.fullname" . }}
           port: 3000
-{{- end }}
 {{- end }}

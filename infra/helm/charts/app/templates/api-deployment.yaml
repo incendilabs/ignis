@@ -28,6 +28,11 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: Production
+            {{- $allowedHosts := default .Values.api.hostnames .Values.api.allowedHosts }}
+            {{- if $allowedHosts }}
+            - name: AllowedHosts
+              value: {{ prepend $allowedHosts "localhost" | join ";" | quote }}
+            {{- end }}
             {{- range $index, $proxy := .Values.api.forwardedHeaders.knownProxies }}
             - name: ForwardedHeaders__KnownProxies__{{ $index }}
               value: {{ $proxy | quote }}
@@ -51,6 +56,9 @@ spec:
             httpGet:
               path: /healthz
               port: http
+              httpHeaders:
+                - name: Host
+                  value: localhost
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 3
@@ -58,6 +66,9 @@ spec:
             httpGet:
               path: /healthz
               port: http
+              httpHeaders:
+                - name: Host
+                  value: localhost
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 3

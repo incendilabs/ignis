@@ -10,7 +10,7 @@
 | `app.api.image.repository` | API image repository | `ignis-api` |
 | `app.api.image.tag` | API image tag | `latest` |
 | `app.api.resources` | CPU/memory resource limits | See values.yaml |
-| `app.api.hostnames` | Hostnames for API HTTPRoute | `[]` |
+| `app.api.hostnames` | Hostnames for API HTTPRoute; empty disables the route | `[]` |
 | `app.api.sparkSettings.endpoint` | FHIR endpoint URL | `http://ignis-api:8080/fhir` |
 | `app.api.sparkSettings.fhirRelease` | FHIR release version | `R4` |
 | `app.api.externalMongodbConnectionString` | External MongoDB connection string | `""` |
@@ -25,13 +25,13 @@
 | `app.web.image.repository` | Web image repository | `ignis-web` |
 | `app.web.image.tag` | Web image tag | `latest` |
 | `app.web.resources` | CPU/memory resource limits | See values.yaml |
-| `app.web.hostnames` | Hostnames for Web HTTPRoute | `[]` |
+| `app.web.hostnames` | Hostnames for Web HTTPRoute; empty disables the route | `[]` |
 
 ### Gateway API (`app.gateway`)
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `app.gateway.enabled` | Enable HTTPRoute resources | `true` |
+| `app.gateway.enabled` | Enable HTTPRoute resources for components with hostnames configured | `true` |
 | `app.gateway.name` | Name of the Gateway to attach to | `ignis-gateway` |
 | `app.gateway.namespace` | Namespace of the Gateway | `""` |
 
