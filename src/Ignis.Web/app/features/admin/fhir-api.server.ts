@@ -137,7 +137,7 @@ export function requireScopedSession(
   requiredScope: string,
 ): ReturnType<typeof data<OperationResult>> | null {
   if (session === null) {
-    logger.warn(
+    logger.info(
       { context: { requiredScope } },
       "Maintenance action blocked: no session",
     );
