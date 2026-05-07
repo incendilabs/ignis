@@ -17,4 +17,11 @@ public sealed class FeatureSettings
     /// switch on top of <c>maintenance/database.destructive</c>.
     /// </summary>
     public bool AllowClearStore { get; set; }
+
+    /// <summary>
+    /// Gates the <c>$archive-import</c> endpoint, which is a work in progress.
+    /// When <c>false</c> (default), the endpoint responds with
+    /// <c>503 Service Unavailable</c>.
+    /// </summary>
+    public bool AllowImport { get; set; }
 }

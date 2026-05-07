@@ -9,13 +9,14 @@ using System.Collections.Immutable;
 namespace Ignis.Auth.Authorization;
 
 /// <summary>
-/// Scopes for observing long-running server operations.
+/// Scopes for observing and triggering long-running server operations.
 /// </summary>
 public static class OperationsScopes
 {
     public const string Read = "operations.read";
+    public const string Import = "operations.import";
 
-    public static ImmutableArray<string> All { get; } = [Read];
+    public static ImmutableArray<string> All { get; } = [Read, Import];
 }
 
 /// <summary>
@@ -27,4 +28,6 @@ public static class OperationsPolicies
 {
     public const string Read =
         ScopeAuthorizationPolicyProvider.PolicyPrefix + OperationsScopes.Read;
+    public const string Import =
+        ScopeAuthorizationPolicyProvider.PolicyPrefix + OperationsScopes.Import;
 }
