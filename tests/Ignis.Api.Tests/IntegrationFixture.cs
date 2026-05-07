@@ -64,6 +64,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__Clients__0__AllowedScopes__4",
         "AuthSettings__Clients__0__AllowedScopes__5",
         "AuthSettings__Clients__0__AllowedScopes__6",
+        "AuthSettings__Clients__0__AllowedScopes__7",
         "AuthSettings__Users__0__Subject",
         "AuthSettings__Users__0__Scopes__0",
         "AuthSettings__Users__0__Scopes__1",
@@ -73,6 +74,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__ExternalProviders__0__ClientId",
         "AuthSettings__ExternalProviders__0__ClientSecret",
         "FeatureManagement__AllowClearStore",
+        "FeatureManagement__AllowImport",
     ];
 
     public async ValueTask InitializeAsync()
@@ -83,6 +85,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("StoreSettings__ConnectionString", connectionString);
         Environment.SetEnvironmentVariable("AuthSettings__ConnectionString", connectionString);
         Environment.SetEnvironmentVariable("FeatureManagement__AllowClearStore", "true");
+        Environment.SetEnvironmentVariable("FeatureManagement__AllowImport", "true");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientId", "test-client");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__ClientSecret", "test-secret");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__DisplayName", "Test Client");
@@ -96,6 +99,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__4", "email");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__5", MaintenanceScopes.DatabaseRead);
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__6", MaintenanceScopes.DatabaseWrite);
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__7", OperationsScopes.Import);
 
         Environment.SetEnvironmentVariable("AuthSettings__Users__0__Subject", "test-user-id");
         Environment.SetEnvironmentVariable("AuthSettings__Users__0__Scopes__0", "openid");
