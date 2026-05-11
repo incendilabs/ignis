@@ -38,6 +38,10 @@ kubectl port-forward svc/ignis-api 8080:8080
 # Visit http://localhost:8080/fhir
 ```
 
+With default values, the chart keeps the API and Web internal-only. Add
+`app.api.hostnames` and/or `app.web.hostnames` when you want the Gateway to
+publish routes for them.
+
 ## Components
 
 The chart is organized as sub-charts:
@@ -94,7 +98,7 @@ helm install ignis infra/helm \
 
 ## Hostnames
 
-API and Web require separate hostnames to avoid routing conflicts. Pass them as lists:
+API and Web require separate hostnames to be published through the Gateway. Pass them as lists:
 
 ```bash
 helm install ignis infra/helm \
@@ -109,6 +113,9 @@ Multiple hostnames per service are supported:
 --set 'app.web.hostnames[0]=ignis.example.com' \
 --set 'app.web.hostnames[1]=ignis.example.org'
 ```
+
+Leaving a hostname list empty keeps that service internal-only and skips the
+corresponding `HTTPRoute`.
 
 ## TLS
 
