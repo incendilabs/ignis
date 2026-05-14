@@ -35,6 +35,10 @@ Copy `src/Ignis.Api/appsettings.local.example.json` to `src/Ignis.Api/appsetting
 
 See the [infrastructure guide](infra/README.md) for testing Ignis on Kubernetes.
 
+### Server setup
+
+For self-hosted deployments, see the [server setup guide](docs/server/README.md) — checklist, [API configuration reference](docs/server/api-configuration.md), and [Web BFF configuration reference](docs/server/web-configuration.md).
+
 ## Production notes
 
 ### Structured JSON logging
