@@ -11,6 +11,8 @@ using System.Text.Json;
 
 using FluentAssertions;
 
+using Ignis.Api.Configuration;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -328,7 +330,7 @@ public class AuthConfigurationTests : IAsyncLifetime
                 factory.CreateClient();
             };
 
-            act.Should().Throw<ArgumentException>()
+            act.Should().Throw<InvalidConfigurationException>()
                 .WithMessage("*ForwardedHeaders:KnownProxies*not-an-ip*");
         }
         finally
