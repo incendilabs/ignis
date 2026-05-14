@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         {{- include "app.api.selectorLabels" . | nindent 8 }}
+      {{- with .Values.api.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       securityContext:
         runAsNonRoot: true

@@ -41,6 +41,10 @@ api:
   # routing hostnames differ from what Kestrel should accept. Probes are
   # configured with `Host: localhost`, which is prepended automatically.
   allowedHosts: []
+  # Annotations applied to the api pod template. Used e.g. by
+  # reloader.stakater.com/auto: "true" to opt the api Deployment into
+  # automatic rolling restart when referenced Secrets or ConfigMaps change.
+  podAnnotations: {}
 
 web:
   enabled: true
@@ -68,6 +72,9 @@ web:
   # Extra env vars to set inline (e.g. non-secret feature flags).
   # Format: list of {name, value} entries.
   extraEnv: []
+  # Annotations applied to the web pod template. Same purpose as
+  # api.podAnnotations.
+  podAnnotations: {}
 
 gateway:
   enabled: true

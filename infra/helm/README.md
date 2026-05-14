@@ -15,6 +15,7 @@
 | `app.api.sparkSettings.fhirRelease`       | FHIR release version                                  | `R4`                         |
 | `app.api.externalMongodbConnectionString` | External MongoDB connection string                    | `""`                         |
 | `app.api.existingSecret`                  | Use existing Secret (skips chart-managed secret)      | `""`                         |
+| `app.api.podAnnotations`                  | Annotations applied to the api pod template           | `{}`                         |
 
 ### Web (`app.web`)
 
@@ -28,6 +29,7 @@
 | `app.web.hostnames`        | Hostnames for Web HTTPRoute; empty disables the route | `[]`            |
 | `app.web.existingSecrets`  | Names of Secrets mounted as env vars via `envFrom`    | `[]`            |
 | `app.web.extraEnv`         | Extra `{name, value}` env entries set inline          | `[]`            |
+| `app.web.podAnnotations`   | Annotations applied to the web pod template           | `{}`            |
 
 The Web BFF reads all its configuration from environment variables. Wire credentials through `existingSecrets`; pass non-secret feature flags through `extraEnv`:
 
