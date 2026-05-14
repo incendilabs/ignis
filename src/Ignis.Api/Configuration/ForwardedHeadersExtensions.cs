@@ -49,7 +49,7 @@ public static class ForwardedHeadersExtensions
         foreach (var proxy in raw)
         {
             if (!IPAddress.TryParse(proxy, out var ip))
-                throw new ArgumentException(
+                throw new InvalidConfigurationException(
                     $"ForwardedHeaders:KnownProxies contains an invalid IP address (got '{proxy}').");
             parsed.Add(ip);
         }
@@ -62,7 +62,7 @@ public static class ForwardedHeadersExtensions
         foreach (var network in raw)
         {
             if (!System.Net.IPNetwork.TryParse(network, out var net))
-                throw new ArgumentException(
+                throw new InvalidConfigurationException(
                     $"ForwardedHeaders:KnownNetworks contains an invalid CIDR network (got '{network}').");
             parsed.Add(net);
         }
