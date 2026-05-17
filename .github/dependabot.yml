@@ -1,0 +1,84 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /src/Ignis.Web
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "Deps (Web)"
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "Deps (Api)"
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "Deps (CI)"
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: docker
+    directory: /src/Ignis.Api
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "Deps (CI)"
+
+  - package-ecosystem: docker
+    directory: /src/Ignis.Web
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "Deps (CI)"
+
+  - package-ecosystem: helm
+    directory: /infra/helm
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "Deps (Infra)"
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
