@@ -77,7 +77,7 @@ jobs:
       - name: Docker metadata
         if: steps.dockerhub.outputs.can_push == 'true'
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ steps.dockerhub.outputs.org }}/ignis-web
           tags: |
