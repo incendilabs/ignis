@@ -31,7 +31,7 @@
     "@inlang/plugin-message-format": "^4.4.0",
     "@react-router/dev": "7.14.2",
     "@tailwindcss/vite": "^4.2.4",
-    "@types/node": "^24",
+    "@types/node": "^25",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "eslint": "^10.3.0",
