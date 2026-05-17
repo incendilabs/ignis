@@ -7,6 +7,7 @@
 using Ignis.Api.Configuration;
 using Ignis.Api.Extensions;
 using Ignis.Api.Hubs;
+using Ignis.Api.Services.BackgroundTasks;
 using Ignis.Api.Services.Import;
 using Ignis.Api.Services.Maintenance;
 using Ignis.Api.Services.Operations;
@@ -89,6 +90,10 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<IOperationProgressNotifier, SignalROperationProgressNotifier>();
 builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 builder.Services.AddScoped<IImportService, ImportService>();
+
+// Background work queue + drainer for long-running operations
+builder.Services.AddSingleton<BackgroundTaskQueue>();
+builder.Services.AddHostedService<QueuedHostedService>();
 
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
