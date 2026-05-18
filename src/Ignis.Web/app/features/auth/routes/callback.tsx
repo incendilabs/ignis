@@ -8,8 +8,8 @@ import { createEncryptedJWT } from "@eventuras/fides-auth";
 import { buildSessionFromTokens, exchangeAuthorizationCode } from "@eventuras/fides-auth/oauth";
 import { redirect } from "react-router";
 
-import { env } from "@/env.server";
-import { Logger } from "@/logger";
+import { env } from "#app/env.server";
+import { Logger } from "#app/logger";
 
 import type { Route } from "./+types/callback";
 import { isEnabled, oauth } from "../config.server";

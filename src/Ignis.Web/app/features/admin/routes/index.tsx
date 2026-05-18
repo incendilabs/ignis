@@ -18,8 +18,8 @@ import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { useState } from "react";
 import { redirect, useFetcher } from "react-router";
 
-import { getSessionFromRequest } from "@/features/auth/session.server";
-import { m } from "@/i18n/paraglide/messages";
+import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { m } from "#app/i18n/paraglide/messages";
 
 import type { Route } from "./+types/index";
 import {

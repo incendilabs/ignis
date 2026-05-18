@@ -7,8 +7,8 @@
 import type { Session } from "@eventuras/fides-auth/types";
 import { data } from "react-router";
 
-import { env } from "@/env.server";
-import { Logger } from "@/logger";
+import { env } from "#app/env.server";
+import { Logger } from "#app/logger";
 
 import type { OperationResult } from "./maintenance.shared";
 

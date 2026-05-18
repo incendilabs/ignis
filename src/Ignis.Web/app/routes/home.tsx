@@ -12,7 +12,7 @@ import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Section } from "@eventuras/ratio-ui/layout/Section";
 import { Text } from "@eventuras/ratio-ui/core/Text";
 
-import { m } from "@/i18n/paraglide/messages";
+import { m } from "#app/i18n/paraglide/messages";
 
 export function meta() {
   return [

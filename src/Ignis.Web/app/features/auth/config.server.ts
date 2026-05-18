@@ -6,8 +6,8 @@
 
 import type { OAuthConfig } from "@eventuras/fides-auth/oauth";
 
-import { env, envBool } from "@/env.server";
-import { scopes as adminScopes } from "@/features/admin/scopes";
+import { env, envBool } from "#app/env.server";
+import { scopes as adminScopes } from "#app/features/admin/scopes";
 
 export function isEnabled(): boolean {
   return envBool("IGNIS_WEB_FEATURES_AUTH", { default: false });
