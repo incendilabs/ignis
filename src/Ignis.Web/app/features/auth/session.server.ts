@@ -7,7 +7,7 @@
 import { validateSessionJwt } from "@eventuras/fides-auth";
 import type { Session } from "@eventuras/fides-auth/types";
 
-import { env } from "@/env.server";
+import { env } from "#app/env.server";
 
 import { readCookieString, sessionCookie } from "./cookies.server";
 

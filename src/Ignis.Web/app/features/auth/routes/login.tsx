@@ -7,7 +7,7 @@
 import { buildPKCEOptions, discoverAndBuildAuthorizationUrl } from "@eventuras/fides-auth/oauth";
 import { redirect } from "react-router";
 
-import { Logger } from "@/logger";
+import { Logger } from "#app/logger";
 
 import { isEnabled, oauth } from "../config.server";
 import { oauthStateCookie, oauthVerifierCookie } from "../cookies.server";

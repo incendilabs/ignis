@@ -6,7 +6,7 @@
 
 import { Select } from "@eventuras/ratio-ui/forms/Select";
 
-import { getLocale, locales, setLocale } from "@/i18n/paraglide/runtime";
+import { getLocale, locales, setLocale } from "#app/i18n/paraglide/runtime";
 
 const localeLabels: Record<string, string> = {
   en: "English",

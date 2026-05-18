@@ -9,9 +9,9 @@ import { Button } from "@eventuras/ratio-ui/core/Button";
 import { Link } from "@eventuras/ratio-ui/core/Link";
 import { Navbar as RatioNavbar } from "@eventuras/ratio-ui/core/Navbar";
 
-import { LanguageSelect } from "@/i18n/LanguageSelect";
-import { m } from "@/i18n/paraglide/messages";
-import { useTheme } from "@/contexts/theme-provider";
+import { LanguageSelect } from "#app/i18n/LanguageSelect";
+import { m } from "#app/i18n/paraglide/messages";
+import { useTheme } from "#app/contexts/theme-provider";
 
 interface NavbarProps {
   features: {
