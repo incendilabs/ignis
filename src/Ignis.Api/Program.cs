@@ -6,6 +6,7 @@
 
 using Ignis.Api.Configuration;
 using Ignis.Api.Extensions;
+using Ignis.Api.Filters;
 using Ignis.Api.Hubs;
 using Ignis.Api.Services.BackgroundTasks;
 using Ignis.Api.Services.Import;
@@ -50,6 +51,10 @@ builder.Configuration.Bind("AuthSettings", authSettings);
 
 // Bind feature flags
 builder.Services.Configure<FeatureSettings>(builder.Configuration.GetSection("FeatureManagement"));
+
+// Bind import settings + per-action size filter used by $archive-import
+builder.Services.Configure<ImportSettings>(builder.Configuration.GetSection("ImportSettings"));
+builder.Services.AddScoped<ImportRequestSizeLimitFilter>();
 
 // Bind forwarded headers settings 
 // Middleware is only added if at least one of KnownProxies or KnownNetworks are configured.
