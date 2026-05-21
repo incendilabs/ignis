@@ -14,8 +14,9 @@ namespace Ignis.Api.Services.Import;
 public interface IImportService
 {
     /// <summary>
-    /// Imports an archive (zip) of JSON-serialized FHIR resources.
-    /// Archive parsing, extraction limits, and resource ingestion are not yet implemented.
+    /// Reads a zip archive and reports the number of entries it contains via
+    /// the operations hub. Resource parsing and ingestion are out of scope for
+    /// the current slice; later slices will extend the implementation.
     /// </summary>
-    Task ImportArchiveAsync(Guid operationId);
+    Task ImportZipArchiveAsync(Guid operationId, Stream archive);
 }
