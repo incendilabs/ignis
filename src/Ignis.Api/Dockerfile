@@ -1,5 +1,5 @@
 # Build context: src/ (docker build -f src/Ignis.Api/Dockerfile src/)
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:5c559aa5d99337e400d39ab4fa1f6979d126c29b20939d53658ed38300571e74 AS build
 WORKDIR /src
 COPY Ignis.Api/Ignis.Api.csproj Ignis.Api/
 COPY Ignis.Auth/Ignis.Auth.csproj Ignis.Auth/
@@ -7,7 +7,7 @@ RUN dotnet restore "Ignis.Api/Ignis.Api.csproj"
 COPY . .
 RUN dotnet publish "Ignis.Api/Ignis.Api.csproj" -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:1e37a8236c558ae31bd6bc8144e38e6036b73cf1b0616fe56d79e60babb9d93b
 WORKDIR /app
 RUN apk add --no-cache wget
 COPY --chown=app:app --from=build /app/publish .

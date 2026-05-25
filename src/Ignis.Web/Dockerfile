@@ -1,20 +1,20 @@
-FROM node:24-alpine AS dev-deps
+FROM node:24-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14 AS dev-deps
 COPY . /app
 WORKDIR /app
 RUN npm ci
 
-FROM node:24-alpine AS prod-deps
+FROM node:24-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14 AS prod-deps
 COPY ./package.json package-lock.json /app/
 WORKDIR /app
 RUN npm ci --omit=dev
 
-FROM node:24-alpine AS build
+FROM node:24-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14 AS build
 COPY . /app/
 COPY --from=dev-deps /app/node_modules /app/node_modules
 WORKDIR /app
 RUN npm run build
 
-FROM node:24-alpine
+FROM node:24-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14
 RUN apk add --no-cache wget
 COPY --chown=node:node ./package.json package-lock.json /app/
 COPY --chown=node:node --from=prod-deps /app/node_modules /app/node_modules
