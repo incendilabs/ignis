@@ -9,6 +9,7 @@ using System.Text.Json;
 using Ignis.Auth.Authorization;
 
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 
 using MongoDB.Driver;
@@ -146,12 +147,20 @@ public sealed class IntegrationFixture : IAsyncLifetime
     }
 
     public HubConnection BuildHubConnection(string relativePath, string token) =>
+        BuildHubConnection(Factory, relativePath, token);
+
+    // Lets tests built against a `WithWebHostBuilder` override factory connect
+    // to that override's hub instead of the fixture's default server.
+    public static HubConnection BuildHubConnection(
+        WebApplicationFactory<Program> factory,
+        string relativePath,
+        string token) =>
         new HubConnectionBuilder()
             .WithUrl(
-                new Uri(Factory.Server.BaseAddress, relativePath),
+                new Uri(factory.Server.BaseAddress, relativePath),
                 options =>
                 {
-                    options.HttpMessageHandlerFactory = _ => Factory.Server.CreateHandler();
+                    options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
                     options.Transports = HttpTransportType.LongPolling;
                     options.AccessTokenProvider = () => Task.FromResult<string?>(token);
                 })

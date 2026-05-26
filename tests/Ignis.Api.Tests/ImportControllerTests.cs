@@ -65,6 +65,32 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         return content;
     }
 
+    private static MultipartFormDataContent BuildZipWithPatient(string patientId)
+        => BuildZipWithPatient($"{patientId}.json", patientId);
+
+    private static MultipartFormDataContent BuildZipWithPatient(string entryName, string patientId)
+    {
+        using var buffer = new MemoryStream();
+        using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            var entry = zip.CreateEntry(entryName);
+            using var entryStream = entry.Open();
+            using var writer = new StreamWriter(entryStream);
+            writer.Write($$"""
+                {
+                  "resourceType": "Patient",
+                  "id": "{{patientId}}",
+                  "name": [{ "family": "Imported", "given": ["Test"] }]
+                }
+                """);
+        }
+        var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(buffer.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
+        content.Add(fileContent, "file", "archive.zip");
+        return content;
+    }
+
     private static MultipartFormDataContent BuildValidZipContent(int entryCount)
     {
         using var ms = new MemoryStream();
@@ -113,7 +139,8 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         var token = await _fixture.GetClientCredentialsTokenAsync(CT, OperationsScopes.Import);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        using var content = BuildArchiveContent();
+        // Valid (empty) zip so the synchronous probe accepts it; the scope check is the focus.
+        using var content = BuildValidZipContent(entryCount: 0);
         var response = await client.PostAsync("/fhir/$archive-import", content, CT);
 
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
@@ -182,34 +209,107 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
     }
 
     [Fact]
-    public async Task ArchiveImport_WithInvalidZipBytes_PublishesError()
+    public async Task ArchiveImport_WithJsonPatient_PersistsResourceToStore()
     {
+        // Unique id keeps the test isolated from other tests that may share the store.
+        var patientId = $"import-test-{Guid.NewGuid():N}";
+
         var token = await _fixture.GetClientCredentialsTokenAsync(
             CT, $"{OperationsScopes.Import} {OperationsScopes.Read}");
 
         await using var hub = _fixture.BuildHubConnection("/hubs/operations", token);
-
-        var errorEvents = Channel.CreateUnbounded<(Guid Id, string Message)>();
+        var completedEvents = Channel.CreateUnbounded<(Guid Id, string Message)>();
         hub.On<Guid, string>(
-            OperationProgressHubMethods.Error,
-            (id, msg) => errorEvents.Writer.TryWrite((id, msg)));
-
+            OperationProgressHubMethods.Completed,
+            (id, msg) => completedEvents.Writer.TryWrite((id, msg)));
         await hub.StartAsync(CT);
 
         using var client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        using var content = BuildArchiveContent();
+        using var content = BuildZipWithPatient(patientId);
         var response = await client.PostAsync("/fhir/$archive-import", content, CT);
-
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
 
         var outcome = new FhirJsonParser().Parse<OperationOutcome>(
             await response.Content.ReadAsStringAsync(CT));
         var operationId = Guid.Parse(outcome.Id);
 
-        var error = await WaitForEventAsync(
-            errorEvents.Reader, operationId, TimeSpan.FromSeconds(5), CT);
-        error.Message.Should().Contain("zip");
+        await WaitForEventAsync(
+            completedEvents.Reader, operationId, TimeSpan.FromSeconds(10), CT);
+
+        var readResponse = await client.GetAsync($"/fhir/Patient/{patientId}", CT);
+        readResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await readResponse.Content.ReadAsStringAsync(CT);
+        body.Should().Contain(patientId);
+        body.Should().Contain("Imported");
+    }
+
+    [Fact]
+    public async Task ArchiveImport_WhenArchiveExceedsTotalUncompressedLimit_ReturnsRequestEntityTooLarge()
+    {
+        // 50 bytes is well below any valid FHIR resource — guaranteed trip.
+        using var factory = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.PostConfigure<ImportSettings>(o => o.MaxArchiveUncompressedBytes = 50)));
+
+        var token = await _fixture.GetClientCredentialsTokenAsync(CT, OperationsScopes.Import);
+
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using var content = BuildZipWithPatient($"limit-test-{Guid.NewGuid():N}");
+        var response = await client.PostAsync("/fhir/$archive-import", content, CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
+    }
+
+    [Fact]
+    public async Task ArchiveImport_WhenEntryExceedsSizeLimit_SkipsEntry()
+    {
+        // 10 bytes < smallest valid Patient JSON — entry is skipped, import completes.
+        using var factory = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.PostConfigure<ImportSettings>(o => o.MaxEntryUncompressedBytes = 10)));
+
+        var token = await _fixture.GetClientCredentialsTokenAsync(
+            CT, $"{OperationsScopes.Import} {OperationsScopes.Read}");
+
+        await using var hub = IntegrationFixture.BuildHubConnection(factory, "/hubs/operations", token);
+        var completedEvents = Channel.CreateUnbounded<(Guid Id, string Message)>();
+        hub.On<Guid, string>(
+            OperationProgressHubMethods.Completed,
+            (id, msg) => completedEvents.Writer.TryWrite((id, msg)));
+        await hub.StartAsync(CT);
+
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var patientId = $"oversize-test-{Guid.NewGuid():N}";
+        using var content = BuildZipWithPatient(patientId);
+        var response = await client.PostAsync("/fhir/$archive-import", content, CT);
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+
+        var outcome = new FhirJsonParser().Parse<OperationOutcome>(
+            await response.Content.ReadAsStringAsync(CT));
+        var operationId = Guid.Parse(outcome.Id);
+
+        await WaitForEventAsync(completedEvents.Reader, operationId, TimeSpan.FromSeconds(5), CT);
+
+        var readResponse = await client.GetAsync($"/fhir/Patient/{patientId}", CT);
+        readResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task ArchiveImport_WithInvalidZipBytes_ReturnsBadRequest()
+    {
+        using var client = _fixture.Factory.CreateClient();
+        var token = await _fixture.GetClientCredentialsTokenAsync(CT, OperationsScopes.Import);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using var content = BuildArchiveContent();
+        var response = await client.PostAsync("/fhir/$archive-import", content, CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

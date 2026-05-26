@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+using System.IO.Compression;
 using System.Net;
 
 using Hl7.Fhir.Model;
@@ -31,6 +32,7 @@ namespace Ignis.Api.Controllers;
 public class ImportController(
     BackgroundTaskQueue backgroundTaskQueue,
     IOptions<FeatureSettings> featureSettings,
+    IOptions<ImportSettings> importSettings,
     ILogger<ImportController> logger) : ControllerBase
 {
     // One import at a time: the drainer is single-reader and uploads sit in
@@ -40,12 +42,16 @@ public class ImportController(
 
     /// <summary>
     /// Imports a zip archive of JSON-serialized FHIR resources. Requires the
-    /// <c>operations.import</c> scope and <c>FeatureManagement:AllowImport</c>;
-    /// otherwise responds with <c>503</c>. Returns <c>202</c> with an
-    /// <see cref="OperationOutcome"/> carrying the operation id; the archive
-    /// is buffered, queued, and progress/completion/error is reported via the
-    /// operations hub.
+    /// <c>operations.import</c> scope and <c>FeatureManagement:AllowImport</c>.
+    /// The archive is buffered, queued, and progress/completion/error is reported
+    /// via the operations hub; the response body is an <see cref="OperationOutcome"/>
+    /// carrying the operation id.
     /// </summary>
+    /// <response code="202">Archive structurally valid; ingestion queued.</response>
+    /// <response code="400">Uploaded file is not a valid zip archive.</response>
+    /// <response code="413">Archive uncompressed size exceeds the configured limit.</response>
+    /// <response code="429">Another archive import is already in progress.</response>
+    /// <response code="503">Archive import is disabled by feature flag.</response>
     [HttpPost("$archive-import"), Tags("Operations")]
     [Authorize(Policy = OperationsPolicies.Import)]
     [Consumes("multipart/form-data")]
@@ -85,6 +91,17 @@ public class ImportController(
                 await stream.CopyToAsync(buffer, HttpContext.RequestAborted);
             buffer.Position = 0;
 
+            switch (ValidateZipArchive(buffer, operationId))
+            {
+                case ArchiveValidation.Malformed:
+                    return Respond.WithError(HttpStatusCode.BadRequest,
+                        "Uploaded file is not a valid zip archive.");
+                case ArchiveValidation.TooLarge:
+                    return Respond.WithError(HttpStatusCode.RequestEntityTooLarge,
+                        "Archive uncompressed size exceeds the configured limit.");
+            }
+            buffer.Position = 0;
+
             await backgroundTaskQueue.QueueAsync(async (services, _) =>
             {
                 try
@@ -115,6 +132,40 @@ public class ImportController(
                 _importSlot.Release();
                 buffer?.Dispose();
             }
+        }
+    }
+
+    private enum ArchiveValidation { Valid, Malformed, TooLarge }
+
+    private ArchiveValidation ValidateZipArchive(Stream archive, Guid operationId)
+    {
+        var maxUncompressed = importSettings.Value.MaxArchiveUncompressedBytes;
+        try
+        {
+            using var probe = new ZipArchive(archive, ZipArchiveMode.Read, leaveOpen: true);
+            long total = 0;
+            foreach (var entry in probe.Entries)
+            {
+                // ZipArchiveMode.Read spec: entry.Length is always >= 0.
+                if (entry.Length > maxUncompressed - total)
+                {
+                    logger.LogWarning(
+                        "Rejected archive: uncompressed size exceeds limit {Limit} (operation {OperationId}).",
+                        maxUncompressed, operationId);
+                    return ArchiveValidation.TooLarge;
+                }
+                total += entry.Length;
+            }
+            return ArchiveValidation.Valid;
+        }
+        catch (Exception ex) when (
+            ex is InvalidDataException or
+            ArgumentOutOfRangeException or
+            EndOfStreamException)
+        {
+            logger.LogWarning(ex,
+                "Rejected malformed archive (operation {OperationId}).", operationId);
+            return ArchiveValidation.Malformed;
         }
     }
 }
