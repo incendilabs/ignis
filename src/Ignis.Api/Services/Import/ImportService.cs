@@ -28,6 +28,13 @@ public sealed class ImportService(
     IOperationProgressNotifier notifier,
     ILogger<ImportService> logger) : IImportService
 {
+    private enum IngestResult
+    {
+        Succeeded,
+        Skipped,
+        Failed,
+    }
+
     private static readonly FhirJsonParser Parser = new();
 
     public async Task ImportZipArchiveAsync(Guid operationId, Stream archive)
@@ -47,11 +54,27 @@ public sealed class ImportService(
                 new OperationProgress(Current: 0, Total: entryCount))
                 .ConfigureAwait(false);
 
+            var succeeded = 0;
+            var skipped = 0;
+            var failed = 0;
             var current = 0;
             foreach (var entry in zip.Entries)
             {
                 current++;
-                await IngestEntryAsync(operationId, entry).ConfigureAwait(false);
+                switch (await IngestEntryAsync(operationId, entry).ConfigureAwait(false))
+                {
+                    case IngestResult.Succeeded:
+                        succeeded++;
+                        break;
+
+                    case IngestResult.Skipped:
+                        skipped++;
+                        break;
+
+                    case IngestResult.Failed:
+                        failed++;
+                        break;
+                }
                 await notifier.ProgressAsync(
                     operationId,
                     $"Processed {TruncateName(entry.FullName)}",
@@ -60,7 +83,9 @@ public sealed class ImportService(
             }
 
             await notifier
-                .CompletedAsync(operationId, $"Enumerated {entryCount} entries.")
+                .CompletedAsync(operationId, new OperationSummary(
+                    $"Imported {succeeded}, skipped {skipped}, failed {failed} of {entryCount} entries.",
+                    new OperationStatistics(entryCount, succeeded, skipped, failed)))
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -77,12 +102,12 @@ public sealed class ImportService(
         }
     }
 
-    private async Task IngestEntryAsync(Guid operationId, ZipArchiveEntry entry)
+    private async Task<IngestResult> IngestEntryAsync(Guid operationId, ZipArchiveEntry entry)
     {
         if (entry.FullName.EndsWith('/'))
-            return;
+            return IngestResult.Skipped;
 
-        // Check for suspect paths before any file I/O. 
+        // Check for suspect paths before any file I/O.
         var name = entry.FullName;
         if (name.Contains("..", StringComparison.Ordinal) ||
             Path.IsPathRooted(name) ||
@@ -91,7 +116,7 @@ public sealed class ImportService(
             logger.LogWarning(
                 "Skipping entry with suspect path (operation {OperationId}): {Name}.",
                 operationId, TruncateName(name));
-            return;
+            return IngestResult.Skipped;
         }
 
         if (entry.Length > settings.Value.MaxEntryUncompressedBytes)
@@ -99,31 +124,25 @@ public sealed class ImportService(
             logger.LogWarning(
                 "Skipping oversize entry (operation {OperationId}, {Bytes} bytes): {Name}.",
                 operationId, entry.Length, TruncateName(entry.FullName));
-            return;
+            return IngestResult.Skipped;
         }
 
         var ext = Path.GetExtension(entry.FullName).ToLowerInvariant();
-        if (ext is not ".json")
-        {
-            logger.LogDebug(
-                "Skipping non-resource entry (operation {OperationId}): {Name}.",
-                operationId, TruncateName(entry.FullName));
-            return;
-        }
-
         try
         {
-            // BoundedStream enforces the per-entry cap during decompression so a
-            // zip that lies about uncompressed Length cannot blow up memory. Set
-            // up once here so every format-specific ingester inherits it.
-            await using var raw = entry.Open();
-            await using var bounded = new BoundedStream(raw, settings.Value.MaxEntryUncompressedBytes);
-
             switch (ext)
             {
                 case ".json":
-                    await IngestJsonResourceAsync(operationId, entry, bounded).ConfigureAwait(false);
-                    return;
+                    {
+                        await using var raw = entry.Open();
+                        await using var bounded = new BoundedStream(raw, settings.Value.MaxEntryUncompressedBytes);
+                        return await IngestJsonResourceAsync(operationId, entry, bounded).ConfigureAwait(false);
+                    }
+                default:
+                    logger.LogDebug(
+                        "Skipping non-resource entry (operation {OperationId}): {Name}.",
+                        operationId, TruncateName(entry.FullName));
+                    return IngestResult.Skipped;
             }
         }
         catch (Exception ex)
@@ -133,26 +152,29 @@ public sealed class ImportService(
                 ex,
                 "Failed to ingest entry (operation {OperationId}, entry {Name}).",
                 operationId, TruncateName(entry.FullName));
+            return IngestResult.Failed;
         }
     }
 
-    private async Task IngestJsonResourceAsync(Guid operationId, ZipArchiveEntry entry, Stream content)
+    private async Task<IngestResult> IngestJsonResourceAsync(
+        Guid operationId, ZipArchiveEntry entry, Stream content)
     {
         using var reader = new StreamReader(content);
         var json = await reader.ReadToEndAsync().ConfigureAwait(false);
 
-        await UpsertAsync(operationId, entry, Parser.Parse<Resource>(json))
+        return await UpsertAsync(operationId, entry, Parser.Parse<Resource>(json))
             .ConfigureAwait(false);
     }
 
-    private async Task UpsertAsync(Guid operationId, ZipArchiveEntry entry, Resource resource)
+    private async Task<IngestResult> UpsertAsync(
+        Guid operationId, ZipArchiveEntry entry, Resource resource)
     {
         if (string.IsNullOrEmpty(resource.Id))
         {
             logger.LogWarning(
                 "Skipping resource without id (operation {OperationId}, entry {Name}).",
                 operationId, TruncateName(entry.FullName));
-            return;
+            return IngestResult.Skipped;
         }
 
         var key = Key.Create(resource.TypeName, resource.Id);
@@ -161,6 +183,7 @@ public sealed class ImportService(
         logger.LogDebug(
             "Imported {ResourceType}/{ResourceId} (operation {OperationId}).",
             resource.TypeName, resource.Id, operationId);
+        return IngestResult.Succeeded;
     }
 
     // Cap names before they hit logs or hub events — zip permits arbitrarily long names.

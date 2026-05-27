@@ -55,6 +55,21 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         }
     }
 
+    private static async Task<OperationSummary> WaitForCompletedAsync(
+        ChannelReader<(Guid Id, OperationSummary Summary)> reader,
+        Guid expectedId,
+        TimeSpan timeout,
+        CancellationToken ct)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(timeout);
+        while (true)
+        {
+            var ev = await reader.ReadAsync(cts.Token);
+            if (ev.Id == expectedId) return ev.Summary;
+        }
+    }
+
     private static MultipartFormDataContent BuildArchiveContent()
     {
         var content = new MultipartFormDataContent();
@@ -173,13 +188,13 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
 
         // ConcurrentQueue + Channel — SignalR callbacks run on thread-pool threads.
         var progressEvents = new ConcurrentQueue<(Guid Id, string Message)>();
-        var completedEvents = Channel.CreateUnbounded<(Guid Id, string Message)>();
+        var completedEvents = Channel.CreateUnbounded<(Guid Id, OperationSummary Summary)>();
         hub.On<Guid, string, OperationProgress?>(
             OperationProgressHubMethods.Progress,
             (id, msg, _) => progressEvents.Enqueue((id, msg)));
-        hub.On<Guid, string>(
+        hub.On<Guid, OperationSummary>(
             OperationProgressHubMethods.Completed,
-            (id, msg) => completedEvents.Writer.TryWrite((id, msg)));
+            (id, summary) => completedEvents.Writer.TryWrite((id, summary)));
 
         await hub.StartAsync(CT);
 
@@ -195,9 +210,14 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
             await response.Content.ReadAsStringAsync(CT));
         var operationId = Guid.Parse(outcome.Id);
 
-        var completed = await WaitForEventAsync(
+        var summary = await WaitForCompletedAsync(
             completedEvents.Reader, operationId, TimeSpan.FromSeconds(5), CT);
-        completed.Message.Should().Contain("3");
+        summary.Message.Should().Contain("3");
+        // Empty .json entries fail FHIR parsing — every entry should land in Failed.
+        summary.Statistics.Should().NotBeNull();
+        summary.Statistics!.Total.Should().Be(3);
+        summary.Statistics.Failed.Should().Be(3);
+        summary.Statistics.Succeeded.Should().Be(0);
 
         var ourProgress = progressEvents
             .Where(e => e.Id == operationId)
@@ -219,9 +239,9 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
 
         await using var hub = _fixture.BuildHubConnection("/hubs/operations", token);
         var completedEvents = Channel.CreateUnbounded<(Guid Id, string Message)>();
-        hub.On<Guid, string>(
+        hub.On<Guid, OperationSummary>(
             OperationProgressHubMethods.Completed,
-            (id, msg) => completedEvents.Writer.TryWrite((id, msg)));
+            (id, summary) => completedEvents.Writer.TryWrite((id, summary.Message)));
         await hub.StartAsync(CT);
 
         using var client = _fixture.Factory.CreateClient();
@@ -277,9 +297,9 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
 
         await using var hub = IntegrationFixture.BuildHubConnection(factory, "/hubs/operations", token);
         var completedEvents = Channel.CreateUnbounded<(Guid Id, string Message)>();
-        hub.On<Guid, string>(
+        hub.On<Guid, OperationSummary>(
             OperationProgressHubMethods.Completed,
-            (id, msg) => completedEvents.Writer.TryWrite((id, msg)));
+            (id, summary) => completedEvents.Writer.TryWrite((id, summary.Message)));
         await hub.StartAsync(CT);
 
         using var client = factory.CreateClient();
