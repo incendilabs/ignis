@@ -19,8 +19,8 @@ public sealed class SignalROperationProgressNotifier(
     public Task ProgressAsync(Guid operationId, string message, OperationProgress? progress = null) =>
         hub.Clients.All.SendAsync(OperationProgressHubMethods.Progress, operationId, message, progress);
 
-    public Task CompletedAsync(Guid operationId, string message) =>
-        hub.Clients.All.SendAsync(OperationProgressHubMethods.Completed, operationId, message);
+    public Task CompletedAsync(Guid operationId, OperationSummary summary) =>
+        hub.Clients.All.SendAsync(OperationProgressHubMethods.Completed, operationId, summary);
 
     public Task ErrorAsync(Guid operationId, string message) =>
         hub.Clients.All.SendAsync(OperationProgressHubMethods.Error, operationId, message);

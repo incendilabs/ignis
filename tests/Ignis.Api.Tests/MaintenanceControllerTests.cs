@@ -14,6 +14,7 @@ using Hl7.Fhir.Serialization;
 
 using Ignis.Api.Configuration;
 using Ignis.Api.Hubs;
+using Ignis.Api.Services.Operations;
 using Ignis.Auth.Authorization;
 
 using Microsoft.AspNetCore.SignalR.Client;
@@ -103,8 +104,9 @@ public class MaintenanceControllerTests : IClassFixture<IntegrationFixture>
 
         await using var hub = _fixture.BuildHubConnection("/hubs/operations", token);
 
-        hub.On<Guid, string>(OperationProgressHubMethods.Completed, (id, message) =>
-            completed.TrySetResult((id, message)));
+        hub.On<Guid, OperationSummary>(
+            OperationProgressHubMethods.Completed,
+            (id, summary) => completed.TrySetResult((id, summary.Message)));
 
         await hub.StartAsync(CT);
 
