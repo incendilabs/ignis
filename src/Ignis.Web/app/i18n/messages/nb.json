@@ -21,5 +21,10 @@
   "operations_title": "Operasjoner",
   "operations_subtitle": "Sanntidsfremdrift for langvarige operasjoner på serveren.",
   "operations_console_title": "Operasjonslogg",
-  "operations_console_status_dummy": "Viser plassholder-data — ekte tilkobling kommer i en oppfølger."
+  "operations_console_status_dummy": "Viser plassholder-data — ekte tilkobling kommer i en oppfølger.",
+  "resources_capability_error": "Kunne ikke hente capability statement fra FHIR-serveren. Sjekk at FHIR-API-et er tilgjengelig og prøv igjen.",
+  "resources_subtitle": "Ressurstyper som FHIR-serveren tilbyr, med antall instanser.",
+  "resources_table_count": "Antall",
+  "resources_table_type": "Ressurstype",
+  "resources_title": "Ressurser"
 }

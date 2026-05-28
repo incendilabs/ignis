@@ -21,5 +21,10 @@
   "operations_title": "Operations",
   "operations_subtitle": "Live progress for long-running server operations.",
   "operations_console_title": "Operations log",
-  "operations_console_status_dummy": "Showing placeholder data — live wiring lands in a follow-up."
+  "operations_console_status_dummy": "Showing placeholder data — live wiring lands in a follow-up.",
+  "resources_capability_error": "Could not load the FHIR server capability statement. Check that the FHIR API is reachable and try again.",
+  "resources_subtitle": "Resource types declared by the FHIR server, with instance counts.",
+  "resources_table_count": "Count",
+  "resources_table_type": "Resource type",
+  "resources_title": "Resources"
 }
