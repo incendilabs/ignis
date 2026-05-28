@@ -17,5 +17,9 @@
   "home_about": "Ignis er en plattform for eksperimentering med FHIR (Fast Healthcare Interoperability Resources). Prosjektet bygger på Spark, en åpen kildekode FHIR-server.",
   "home_subtitle": "FHIR-eksperimenter og prototyping",
   "home_title": "Ignis FHIR-sandkasse",
-  "nav_login": "Logg inn"
+  "nav_login": "Logg inn",
+  "operations_title": "Operasjoner",
+  "operations_subtitle": "Sanntidsfremdrift for langvarige operasjoner på serveren.",
+  "operations_console_title": "Operasjonslogg",
+  "operations_console_status_dummy": "Viser plassholder-data — ekte tilkobling kommer i en oppfølger."
 }

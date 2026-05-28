@@ -20,12 +20,13 @@ Every environment variable `Ignis.Web` (the BFF) reads.
 
 ## Feature flags
 
-Both default to off. Set to `"true"` to enable.
+All default to off. Set to `"true"` to enable.
 
-| Variable                   | Notes                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `IGNIS_WEB_FEATURES_ADMIN` | Enables the admin UI at `/admin/*`. Requires `IGNIS_WEB_FEATURES_AUTH=true`. See [Admin UI](../admin/admin-ui.md). |
-| `IGNIS_WEB_FEATURES_AUTH`  | Master switch for the OAuth/BFF login flow. Most other features require this.                                      |
+| Variable                        | Notes                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `IGNIS_WEB_FEATURES_ADMIN`      | Enables the admin UI at `/admin/*`. Requires `IGNIS_WEB_FEATURES_AUTH=true`. See [Admin UI](../admin/admin-ui.md). |
+| `IGNIS_WEB_FEATURES_AUTH`       | Master switch for the OAuth/BFF login flow. Most other features require this.                                      |
+| `IGNIS_WEB_FEATURES_OPERATIONS` | Enables the operations log at `/admin/operations`. Requires `IGNIS_WEB_FEATURES_ADMIN=true`.                       |
 
 ## Cross-references with the API
 

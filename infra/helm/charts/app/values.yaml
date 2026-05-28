@@ -67,7 +67,7 @@ web:
   # Secrets — e.g. one synced by External Secrets, one with the session key.
   # Typical keys: IGNIS_AUTH_ISSUER, IGNIS_WEB_APP_URL, IGNIS_WEB_CLIENT_ID,
   # IGNIS_WEB_CLIENT_SECRET, IGNIS_WEB_SESSION_SECRET, IGNIS_WEB_FHIR_BASE_URL,
-  # IGNIS_WEB_FEATURES_AUTH, IGNIS_WEB_FEATURES_ADMIN.
+  # IGNIS_WEB_FEATURES_AUTH, IGNIS_WEB_FEATURES_ADMIN, IGNIS_WEB_FEATURES_OPERATIONS.
   existingSecrets: []
   # Extra env vars to set inline (e.g. non-secret feature flags).
   # Format: list of {name, value} entries.
