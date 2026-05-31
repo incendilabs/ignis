@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { env } from "#app/env.server";
+import { fhirHeaders, resolveFhirUrl } from "#app/fhir.server";
 import { Logger } from "#app/logger";
 
 const logger = Logger.create({ namespace: "resources-ui:fhir-client" });
@@ -30,29 +30,6 @@ interface CountBundle {
 // anything else so the helper is safe by construction even when called
 // with input that didn't come from the CapabilityStatement.
 const FHIR_RESOURCE_TYPE_NAME = /^[A-Z][A-Za-z]+$/;
-
-function resolveFhirUrl(request: Request, endpoint: string): URL {
-  const configuredBase = env("IGNIS_WEB_FHIR_BASE_URL", { default: "" });
-  const baseUrl = new URL(configuredBase === ""
-    ? new URL("/fhir/", request.url).toString()
-    : configuredBase);
-  const normalizedPath = baseUrl.pathname === "/"
-    ? "/fhir/"
-    : baseUrl.pathname.endsWith("/")
-      ? baseUrl.pathname
-      : `${baseUrl.pathname}/`;
-  return new URL(endpoint, `${baseUrl.origin}${normalizedPath}`);
-}
-
-function fhirHeaders(accessToken: string | undefined): HeadersInit {
-  const headers: Record<string, string> = {
-    Accept: "application/fhir+json, application/json",
-  };
-  if (accessToken !== undefined && accessToken !== "") {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return headers;
-}
 
 /**
  * Returns the list of resource types declared by the FHIR server's

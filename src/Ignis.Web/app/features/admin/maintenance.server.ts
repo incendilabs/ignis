@@ -5,11 +5,16 @@
  */
 
 import {
-  fhirApiUnavailableMessage,
+  fhirBaseIsDefaultSameOrigin,
+  fhirHeaders,
   getOperationOutcomeDetails,
-  mapFhirApiFailure,
   parseJson,
-  resolveOperationUrl,
+  resolveFhirUrl,
+} from "#app/fhir.server";
+
+import {
+  fhirApiUnavailableMessage,
+  mapFhirApiFailure,
 } from "./fhir-api.server";
 import {
   maintenanceOperations,
@@ -28,13 +33,10 @@ export async function runMaintenanceOperation(
   accessToken: string,
 ): Promise<OperationResult> {
   try {
-    const target = resolveOperationUrl(request, operation.endpoint);
-    const response = await fetch(target.url, {
+    const url = resolveFhirUrl(request, operation.endpoint);
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        Accept: "application/fhir+json, application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: fhirHeaders(accessToken),
     });
 
     const payload = await parseJson(response);
@@ -59,7 +61,7 @@ export async function runMaintenanceOperation(
     const genericFailure = mapFhirApiFailure(response, {
       operationId: outcome.operationId,
       requiredScope: operation.requiredScope,
-      usingDefaultSameOriginBase: target.usingDefaultSameOriginBase,
+      usingDefaultSameOriginBase: fhirBaseIsDefaultSameOrigin(),
     });
     if (genericFailure !== null) return genericFailure;
 
@@ -78,11 +80,9 @@ export async function runMaintenanceOperation(
 
 export async function getDatabaseConnectionStatus(request: Request): Promise<DatabaseConnectionStatus> {
   try {
-    const target = resolveOperationUrl(request, "metadata");
-    const response = await fetch(target.url, {
-      headers: {
-        Accept: "application/fhir+json, application/json",
-      },
+    const url = resolveFhirUrl(request, "metadata");
+    const response = await fetch(url, {
+      headers: fhirHeaders(),
     });
 
     if (response.ok) {
@@ -94,7 +94,7 @@ export async function getDatabaseConnectionStatus(request: Request): Promise<Dat
 
     return {
       ok: false,
-      message: fhirApiUnavailableMessage(response, target.usingDefaultSameOriginBase),
+      message: fhirApiUnavailableMessage(response, fhirBaseIsDefaultSameOrigin()),
     };
   } catch {
     return {
