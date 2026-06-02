@@ -121,6 +121,12 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         return content;
     }
 
+    private static Guid ReadOperationId(string responseBody)
+    {
+        var outcome = new FhirJsonDeserializer().Deserialize<OperationOutcome>(responseBody);
+        return Guid.TryParse(outcome.Id, out var id) ? id : Guid.Empty;
+    }
+
     [Fact]
     public async Task ArchiveImport_WithoutAuth_ReturnsUnauthorized()
     {
@@ -206,9 +212,8 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
 
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
 
-        var outcome = new FhirJsonDeserializer().Deserialize<OperationOutcome>(
-            await response.Content.ReadAsStringAsync(CT));
-        var operationId = Guid.Parse(outcome.Id);
+        var operationId = ReadOperationId(await response.Content.ReadAsStringAsync(CT));
+        operationId.Should().NotBe(Guid.Empty);
 
         var summary = await WaitForCompletedAsync(
             completedEvents.Reader, operationId, TimeSpan.FromSeconds(5), CT);
@@ -251,9 +256,8 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         var response = await client.PostAsync("/fhir/$archive-import", content, CT);
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
 
-        var outcome = new FhirJsonDeserializer().Deserialize<OperationOutcome>(
-            await response.Content.ReadAsStringAsync(CT));
-        var operationId = Guid.Parse(outcome.Id);
+        var operationId = ReadOperationId(await response.Content.ReadAsStringAsync(CT));
+        operationId.Should().NotBe(Guid.Empty);
 
         await WaitForEventAsync(
             completedEvents.Reader, operationId, TimeSpan.FromSeconds(10), CT);
@@ -310,9 +314,8 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         var response = await client.PostAsync("/fhir/$archive-import", content, CT);
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
 
-        var outcome = new FhirJsonDeserializer().Deserialize<OperationOutcome>(
-            await response.Content.ReadAsStringAsync(CT));
-        var operationId = Guid.Parse(outcome.Id);
+        var operationId = ReadOperationId(await response.Content.ReadAsStringAsync(CT));
+        operationId.Should().NotBe(Guid.Empty);
 
         await WaitForEventAsync(completedEvents.Reader, operationId, TimeSpan.FromSeconds(5), CT);
 
