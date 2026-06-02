@@ -113,9 +113,9 @@ public class MaintenanceControllerTests : IClassFixture<IntegrationFixture>
         var response = await client.PostAsync("/fhir/$clear-store", null, CT);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var outcome = new FhirJsonParser().Parse<OperationOutcome>(
+        var outcome = new FhirJsonDeserializer().Deserialize<OperationOutcome>(
             await response.Content.ReadAsStringAsync(CT));
-        var responseOperationId = Guid.Parse(outcome.Id);
+        var responseOperationId = string.IsNullOrWhiteSpace(outcome.Id) ? Guid.Empty : Guid.Parse(outcome.Id);
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(CT);
         timeout.CancelAfter(TimeSpan.FromSeconds(10));

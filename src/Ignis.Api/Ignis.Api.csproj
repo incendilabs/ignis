@@ -18,7 +18,7 @@
         <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
         <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
-        <PackageReference Include="Spark.Engine.R4" Version="2.4.1" />
-        <PackageReference Include="Spark.Mongo.R4" Version="2.4.1" />
+        <PackageReference Include="Spark.Engine.R4" Version="3.0.1" />
+        <PackageReference Include="Spark.Store.MongoDB" Version="3.0.1" />
     </ItemGroup>
 </Project>

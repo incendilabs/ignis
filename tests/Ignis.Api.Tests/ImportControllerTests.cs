@@ -206,7 +206,7 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
 
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
 
-        var outcome = new FhirJsonParser().Parse<OperationOutcome>(
+        var outcome = new FhirJsonDeserializer().Deserialize<OperationOutcome>(
             await response.Content.ReadAsStringAsync(CT));
         var operationId = Guid.Parse(outcome.Id);
 
@@ -251,7 +251,7 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         var response = await client.PostAsync("/fhir/$archive-import", content, CT);
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
 
-        var outcome = new FhirJsonParser().Parse<OperationOutcome>(
+        var outcome = new FhirJsonDeserializer().Deserialize<OperationOutcome>(
             await response.Content.ReadAsStringAsync(CT));
         var operationId = Guid.Parse(outcome.Id);
 
@@ -310,7 +310,7 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         var response = await client.PostAsync("/fhir/$archive-import", content, CT);
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
 
-        var outcome = new FhirJsonParser().Parse<OperationOutcome>(
+        var outcome = new FhirJsonDeserializer().Deserialize<OperationOutcome>(
             await response.Content.ReadAsStringAsync(CT));
         var operationId = Guid.Parse(outcome.Id);
 

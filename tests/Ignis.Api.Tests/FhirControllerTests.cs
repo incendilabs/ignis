@@ -28,7 +28,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
     private readonly HttpClient _client;
 
     private readonly FhirJsonSerializer _serializer = new();
-    private readonly FhirJsonParser _parser = new();
+    private readonly FhirJsonDeserializer _deserializer = new();
 
     public FhirControllerTests(IntegrationFixture fixture)
     {
@@ -75,7 +75,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.Content.ReadAsStringAsync(CT);
-        var resource = _parser.Parse<Resource>(body);
+        var resource = _deserializer.Deserialize<Resource>(body);
         resource.Should().BeOfType<CapabilityStatement>();
     }
 
@@ -95,7 +95,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var createdBody = await createResponse.Content.ReadAsStringAsync(CT);
-        var created = _parser.Parse<Patient>(createdBody);
+        var created = _deserializer.Deserialize<Patient>(createdBody);
         created.Id.Should().NotBeNullOrEmpty();
 
         // Read
@@ -103,7 +103,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         readResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var readBody = await readResponse.Content.ReadAsStringAsync(CT);
-        var read = _parser.Parse<Patient>(readBody);
+        var read = _deserializer.Deserialize<Patient>(readBody);
         read.Name[0].Family.Should().Be("Losen");
     }
 
@@ -135,7 +135,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         var createResponse = await PostFhirResource("Patient", patient);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var created = _parser.Parse<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
+        var created = _deserializer.Deserialize<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
         created.Id.Should().NotBeNullOrEmpty();
 
         created.Name[0].Family = "Johansen";
@@ -146,7 +146,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         var readResponse = await _client.GetAsync($"/fhir/Patient/{created.Id}", CT);
         readResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var read = _parser.Parse<Patient>(await readResponse.Content.ReadAsStringAsync(CT));
+        var read = _deserializer.Deserialize<Patient>(await readResponse.Content.ReadAsStringAsync(CT));
         read.Name[0].Family.Should().Be("Johansen");
     }
 
@@ -163,7 +163,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         var createResponse = await PostFhirResource("Patient", patient);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var created = _parser.Parse<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
+        var created = _deserializer.Deserialize<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
         created.Id.Should().NotBeNullOrEmpty();
 
         var deleteResponse = await _client.DeleteAsync($"/fhir/Patient/{created.Id}", CT);
@@ -182,7 +182,7 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.Content.ReadAsStringAsync(CT);
-        var bundle = _parser.Parse<Bundle>(body);
+        var bundle = _deserializer.Deserialize<Bundle>(body);
 
         bundle.Type.Should().Be(Bundle.BundleType.Searchset);
     }
@@ -209,14 +209,14 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         var createResponse = await PostFhirResource("Patient", patient);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var created = _parser.Parse<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
+        var created = _deserializer.Deserialize<Patient>(await createResponse.Content.ReadAsStringAsync(CT));
         created.Id.Should().NotBeNullOrEmpty();
 
         var historyResponse = await _client.GetAsync($"/fhir/Patient/{created.Id}/_history", CT);
         historyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await historyResponse.Content.ReadAsStringAsync(CT);
-        var bundle = _parser.Parse<Bundle>(body);
+        var bundle = _deserializer.Deserialize<Bundle>(body);
 
         bundle.Type.Should().Be(Bundle.BundleType.History);
         bundle.Entry.Should().NotBeEmpty();

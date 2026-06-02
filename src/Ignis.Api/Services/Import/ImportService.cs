@@ -35,7 +35,7 @@ public sealed class ImportService(
         Failed,
     }
 
-    private static readonly FhirJsonParser Parser = new();
+    private static readonly FhirJsonDeserializer Parser = new();
 
     public async Task ImportZipArchiveAsync(Guid operationId, Stream archive)
     {
@@ -162,7 +162,7 @@ public sealed class ImportService(
         using var reader = new StreamReader(content);
         var json = await reader.ReadToEndAsync().ConfigureAwait(false);
 
-        return await UpsertAsync(operationId, entry, Parser.Parse<Resource>(json))
+        return await UpsertAsync(operationId, entry, Parser.Deserialize<Resource>(json))
             .ConfigureAwait(false);
     }
 
