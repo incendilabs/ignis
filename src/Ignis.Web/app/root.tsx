@@ -23,6 +23,7 @@ import { ThemeProvider } from "./contexts/theme-provider";
 import { Navbar } from "#app/components/ui/navbar";
 import * as adminConfig from "#app/features/admin/config.server";
 import * as authConfig from "#app/features/auth/config.server";
+import { getSessionExpiry } from "#app/features/auth/session.server";
 
 export const middleware: MiddlewareFunction[] = [
   (ctx, next) => paraglideMiddleware(ctx.request, () => next()),
@@ -32,11 +33,25 @@ export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/images/ignis-logo.png", type: "image/png" },
 ];
 
-export function loader() {
+export async function loader({ request }: Route.LoaderArgs) {
+  const features = {
+    auth: authConfig.isEnabled(),
+    admin: adminConfig.isEnabled(),
+  };
+
+  const expiry = features.auth
+    ? await getSessionExpiry(request)
+    : { authenticated: false, accessTokenExpiresIn: null };
+
+  const accessTokenExpiresAt =
+    expiry.authenticated && expiry.accessTokenExpiresIn !== null
+      ? Date.now() + expiry.accessTokenExpiresIn * 1000
+      : null;
   return {
-    features: {
-      auth: authConfig.isEnabled(),
-      admin: adminConfig.isEnabled(),
+    features,
+    auth: {
+      authenticated: expiry.authenticated,
+      accessTokenExpiresAt,
     },
   };
 }
