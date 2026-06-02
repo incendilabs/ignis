@@ -7,7 +7,6 @@
 
 using Ignis.Api.Services.Operations;
 
-using Spark.Core;
 using Spark.Engine.Interfaces;
 using Spark.Engine.Service.FhirServiceExtensions;
 

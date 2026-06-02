@@ -23,7 +23,7 @@ using Serilog;
 
 using Spark.Engine;
 using Spark.Engine.Extensions;
-using Spark.Mongo.Extensions;
+using Spark.Store.MongoDB.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -88,7 +88,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddMongoFhirStore(storeSettings);
 
 // Register Spark FHIR engine (also registers controllers + FHIR formatters)
-builder.Services.AddFhir(sparkSettings);
+builder.Services.AddFhirWithMvc(sparkSettings);
 
 // Maintenance services and operation notifications
 builder.Services.AddSignalR();
