@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@inlang/paraglide-js": "^2.18.0",
+    "@inlang/paraglide-js": "^2.18.1",
     "@inlang/plugin-m-function-matcher": "^2.2.6",
     "@inlang/plugin-message-format": "^4.4.0",
     "@react-router/dev": "7.15.1",
@@ -40,7 +40,7 @@
     "eslint": "^10.4.0",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3",
+    "typescript-eslint": "^8.59.4",
     "vite": "^7.3.2",
     "vitest": "^4.1.6"
   }
