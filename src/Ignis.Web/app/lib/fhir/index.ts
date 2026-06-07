@@ -18,3 +18,4 @@ export type {
   OperationOutcomeIssue,
   OperationOutcomePayload,
 } from "./operation-outcome";
+export { isValidFhirResourceTypeName } from "./resource-type";
