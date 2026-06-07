@@ -85,7 +85,11 @@ export default function ResourceTypeDetails({ loaderData }: Route.ComponentProps
               <Table.Body>
                 {loaderData.resources.map((resource) => (
                   <Table.Row key={resource.id}>
-                    <Table.Cell>{resource.id}</Table.Cell>
+                    <Table.Cell>
+                      <Link href={`/resources/${loaderData.resourceType}/${resource.id}`}>
+                        {resource.id}
+                      </Link>
+                    </Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
