@@ -5,6 +5,7 @@
  */
 
 import { Heading } from "@eventuras/ratio-ui/core/Heading";
+import { Link } from "@eventuras/ratio-ui/core/Link";
 import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Table } from "@eventuras/ratio-ui/core/Table";
 import { Text } from "@eventuras/ratio-ui/core/Text";
@@ -90,7 +91,9 @@ export default function ResourcesIndex({ loaderData }: Route.ComponentProps) {
             <Table.Body>
               {loaderData.rows.map((row) => (
                 <Table.Row key={row.type}>
-                  <Table.Cell>{row.type}</Table.Cell>
+                  <Table.Cell>
+                    <Link href={`/resources/${row.type}`}>{row.type}</Link>
+                  </Table.Cell>
                   <Table.Cell>{row.count ?? "—"}</Table.Cell>
                 </Table.Row>
               ))}
