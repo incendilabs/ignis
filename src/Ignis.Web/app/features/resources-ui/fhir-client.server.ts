@@ -122,3 +122,37 @@ export async function fetchResourceList(
     return null;
   }
 }
+
+/**
+ * Fetches a single resource instance by type and id, returning the parsed
+ * resource object or `null` when it can't be retrieved (invalid type/id,
+ * non-2xx, or a non-object body).
+ */
+export async function fetchResource(
+  request: Request,
+  accessToken: string | undefined,
+  resourceType: string,
+  id: string,
+): Promise<Record<string, unknown> | null> {
+  if (!isValidFhirResourceTypeName(resourceType) || !isValidFhirId(id)) {
+    logger.warn(
+      { context: { resourceType, id } },
+      "Rejected read request for invalid FHIR resource type name or id",
+    );
+    return null;
+  }
+
+  try {
+    const url = resolveFhirUrl(request, `${resourceType}/${id}`);
+    const response = await fetch(url, { headers: fhirHeaders(accessToken) });
+    if (!response.ok) return null;
+
+    const body: unknown = await response.json();
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return null;
+    }
+    return body as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
