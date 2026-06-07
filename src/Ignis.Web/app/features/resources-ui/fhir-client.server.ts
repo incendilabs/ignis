@@ -9,7 +9,7 @@ import {
   bundleResources,
   type FhirBundle,
 } from "#app/lib/fhir";
-import { isValidFhirId, isValidFhirResourceTypeName } from "#app/lib/fhir/validation";
+import { fhirResourcePath } from "#app/lib/fhir/http";
 import { Logger } from "#app/logger";
 
 const logger = Logger.create({ namespace: "resources-ui:fhir-client" });
@@ -67,7 +67,8 @@ export async function fetchResourceCount(
   accessToken: string | undefined,
   resourceType: string,
 ): Promise<number | null> {
-  if (!isValidFhirResourceTypeName(resourceType)) {
+  const path = fhirResourcePath(resourceType);
+  if (path === null) {
     logger.warn(
       { context: { resourceType } },
       "Rejected count request for non-FHIR resource type name",
@@ -75,7 +76,7 @@ export async function fetchResourceCount(
     return null;
   }
   try {
-    const url = resolveFhirUrl(request, `${resourceType}?_summary=count`);
+    const url = resolveFhirUrl(request, `${path}?_summary=count`);
     const response = await fetch(url, { headers: fhirHeaders(accessToken) });
     if (!response.ok) return null;
     const body = (await response.json()) as FhirBundle;
@@ -96,7 +97,8 @@ export async function fetchResourceList(
   resourceType: string,
   limit = 100,
 ): Promise<ResourceListItem[] | null> {
-  if (!isValidFhirResourceTypeName(resourceType)) {
+  const path = fhirResourcePath(resourceType);
+  if (path === null) {
     logger.warn(
       { context: { resourceType } },
       "Rejected list request for non-FHIR resource type name",
@@ -107,7 +109,7 @@ export async function fetchResourceList(
   try {
     const url = resolveFhirUrl(
       request,
-      `${resourceType}?_count=${String(limit)}&_elements=id`,
+      `${path}?_count=${String(limit)}&_elements=id`,
     );
     const response = await fetch(url, { headers: fhirHeaders(accessToken) });
     if (!response.ok) return null;
@@ -134,7 +136,8 @@ export async function fetchResource(
   resourceType: string,
   id: string,
 ): Promise<Record<string, unknown> | null> {
-  if (!isValidFhirResourceTypeName(resourceType) || !isValidFhirId(id)) {
+  const path = fhirResourcePath(resourceType, id);
+  if (path === null) {
     logger.warn(
       { context: { resourceType, id } },
       "Rejected read request for invalid FHIR resource type name or id",
@@ -143,7 +146,7 @@ export async function fetchResource(
   }
 
   try {
-    const url = resolveFhirUrl(request, `${resourceType}/${id}`);
+    const url = resolveFhirUrl(request, path);
     const response = await fetch(url, { headers: fhirHeaders(accessToken) });
     if (!response.ok) return null;
 
