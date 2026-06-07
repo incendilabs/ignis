@@ -8,8 +8,8 @@ import { fhirHeaders, resolveFhirUrl } from "#app/fhir.server";
 import {
   bundleResources,
   type FhirBundle,
-  isValidFhirResourceTypeName,
 } from "#app/lib/fhir";
+import { isValidFhirId, isValidFhirResourceTypeName } from "#app/lib/fhir/validation";
 import { Logger } from "#app/logger";
 
 const logger = Logger.create({ namespace: "resources-ui:fhir-client" });

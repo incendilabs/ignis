@@ -18,6 +18,5 @@ export type {
   OperationOutcomeIssue,
   OperationOutcomePayload,
 } from "./operation-outcome";
-export { isValidFhirResourceTypeName } from "./resource-type";
 export { bundleResources } from "./bundle";
 export type { FhirBundle, FhirBundleEntry } from "./bundle";

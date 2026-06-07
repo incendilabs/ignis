@@ -15,7 +15,7 @@ import { redirect } from "react-router";
 
 import { getSessionFromRequest } from "#app/features/auth/session.server";
 import { m } from "#app/i18n/paraglide/messages";
-import { isValidFhirResourceTypeName } from "#app/lib/fhir";
+import { isValidFhirResourceTypeName } from "#app/lib/fhir/validation";
 
 import type { Route } from "./+types/$resourceType";
 import { isEnabled } from "../config.server";
