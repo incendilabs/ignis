@@ -5,7 +5,6 @@
  */
 
 import { Heading } from "@eventuras/ratio-ui/core/Heading";
-import { Link } from "@eventuras/ratio-ui/core/Link";
 import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Table } from "@eventuras/ratio-ui/core/Table";
 import { Text } from "@eventuras/ratio-ui/core/Text";
@@ -19,6 +18,7 @@ import { m } from "#app/i18n/paraglide/messages";
 import type { Route } from "./+types/index";
 import { isEnabled } from "../config.server";
 import { fetchResourceCount, fetchResourceTypes } from "../fhir-client.server";
+import { ResourceLink } from "../ResourceLink";
 
 interface ResourceRow {
   type: string;
@@ -92,7 +92,7 @@ export default function ResourcesIndex({ loaderData }: Route.ComponentProps) {
               {loaderData.rows.map((row) => (
                 <Table.Row key={row.type}>
                   <Table.Cell>
-                    <Link href={`/resources/${row.type}`}>{row.type}</Link>
+                    <ResourceLink type={row.type}>{row.type}</ResourceLink>
                   </Table.Cell>
                   <Table.Cell>{row.count ?? "—"}</Table.Cell>
                 </Table.Row>

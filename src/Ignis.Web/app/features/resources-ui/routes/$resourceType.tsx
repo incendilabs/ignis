@@ -23,6 +23,7 @@ import {
   fetchResourceCount,
   fetchResourceList,
 } from "../fhir-client.server";
+import { ResourceLink } from "../ResourceLink";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
@@ -86,9 +87,9 @@ export default function ResourceTypeDetails({ loaderData }: Route.ComponentProps
                 {loaderData.resources.map((resource) => (
                   <Table.Row key={resource.id}>
                     <Table.Cell>
-                      <Link href={`/resources/${loaderData.resourceType}/${resource.id}`}>
+                      <ResourceLink type={loaderData.resourceType} id={resource.id}>
                         {resource.id}
-                      </Link>
+                      </ResourceLink>
                     </Table.Cell>
                   </Table.Row>
                 ))}
