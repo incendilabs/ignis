@@ -5,6 +5,11 @@
  */
 
 import { fhirHeaders, resolveFhirUrl } from "#app/fhir.server";
+import {
+  bundleResources,
+  type FhirBundle,
+  isValidFhirResourceTypeName,
+} from "#app/lib/fhir";
 import { Logger } from "#app/logger";
 
 const logger = Logger.create({ namespace: "resources-ui:fhir-client" });
@@ -22,14 +27,9 @@ interface CapabilityStatement {
   rest?: CapabilityRest[];
 }
 
-interface CountBundle {
-  total?: number;
+export interface ResourceListItem {
+  id: string;
 }
-
-// FHIR resource type names are PascalCase ASCII (per the spec). Reject
-// anything else so the helper is safe by construction even when called
-// with input that didn't come from the CapabilityStatement.
-const FHIR_RESOURCE_TYPE_NAME = /^[A-Z][A-Za-z]+$/;
 
 /**
  * Returns the list of resource types declared by the FHIR server's
@@ -67,7 +67,7 @@ export async function fetchResourceCount(
   accessToken: string | undefined,
   resourceType: string,
 ): Promise<number | null> {
-  if (!FHIR_RESOURCE_TYPE_NAME.test(resourceType)) {
+  if (!isValidFhirResourceTypeName(resourceType)) {
     logger.warn(
       { context: { resourceType } },
       "Rejected count request for non-FHIR resource type name",
@@ -78,8 +78,46 @@ export async function fetchResourceCount(
     const url = resolveFhirUrl(request, `${resourceType}?_summary=count`);
     const response = await fetch(url, { headers: fhirHeaders(accessToken) });
     if (!response.ok) return null;
-    const body = (await response.json()) as CountBundle;
+    const body = (await response.json()) as FhirBundle;
     return body.total ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetches a small page of resources for one type and extracts the stable
+ * UI-facing id for each. Returns `null` when the page can't be retrieved so
+ * callers can render an error state instead of failing the whole page.
+ */
+export async function fetchResourceList(
+  request: Request,
+  accessToken: string | undefined,
+  resourceType: string,
+  limit = 100,
+): Promise<ResourceListItem[] | null> {
+  if (!isValidFhirResourceTypeName(resourceType)) {
+    logger.warn(
+      { context: { resourceType } },
+      "Rejected list request for non-FHIR resource type name",
+    );
+    return null;
+  }
+
+  try {
+    const url = resolveFhirUrl(
+      request,
+      `${resourceType}?_count=${String(limit)}&_elements=id`,
+    );
+    const response = await fetch(url, { headers: fhirHeaders(accessToken) });
+    if (!response.ok) return null;
+
+    const body = (await response.json()) as FhirBundle;
+    return bundleResources(body)
+      .map((resource) => ({
+        id: typeof resource.id === "string" ? resource.id : "",
+      }))
+      .filter((item) => item.id.length > 0);
   } catch {
     return null;
   }
