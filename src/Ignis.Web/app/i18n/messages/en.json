@@ -29,6 +29,8 @@
   "resources_detail_error": "Could not load resources for this type. Check that the FHIR API is reachable.",
   "resources_detail_id": "ID",
   "resources_detail_summary": "{count} total resources. Showing first {shown}.",
+  "resources_instance_back": "Back to {resourceType}",
+  "resources_instance_error": "Could not load this resource. Check that the FHIR API is reachable.",
   "resources_subtitle": "Resource types declared by the FHIR server, with instance counts.",
   "resources_table_count": "Count",
   "resources_table_type": "Resource type",

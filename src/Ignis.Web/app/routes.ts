@@ -16,6 +16,7 @@ export default [
     route("admin/operations", "features/operations/routes/index.tsx"),
     route("resources", "features/resources-ui/routes/index.tsx"),
     route("resources/:resourceType", "features/resources-ui/routes/$resourceType.tsx"),
+    route("resources/:resourceType/:id", "features/resources-ui/routes/$resourceType.$id.tsx"),
   ]),
   route("healthz", "routes/healthz.ts"),
   route("auth/login", "features/auth/routes/login.tsx"),
