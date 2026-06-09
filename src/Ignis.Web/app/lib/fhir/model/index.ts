@@ -5,6 +5,7 @@ export type {
 } from "./bundle";
 export type { Coding } from "./coding";
 export type { Meta } from "./meta";
+export type { Resource } from "./resource";
 export type {
   Canonical,
   Code,

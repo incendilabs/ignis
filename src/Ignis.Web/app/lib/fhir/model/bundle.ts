@@ -4,22 +4,24 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import type { Resource } from "./resource";
+
 export interface FhirBundleEntry {
-  resource?: Record<string, unknown>;
+  resource?: Resource;
 }
 
 export interface FhirBundle {
   total?: number;
-  entry?: FhirBundleEntry[];
+  entry?: { resource?: Resource; }[];
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isResource(value: unknown): value is Resource {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Returns the resource objects carried by a FHIR Bundle's entries. */
-export function bundleResources(bundle: FhirBundle): Record<string, unknown>[] {
+/** Returns the resources carried by a FHIR Bundle's entries. */
+export function bundleResources(bundle: FhirBundle): Resource[] {
   return (bundle.entry ?? [])
     .map((entry) => entry.resource)
-    .filter((resource): resource is Record<string, unknown> => isObject(resource));
+    .filter((resource): resource is Resource => isResource(resource));
 }
