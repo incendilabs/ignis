@@ -17,5 +17,5 @@ export type {
   OperationOutcomeIssue,
   OperationOutcomePayload,
 } from "./operation-outcome";
-export { bundleResources } from "./bundle";
-export type { FhirBundle, FhirBundleEntry } from "./bundle";
+export { bundleResources } from "./model";
+export type { FhirBundle, FhirBundleEntry } from "./model";
