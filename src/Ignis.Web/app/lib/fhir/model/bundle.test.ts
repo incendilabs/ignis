@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { bundleResources } from ".";
+import { bundleResources, type Resource } from ".";
 
 describe("bundleResources", () => {
   it("returns the resource object from each entry", () => {
@@ -38,7 +38,7 @@ describe("bundleResources", () => {
 
   it("excludes array-valued resources from a malformed payload", () => {
     const bundle = {
-      entry: [{ resource: { id: "1" } }, { resource: [] as unknown as Record<string, unknown> }],
+      entry: [{ resource: { id: "1" } }, { resource: [] as unknown as Resource }],
     };
 
     expect(bundleResources(bundle)).toEqual([{ id: "1" }]);
