@@ -7,7 +7,7 @@ RUN dotnet restore "Ignis.Api/Ignis.Api.csproj"
 COPY . .
 RUN dotnet publish "Ignis.Api/Ignis.Api.csproj" -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:1e37a8236c558ae31bd6bc8144e38e6036b73cf1b0616fe56d79e60babb9d93b
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:6327ae0927b5623617cf8437302e3f2700f01898e86bba60ec2e0971ce7c3add
 WORKDIR /app
 RUN apk add --no-cache wget
 COPY --chown=app:app --from=build /app/publish .
