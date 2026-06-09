@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import { isResource, type Resource } from "./model";
+
 export interface OperationOutcomeIssue {
   diagnostics?: string;
 }
 
-export interface OperationOutcomePayload {
-  resourceType?: string;
-  id?: string;
+export interface OperationOutcomePayload extends Resource<"OperationOutcome"> {
   issue?: OperationOutcomeIssue[];
 }
 
@@ -33,10 +33,5 @@ export function getOperationOutcomeDetails(
 }
 
 function isOperationOutcomePayload(payload: unknown): payload is OperationOutcomePayload {
-  if (typeof payload !== "object" || payload === null) {
-    return false;
-  }
-
-  const candidate = payload as Partial<OperationOutcomePayload>;
-  return candidate.resourceType === "OperationOutcome";
+  return isResource(payload) && payload.resourceType === "OperationOutcome";
 }
