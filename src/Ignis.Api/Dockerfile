@@ -1,5 +1,5 @@
 # Build context: src/ (docker build -f src/Ignis.Api/Dockerfile src/)
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:5c559aa5d99337e400d39ab4fa1f6979d126c29b20939d53658ed38300571e74 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:4fdf1efc2eedaf10b7f42cc7584f71d429dc85bafce662113048bfbaaea5970e AS build
 WORKDIR /src
 COPY Ignis.Api/Ignis.Api.csproj Ignis.Api/
 COPY Ignis.Auth/Ignis.Auth.csproj Ignis.Auth/
