@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { bundleResources } from "./bundle";
+import { bundleResources } from ".";
 
 describe("bundleResources", () => {
   it("returns the resource object from each entry", () => {
