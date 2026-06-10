@@ -23,7 +23,7 @@ import { ThemeProvider } from "./contexts/theme-provider";
 import { Navbar } from "#app/components/ui/navbar";
 import * as adminConfig from "#app/features/admin/config.server";
 import * as authConfig from "#app/features/auth/config.server";
-import { getSessionExpiry } from "#app/features/auth/session.server";
+import { getSessionFromRequest } from "#app/features/auth/session.server";
 
 export const middleware: MiddlewareFunction[] = [
   (ctx, next) => paraglideMiddleware(ctx.request, () => next()),
@@ -39,19 +39,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     admin: adminConfig.isEnabled(),
   };
 
-  const expiry = features.auth
-    ? await getSessionExpiry(request)
-    : { authenticated: false, accessTokenExpiresIn: null };
+  const session = features.auth ? await getSessionFromRequest(request) : null;
 
-  const accessTokenExpiresAt =
-    expiry.authenticated && expiry.accessTokenExpiresIn !== null
-      ? Date.now() + expiry.accessTokenExpiresIn * 1000
-      : null;
   return {
     features,
     auth: {
-      authenticated: expiry.authenticated,
-      accessTokenExpiresAt,
+      authenticated: session !== null,
+      accessTokenExpiresAt: session?.tokens?.accessTokenExpiresAt ?? null,
+      user: session?.user
+        ? { name: session.user.name, email: session.user.email }
+        : null,
     },
   };
 }
