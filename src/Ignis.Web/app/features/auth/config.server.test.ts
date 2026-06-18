@@ -21,6 +21,7 @@ describe("oauth", () => {
       "profile",
       "email",
       "operations.read",
+      "operations.import",
       "maintenance/database.write",
       "maintenance/database.destructive",
     ]);
