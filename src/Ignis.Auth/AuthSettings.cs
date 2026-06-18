@@ -18,11 +18,11 @@ public class AuthSettings
     /// </summary>
     public string? Issuer { get; set; }
     /// <summary>
-    /// Issue access tokens as encrypted JWE (default) or, when <c>false</c>,
-    /// smaller signed-only JWS. Disable when a BFF stores the token in a session
-    /// cookie, where JWE size can exceed the 4 KB browser limit.
+    /// Issue smaller signed-only (JWS) access tokens instead of encrypted JWE.
+    /// Keeps the BFF encrypted session cookie under the 4 KB browser limit, but 
+    /// the token's claims become readable by any holder.
     /// </summary>
-    public bool EncryptAccessTokens { get; set; } = true;
+    public bool DisableAccessTokenEncryption { get; set; }
     public List<ClientDefinition> Clients { get; set; } = [];
     public AuthEndpointSettings Endpoints { get; set; } = new();
     public AuthCertificateSettings Certificates { get; set; } = new();

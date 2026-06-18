@@ -164,15 +164,15 @@ public class AuthConfigurationTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData(true, 5)]  // encrypted JWE has five segments
-    [InlineData(false, 3)] // signed-only JWS has three
+    [InlineData(true, 3)]  // unencrypted: signed-only JWS has three segments
+    [InlineData(false, 5)] // default: encrypted JWE has five
     public async Task TokenEndpoint_AccessTokenFormat_FollowsEncryptionSetting(
-        bool encryptAccessTokens, int expectedSegments)
+        bool disableAccessTokenEncryption, int expectedSegments)
     {
         var envVars = new Dictionary<string, string?>
         {
             ["AuthSettings__ConnectionString"] = _connectionString,
-            ["AuthSettings__EncryptAccessTokens"] = encryptAccessTokens.ToString(),
+            ["AuthSettings__DisableAccessTokenEncryption"] = disableAccessTokenEncryption.ToString(),
             ["AuthSettings__Clients__0__ClientId"] = "format-client",
             ["AuthSettings__Clients__0__ClientSecret"] = "format-secret",
             ["AuthSettings__Clients__0__DisplayName"] = "Format Client",
@@ -189,7 +189,7 @@ public class AuthConfigurationTests : IAsyncLifetime
                 ["SparkSettings:FhirRelease"] = "R4",
                 ["SparkSettings:UseAsynchronousIO"] = "true",
                 ["AuthSettings:ConnectionString"] = _connectionString,
-                ["AuthSettings:EncryptAccessTokens"] = encryptAccessTokens.ToString(),
+                ["AuthSettings:DisableAccessTokenEncryption"] = disableAccessTokenEncryption.ToString(),
                 ["AuthSettings:Clients:0:ClientId"] = "format-client",
                 ["AuthSettings:Clients:0:ClientSecret"] = "format-secret",
                 ["AuthSettings:Clients:0:DisplayName"] = "Format Client",

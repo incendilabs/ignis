@@ -166,8 +166,8 @@ public static class AuthServerExtensions
                     .RequirePushedAuthorizationRequests()
                     .RegisterScopes(KnownScopes.All.ToArray());
 
-                // Smaller signed-only access tokens; see AuthSettings.EncryptAccessTokens.
-                if (!settings.EncryptAccessTokens)
+                // Smaller signed-only access tokens; see AuthSettings.DisableAccessTokenEncryption.
+                if (settings.DisableAccessTokenEncryption)
                     options.DisableAccessTokenEncryption();
 
                 if (!string.IsNullOrWhiteSpace(settings.Issuer))
