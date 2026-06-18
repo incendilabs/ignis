@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading.Channels;
 
 using FluentAssertions;
@@ -165,6 +166,44 @@ public class ImportControllerTests : IClassFixture<IntegrationFixture>
         var response = await client.PostAsync("/fhir/$archive-import", content, CT);
 
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+    }
+
+    [Fact]
+    public async Task ArchiveImportLimits_ReturnsConfiguredMaxUploadSize()
+    {
+        const int configuredMax = 12_345_678;
+        using var factory = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.PostConfigure<ImportSettings>(o => o.MaxUploadSizeBytes = configuredMax)));
+
+        using var client = factory.CreateClient();
+        var token = await _fixture.GetClientCredentialsTokenAsync(CT, OperationsScopes.Import);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync("/fhir/$archive-import", CT);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadAsStringAsync(CT);
+        using var doc = JsonDocument.Parse(body);
+        var parameter = doc.RootElement.GetProperty("parameter").EnumerateArray()
+            .First(p => p.GetProperty("name").GetString() == "maxUploadSizeBytes");
+        parameter.GetProperty("valueInteger").GetInt32().Should().Be(configuredMax);
+    }
+
+    [Fact]
+    public async Task ArchiveImportLimits_WithFeatureDisabled_ReturnsServiceUnavailable()
+    {
+        using var factory = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.PostConfigure<FeatureSettings>(o => o.AllowImport = false)));
+
+        using var client = factory.CreateClient();
+        var token = await _fixture.GetClientCredentialsTokenAsync(CT, OperationsScopes.Import);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync("/fhir/$archive-import", CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
     }
 
     [Fact]

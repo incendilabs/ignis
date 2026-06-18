@@ -135,6 +135,27 @@ public class ImportController(
         }
     }
 
+    /// <summary>
+    /// Returns the configured archive-import limits so clients can validate an
+    /// upload before sending it. Requires the <c>operations.import</c> scope.
+    /// </summary>
+    /// <response code="200">A <c>Parameters</c> resource with the upload limits.</response>
+    [HttpGet("$archive-import"), Tags("Operations")]
+    [Authorize(Policy = OperationsPolicies.Import)]
+    public FhirResponse ArchiveImportLimits()
+    {
+        if (!featureSettings.Value.AllowImport)
+            return Respond.WithError(
+                HttpStatusCode.ServiceUnavailable,
+                "Archive import is not enabled on this server.");
+
+        var maxUploadSizeBytes =
+            (int)Math.Clamp(importSettings.Value.MaxUploadSizeBytes, 0L, int.MaxValue);
+        var parameters = new Parameters();
+        parameters.Add("maxUploadSizeBytes", new Integer(maxUploadSizeBytes));
+        return Respond.WithResource(parameters);
+    }
+
     private enum ArchiveValidation { Valid, Malformed, TooLarge }
 
     private ArchiveValidation ValidateZipArchive(Stream archive, Guid operationId)
