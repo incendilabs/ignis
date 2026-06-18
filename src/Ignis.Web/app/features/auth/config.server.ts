@@ -19,6 +19,7 @@ export function oauth(): OAuthConfig {
     "profile",
     "email",
     adminScopes.operationsRead,
+    adminScopes.operationsImport,
     adminScopes.maintenanceDatabaseWrite,
     adminScopes.maintenanceDatabaseDestructive,
   ];
