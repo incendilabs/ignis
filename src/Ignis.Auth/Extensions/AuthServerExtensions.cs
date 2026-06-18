@@ -166,6 +166,10 @@ public static class AuthServerExtensions
                     .RequirePushedAuthorizationRequests()
                     .RegisterScopes(KnownScopes.All.ToArray());
 
+                // Smaller signed-only access tokens; see AuthSettings.EncryptAccessTokens.
+                if (!settings.EncryptAccessTokens)
+                    options.DisableAccessTokenEncryption();
+
                 if (!string.IsNullOrWhiteSpace(settings.Issuer))
                 {
                     if (!Uri.TryCreate(settings.Issuer.Trim(), UriKind.Absolute, out var issuer))

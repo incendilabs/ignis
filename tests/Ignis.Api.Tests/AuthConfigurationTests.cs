@@ -163,6 +163,62 @@ public class AuthConfigurationTests : IAsyncLifetime
         }
     }
 
+    [Theory]
+    [InlineData(true, 5)]  // encrypted JWE has five segments
+    [InlineData(false, 3)] // signed-only JWS has three
+    public async Task TokenEndpoint_AccessTokenFormat_FollowsEncryptionSetting(
+        bool encryptAccessTokens, int expectedSegments)
+    {
+        var envVars = new Dictionary<string, string?>
+        {
+            ["AuthSettings__ConnectionString"] = _connectionString,
+            ["AuthSettings__EncryptAccessTokens"] = encryptAccessTokens.ToString(),
+            ["AuthSettings__Clients__0__ClientId"] = "format-client",
+            ["AuthSettings__Clients__0__ClientSecret"] = "format-secret",
+            ["AuthSettings__Clients__0__DisplayName"] = "Format Client",
+            ["AuthSettings__Clients__0__AllowedGrantTypes__0"] = "client_credentials",
+            ["StoreSettings__ConnectionString"] = _connectionString,
+        };
+        SetEnvVars(envVars);
+        try
+        {
+            await using var factory = CreateFactory(new Dictionary<string, string?>
+            {
+                ["StoreSettings:ConnectionString"] = _connectionString,
+                ["SparkSettings:Endpoint"] = "https://localhost/fhir",
+                ["SparkSettings:FhirRelease"] = "R4",
+                ["SparkSettings:UseAsynchronousIO"] = "true",
+                ["AuthSettings:ConnectionString"] = _connectionString,
+                ["AuthSettings:EncryptAccessTokens"] = encryptAccessTokens.ToString(),
+                ["AuthSettings:Clients:0:ClientId"] = "format-client",
+                ["AuthSettings:Clients:0:ClientSecret"] = "format-secret",
+                ["AuthSettings:Clients:0:DisplayName"] = "Format Client",
+                ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
+            });
+            using var client = factory.CreateClient();
+
+            var response = await client.PostAsync("/connect/token",
+                new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["grant_type"] = "client_credentials",
+                    ["client_id"] = "format-client",
+                    ["client_secret"] = "format-secret",
+                }), CT);
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var body = await response.Content.ReadAsStringAsync(CT);
+            using var doc = JsonDocument.Parse(body);
+            var accessToken = doc.RootElement.GetProperty("access_token").GetString();
+            accessToken.Should().NotBeNullOrEmpty();
+            accessToken!.Split('.').Should().HaveCount(expectedSegments);
+        }
+        finally
+        {
+            ClearEnvVars(envVars);
+        }
+    }
+
     [Fact]
     public async Task TokenEndpoint_Works_WithCertificatesInProduction()
     {
