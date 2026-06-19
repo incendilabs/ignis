@@ -8,6 +8,7 @@ import { Badge } from "@eventuras/ratio-ui/core/Badge";
 import { Button } from "@eventuras/ratio-ui/core/Button";
 import { Card } from "@eventuras/ratio-ui/core/Card";
 import { Heading } from "@eventuras/ratio-ui/core/Heading";
+import { Link } from "@eventuras/ratio-ui/core/Link";
 import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Text } from "@eventuras/ratio-ui/core/Text";
 import { Unauthorized } from "@eventuras/ratio-ui/blocks/Unauthorized";
@@ -42,6 +43,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (!isAuthorized) {
     return {
       canClearStore: false,
+      canImport: false,
       canRebuildIndex: false,
       databaseStatus: { ok: false as const, message: "" },
       isAuthorized: false,
@@ -52,6 +54,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const databaseStatus = await getDatabaseConnectionStatus(request);
   return {
     canClearStore: grantedScopes.includes(scopes.maintenanceDatabaseDestructive),
+    canImport: grantedScopes.includes(scopes.operationsImport),
     canRebuildIndex: grantedScopes.includes(scopes.maintenanceDatabaseWrite),
     databaseStatus,
     isAuthorized,
@@ -131,8 +134,28 @@ export default function AdminIndex({ loaderData }: Route.ComponentProps) {
             )}
           </Stack>
         </Card>
+
+        {loaderData.canImport ? <ImportArchiveCard /> : null}
       </Stack>
     </Container>
+  );
+}
+
+function ImportArchiveCard() {
+  return (
+    <Card className="p-6">
+      <Stack direction="vertical" gap="md">
+        <Stack direction="vertical" gap="xs">
+          <Heading as="h2">{m.admin_import_link_title()}</Heading>
+          <Text>{m.admin_import_link_description()}</Text>
+        </Stack>
+        <div>
+          <Link href="/admin/import" variant="button-primary">
+            {m.admin_import_link_button()}
+          </Link>
+        </div>
+      </Stack>
+    </Card>
   );
 }
 
