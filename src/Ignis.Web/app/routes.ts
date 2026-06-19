@@ -13,6 +13,7 @@ export default [
   ...prefix(":locale?", [
     index("routes/home.tsx"),
     route("admin", "features/admin/routes/index.tsx"),
+    route("admin/import", "features/admin/routes/import.tsx"),
     route("admin/operations", "features/operations/routes/index.tsx"),
     route("resources", "features/resources-ui/routes/index.tsx"),
     route("resources/:resourceType", "features/resources-ui/routes/$resourceType.tsx"),
