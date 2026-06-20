@@ -4,4 +4,5 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+export { HttpStatus } from "./status";
 export { fhirResourcePath, joinFhirUrl } from "./url";
