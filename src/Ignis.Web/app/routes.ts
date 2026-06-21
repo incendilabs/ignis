@@ -19,6 +19,8 @@ export default [
     route("resources/:resourceType", "features/resources-ui/routes/$resourceType.tsx"),
     route("resources/:resourceType/:id", "features/resources-ui/routes/$resourceType.$id.tsx"),
   ]),
+  // Skip i18n handling for these routes.
+  route("admin/operations/stream", "features/operations/routes/stream.ts"),
   route("healthz", "routes/healthz.ts"),
   route("auth/login", "features/auth/routes/login.tsx"),
   route("auth/callback", "features/auth/routes/callback.tsx"),
