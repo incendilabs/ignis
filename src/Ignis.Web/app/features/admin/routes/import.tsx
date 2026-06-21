@@ -7,6 +7,7 @@
 import { Button } from "@eventuras/ratio-ui/core/Button";
 import { Card } from "@eventuras/ratio-ui/core/Card";
 import { Heading } from "@eventuras/ratio-ui/core/Heading";
+import { Link } from "@eventuras/ratio-ui/core/Link";
 import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Text } from "@eventuras/ratio-ui/core/Text";
 import { Unauthorized } from "@eventuras/ratio-ui/blocks/Unauthorized";
@@ -22,6 +23,8 @@ import { useState } from "react";
 import { redirect, useFetcher } from "react-router";
 
 import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { OperationsConsole } from "#app/features/operations/components/OperationsConsole";
+import { useOperationsStream } from "#app/features/operations/use-operations-stream";
 import { m } from "#app/i18n/paraglide/messages";
 
 import type { Route } from "./+types/import";
@@ -102,6 +105,9 @@ export default function AdminImport({ loaderData }: Route.ComponentProps) {
 
 function ArchiveImportForm({ maxUploadBytes }: { maxUploadBytes: number; }) {
   const fetcher = useFetcher<typeof action>();
+  // Connect on page load so the relay is live before the import starts —
+  // hub events are not replayed, so a late connection would miss them.
+  const stream = useOperationsStream();
   const result = fetcher.data;
   const isSubmitting = fetcher.state !== "idle";
 
@@ -193,6 +199,19 @@ function ArchiveImportForm({ maxUploadBytes }: { maxUploadBytes: number; }) {
       </div>
 
       {result ? <OperationResultPanel result={result} /> : null}
+
+      <Stack direction="vertical" gap="sm">
+        <OperationsConsole
+          events={stream.events}
+          status={stream.status}
+          // Scope to nothing until an import returns its id, so the console
+          // shows its waiting state and then this import's events only.
+          filterOperationId={result?.operationId ?? ""}
+        />
+        <Link href="/admin/operations" variant="button-text">
+          {m.operations_view_all()}
+        </Link>
+      </Stack>
     </Stack>
   );
 }
