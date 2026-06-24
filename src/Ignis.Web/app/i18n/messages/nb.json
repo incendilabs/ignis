@@ -29,6 +29,7 @@
   "import_submit": "Start import",
   "import_title": "Importer arkiv",
   "nav_login": "Logg inn",
+  "nav_logout": "Logg ut",
   "nav_menu": "Meny",
   "operations_title": "Operasjoner",
   "operations_subtitle": "Sanntidsfremdrift for langvarige operasjoner på serveren.",
