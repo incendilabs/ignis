@@ -29,6 +29,7 @@
   "import_submit": "Start import",
   "import_title": "Import archive",
   "nav_login": "Login",
+  "nav_menu": "Menu",
   "operations_title": "Operations",
   "operations_subtitle": "Live progress for long-running server operations.",
   "operations_console_title": "Operations log",
