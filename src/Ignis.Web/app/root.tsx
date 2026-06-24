@@ -85,7 +85,7 @@ export function Layout({ children }: { children: React.ReactNode; }) {
 export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <ThemeProvider>
-      <Navbar features={loaderData.features} />
+      <Navbar features={loaderData.features} user={loaderData.auth.user} />
       <main className="min-h-[calc(100vh-4rem)]">
         <Outlet />
       </main>
