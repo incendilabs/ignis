@@ -23,5 +23,6 @@ export default [
   route("admin/operations/stream", "features/operations/routes/stream.ts"),
   route("healthz", "routes/healthz.ts"),
   route("auth/login", "features/auth/routes/login.tsx"),
+  route("auth/logout", "features/auth/routes/logout.tsx"),
   route("auth/callback", "features/auth/routes/callback.tsx"),
 ] satisfies RouteConfig;
