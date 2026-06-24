@@ -48,6 +48,8 @@
   "resources_detail_summary": "{count} ressurser totalt. Viser de første {shown}.",
   "resources_instance_back": "Tilbake til {resourceType}",
   "resources_instance_error": "Kunne ikke laste denne ressursen. Sjekk at FHIR-API-et er tilgjengelig.",
+  "resources_instance_json": "JSON",
+  "resources_instance_view": "Visning",
   "resources_subtitle": "Ressurstyper som FHIR-serveren tilbyr, med antall instanser.",
   "resources_table_count": "Antall",
   "resources_table_type": "Ressurstype",
