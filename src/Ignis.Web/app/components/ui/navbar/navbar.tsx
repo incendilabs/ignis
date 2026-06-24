@@ -5,7 +5,7 @@
  */
 
 import { Link as RouterLink } from "react-router";
-import { Link } from "@eventuras/ratio-ui/core/Link";
+import { Menu } from "@eventuras/ratio-ui/core/Menu";
 import { Navbar as RatioNavbar } from "@eventuras/ratio-ui/core/Navbar";
 
 import { LanguageSelect } from "#app/i18n/LanguageSelect";
@@ -33,18 +33,17 @@ export function Navbar({ features }: NavbarProps) {
         </RouterLink>
       </RatioNavbar.Brand>
       <RatioNavbar.Content className="justify-end">
-        {features.admin && (
-          <Link href="/admin" variant="button-text">
-            Admin
-          </Link>
-        )}
-        {features.auth && (
-          <Link href="/auth/login" variant="button-text">
-            {m.nav_login()}
-          </Link>
-        )}
         <LanguageSelect className="w-32" />
         <ThemeToggle />
+        <Menu>
+          <Menu.Trigger>
+            {m.nav_menu()}
+            <Menu.Chevron />
+          </Menu.Trigger>
+          <Menu.Link href="/resources">{m.resources_title()}</Menu.Link>
+          {features.admin && <Menu.Link href="/admin">{m.admin_title()}</Menu.Link>}
+          {features.auth && <Menu.Link href="/auth/login">{m.nav_login()}</Menu.Link>}
+        </Menu>
       </RatioNavbar.Content>
     </RatioNavbar>
   );
