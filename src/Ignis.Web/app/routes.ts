@@ -18,6 +18,7 @@ export default [
     route("resources", "features/resources-ui/routes/index.tsx"),
     route("resources/:resourceType", "features/resources-ui/routes/$resourceType.tsx"),
     route("resources/:resourceType/:id", "features/resources-ui/routes/$resourceType.$id.tsx"),
+    route("resources/:resourceType/:id/xml", "features/resources-ui/routes/$resourceType.$id.xml.tsx"),
   ]),
   // Skip i18n handling for these routes.
   route("admin/operations/stream", "features/operations/routes/stream.ts"),
