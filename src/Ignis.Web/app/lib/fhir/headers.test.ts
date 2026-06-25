@@ -25,4 +25,11 @@ describe("fhirHeaders", () => {
   it("omits Authorization for an empty token", () => {
     expect(fhirHeaders("")).not.toHaveProperty("Authorization");
   });
+
+  it("requests FHIR XML when the xml format is selected", () => {
+    expect(fhirHeaders("abc123", { format: "xml" })).toEqual({
+      Accept: "application/fhir+xml, application/xml",
+      Authorization: "Bearer abc123",
+    });
+  });
 });
