@@ -159,3 +159,34 @@ export async function fetchResource(
     return null;
   }
 }
+
+/**
+ * Fetches a single resource instance serialized as FHIR XML, returning the raw
+ * XML string or `null` when it can't be retrieved (invalid type/id or non-2xx).
+ */
+export async function fetchResourceXml(
+  request: Request,
+  accessToken: string | undefined,
+  resourceType: string,
+  id: string,
+): Promise<string | null> {
+  const path = fhirResourcePath(resourceType, id);
+  if (path === null) {
+    logger.warn(
+      { context: { resourceType, id } },
+      "Rejected XML read request for invalid FHIR resource type name or id",
+    );
+    return null;
+  }
+
+  try {
+    const url = resolveFhirUrl(request, `${path}?_pretty=true`);
+    const response = await fetch(url, {
+      headers: fhirHeaders(accessToken, { format: "xml" }),
+    });
+    if (!response.ok) return null;
+    return await response.text();
+  } catch {
+    return null;
+  }
+}
