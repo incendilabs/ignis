@@ -5,31 +5,82 @@
  */
 
 import { DescriptionList } from "@eventuras/ratio-ui/core/DescriptionList";
+import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Tabs } from "@eventuras/ratio-ui/core/Tabs";
-import { useMemo } from "react";
+import { Text } from "@eventuras/ratio-ui/core/Text";
+import { useMemo, useState } from "react";
+import { type FetcherWithComponents, useFetcher } from "react-router";
 
 import { m } from "#app/i18n/paraglide/messages";
 import { formatPrimitive } from "#app/lib/fhir/format";
 import type { Resource } from "#app/lib/fhir/model";
 import { buildResourceTree, type FhirNode } from "#app/lib/fhir/tree";
 
+type XmlResult = { ok: true; xml: string; } | { ok: false; };
+
 /**
- * Renders a single FHIR resource.
+ * Renders a single FHIR resource. The XML serialization is fetched from the
+ * server only when its tab is first opened.
  */
-export function ResourceDetail({ resource }: { resource: Resource; }) {
+export function ResourceDetail({
+  resource,
+  resourceType,
+  id,
+}: {
+  resource: Resource;
+  resourceType: string;
+  id: string;
+}) {
   const nodes = useMemo(() => buildResourceTree(resource), [resource]);
   const json = useMemo(() => JSON.stringify(resource, null, 2), [resource]);
+
+  const xml = useFetcher<XmlResult>();
+  const [xmlRequested, setXmlRequested] = useState(false);
+
+  const handleSelectionChange = (key: string) => {
+    if (key === "xml" && !xmlRequested) {
+      setXmlRequested(true);
+      void xml.load(`/resources/${resourceType}/${id}/xml`);
+    }
+  };
+
   return (
-    <Tabs defaultSelectedKey="structured">
+    <Tabs defaultSelectedKey="structured" onSelectionChange={handleSelectionChange}>
       <Tabs.Item id="structured" title={m.resources_instance_view()}>
         <NodeList nodes={nodes} />
       </Tabs.Item>
       <Tabs.Item id="json" title={m.resources_instance_json()}>
-        <pre className="overflow-x-auto rounded border border-(--border) p-4 text-sm">
-          {json}
-        </pre>
+        <CodeBlock>{json}</CodeBlock>
+      </Tabs.Item>
+      <Tabs.Item id="xml" title={m.resources_instance_xml()}>
+        <XmlPanel fetcher={xml} />
       </Tabs.Item>
     </Tabs>
+  );
+}
+
+/** Renders the lazily-fetched XML, with loading and error states. */
+function XmlPanel({ fetcher }: { fetcher: FetcherWithComponents<XmlResult>; }) {
+  const { data, state } = fetcher;
+  if (state === "loading" || data === undefined) {
+    return <Text>{m.resources_instance_loading()}</Text>;
+  }
+  if (!data.ok) {
+    return (
+      <Panel variant="alert" status="error">
+        <Text>{m.resources_instance_error()}</Text>
+      </Panel>
+    );
+  }
+  return <CodeBlock>{data.xml}</CodeBlock>;
+}
+
+/** Monospaced, scrollable block for raw JSON/XML payloads. */
+function CodeBlock({ children }: { children: string; }) {
+  return (
+    <pre className="overflow-x-auto rounded border border-(--border) p-4 text-sm">
+      {children}
+    </pre>
   );
 }
 

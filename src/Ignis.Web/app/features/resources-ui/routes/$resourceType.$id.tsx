@@ -60,7 +60,14 @@ export default function ResourceInstance({ loaderData }: Route.ComponentProps) {
         </Stack>
 
         {loaderData.ok ? (
-          <ResourceDetail resource={loaderData.resource} />
+          // Key by identity so navigating between instances on this same route
+          // remounts and drops the previous resource's lazily-fetched XML.
+          <ResourceDetail
+            key={`${loaderData.resourceType}/${loaderData.id}`}
+            resource={loaderData.resource}
+            resourceType={loaderData.resourceType}
+            id={loaderData.id}
+          />
         ) : (
           <Panel variant="alert" status="error">
             <Text>{m.resources_instance_error()}</Text>
