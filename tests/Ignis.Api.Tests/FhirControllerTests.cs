@@ -233,6 +233,40 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    // $validate (structural profile validation)
+
+    [Fact]
+    public async Task Validate_NonConformantResource_Returns200WithErrorOutcome()
+    {
+        // Parses fine, but declares (and violates) the vital-signs profile — so profile validation fails.
+        var observation = new Observation
+        {
+            Status = ObservationStatus.Final,
+            Code = new CodeableConcept("http://loinc.org", "85354-9"),
+            Meta = new Meta { Profile = ["http://hl7.org/fhir/StructureDefinition/vitalsigns"] },
+        };
+
+        var response = await PostFhirResource("Observation/$validate", observation);
+
+        // $validate reports findings in the outcome; it does not fail the request.
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var outcome = _deserializer.Deserialize<OperationOutcome>(await response.Content.ReadAsStringAsync(CT));
+        outcome.Issue.Should().Contain(i => i.Severity == OperationOutcome.IssueSeverity.Error);
+    }
+
+    [Fact]
+    public async Task Validate_ConformantResource_Returns200WithoutErrors()
+    {
+        var response = await PostFhirResource("Patient/$validate", new Patient { Active = true });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var outcome = _deserializer.Deserialize<OperationOutcome>(await response.Content.ReadAsStringAsync(CT));
+        outcome.Issue.Should().NotContain(i =>
+            i.Severity == OperationOutcome.IssueSeverity.Error || i.Severity == OperationOutcome.IssueSeverity.Fatal);
+    }
+
     // Helpers
 
     private async Task<HttpResponseMessage> PostFhirResource(string path, Resource resource)

@@ -90,6 +90,9 @@ builder.Services.AddMongoFhirStore(storeSettings);
 // Register Spark FHIR engine (also registers controllers + FHIR formatters)
 builder.Services.AddFhirWithMvc(sparkSettings);
 
+// Register structural profile validation ($validate against IG profiles)
+builder.Services.AddProfileValidation();
+
 // Maintenance services and operation notifications
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IOperationProgressNotifier, SignalROperationProgressNotifier>();
