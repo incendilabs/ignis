@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/*.user
+**/.vs/
+**/.vscode/
+**/*.DotSettings.user
+**/TestResults/
+.git/
+fhir-packages/

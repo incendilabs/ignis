@@ -22,12 +22,15 @@ jobs:
     - name: Check code formatting
       run: dotnet format --verify-no-changes --verbosity diagnostic
     
-    - name: Cache FHIR packages
+    - name: Ensure FHIR packages is cached
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: fhir-packages
         key: fhir-packages-${{ hashFiles('fhir-packages.targets') }}
-
+        
+    - name: Include FHIR packages
+      run: dotnet msbuild src/Ignis.Api/Ignis.Api.csproj -target:DownloadFhirPackages -property:Configuration=Release
+        
     - name: Build
       run: dotnet build --no-restore --configuration Release
     
@@ -84,7 +87,7 @@ jobs:
         if: steps.dockerhub.outputs.can_push == 'true'
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
-          context: src
+          context: .
           file: src/Ignis.Api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
@@ -97,7 +100,7 @@ jobs:
         if: steps.dockerhub.outputs.can_push != 'true'
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
-          context: src
+          context: .
           file: src/Ignis.Api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: false
