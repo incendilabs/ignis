@@ -8,6 +8,7 @@
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="../Ignis.Auth/Ignis.Auth.csproj" />
+        <ProjectReference Include="../Ignis.Validation/Ignis.Validation.csproj" />
     </ItemGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="Ignis.Api.Tests" />
@@ -18,7 +19,11 @@
         <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
         <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+        <PackageReference Include="Firely.Fhir.Packages" Version="5.0.2" />
+        <PackageReference Include="Hl7.Fhir.R4" Version="6.2.0" />
         <PackageReference Include="Spark.Engine.R4" Version="3.0.1" />
         <PackageReference Include="Spark.Store.MongoDB" Version="3.0.1" />
     </ItemGroup>
+
+    <Import Project="../../fhir-packages.targets" />
 </Project>

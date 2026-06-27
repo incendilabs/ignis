@@ -21,4 +21,6 @@
     <ItemGroup>
         <ProjectReference Include="../../src/Ignis.Api/Ignis.Api.csproj" />
     </ItemGroup>
+
+    <Import Project="../../fhir-packages.targets" />
 </Project>

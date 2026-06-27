@@ -35,4 +35,13 @@
           SkipUnchangedFiles="true" />
   </Target>
 
+  <Target Name="CopyFhirPackagesToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_FhirPackageFile Include="$(FhirPackageDir)/*.tgz" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_FhirPackageFile)"
+          DestinationFolder="$(PublishDir)fhir-packages"
+          SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

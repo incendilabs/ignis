@@ -1,11 +1,13 @@
-# Build context: src/ (docker build -f src/Ignis.Api/Dockerfile src/)
+# Build context: repository root (docker build -f src/Ignis.Api/Dockerfile .)
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:fac7cce841f78faa4bca416fb4c636d1a129c09abd9b50e9b45664b95fd008a0 AS build
 WORKDIR /src
-COPY Ignis.Api/Ignis.Api.csproj Ignis.Api/
-COPY Ignis.Auth/Ignis.Auth.csproj Ignis.Auth/
-RUN dotnet restore "Ignis.Api/Ignis.Api.csproj"
-COPY . .
-RUN dotnet publish "Ignis.Api/Ignis.Api.csproj" -c Release -o /app/publish --no-restore
+COPY fhir-packages.targets ./
+COPY src/Ignis.Api/Ignis.Api.csproj src/Ignis.Api/
+COPY src/Ignis.Auth/Ignis.Auth.csproj src/Ignis.Auth/
+COPY src/Ignis.Validation/Ignis.Validation.csproj src/Ignis.Validation/
+RUN dotnet restore "src/Ignis.Api/Ignis.Api.csproj" -p:Configuration=Release
+COPY src ./src
+RUN dotnet publish "src/Ignis.Api/Ignis.Api.csproj" -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:f03685b2735e0d3d25d6c60672e74b21bb6334f1402f71bae2d2cf02307163cd
 WORKDIR /app
@@ -15,5 +17,5 @@ USER app
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-	CMD wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1
 ENTRYPOINT ["dotnet", "Ignis.Api.dll"]
