@@ -20,4 +20,6 @@
     <ItemGroup>
         <ProjectReference Include="../../src/Ignis.Validation/Ignis.Validation.csproj" />
     </ItemGroup>
+
+    <Import Project="../../fhir-packages.targets" />
 </Project>

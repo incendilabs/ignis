@@ -60,3 +60,6 @@ certs/
   
 # Per-developer local overrides (loaded only in Development)
 appsettings.local.json
+
+# FHIR conformance packages (downloaded at build by fhir-packages.targets)
+fhir-packages/

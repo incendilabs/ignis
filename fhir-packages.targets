@@ -1,0 +1,38 @@
+<Project>
+
+  <!--
+    Downloads the FHIR conformance packages used for validation/terminology into a local folder, then
+    copies them into the build output so consumers load them from disk (no network at run time).
+    To add packages or change the FHIR version, edit the FhirPackage item list below.
+  -->
+
+  <PropertyGroup>
+    <!-- Override $(FhirPackageServer) (CLI -p:, env var, or Directory.Build.props) for a mirror, air-gapped
+         feed, or another registry (e.g. https://packages.simplifier.net). -->
+    <FhirPackageServer Condition="'$(FhirPackageServer)' == ''">https://packages.fhir.org</FhirPackageServer>
+    <FhirPackageDir Condition="'$(FhirPackageDir)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)fhir-packages'))</FhirPackageDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FhirPackage Include="hl7.fhir.r4.core" Version="4.0.1" />
+  </ItemGroup>
+
+  <Target Name="DownloadFhirPackages" BeforeTargets="BeforeBuild">
+    <MakeDir Directories="$(FhirPackageDir)" />
+    <DownloadFile SourceUrl="$(FhirPackageServer)/%(FhirPackage.Identity)/%(FhirPackage.Version)"
+                  DestinationFolder="$(FhirPackageDir)"
+                  DestinationFileName="%(FhirPackage.Identity)-%(FhirPackage.Version).tgz"
+                  Retries="2"
+                  Condition="!Exists('$(FhirPackageDir)/%(FhirPackage.Identity)-%(FhirPackage.Version).tgz')" />
+  </Target>
+
+  <Target Name="CopyFhirPackagesToOutput" AfterTargets="Build">
+    <ItemGroup>
+      <_FhirPackageFile Include="$(FhirPackageDir)/*.tgz" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_FhirPackageFile)"
+          DestinationFolder="$(OutDir)fhir-packages"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
