@@ -22,6 +22,12 @@ jobs:
     - name: Check code formatting
       run: dotnet format --verify-no-changes --verbosity diagnostic
     
+    - name: Cache FHIR packages
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: fhir-packages
+        key: fhir-packages-${{ hashFiles('fhir-packages.targets') }}
+
     - name: Build
       run: dotnet build --no-restore --configuration Release
     
