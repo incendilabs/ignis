@@ -10,6 +10,8 @@ using System.Net;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 
+using Ignis.Validation;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
@@ -26,11 +28,13 @@ public class FhirController : ControllerBase
 {
     private readonly IFhirService _fhirService;
     private readonly SparkSettings _settings;
+    private readonly IProfileValidationService _profileValidation;
 
-    public FhirController(IFhirService fhirService, SparkSettings settings)
+    public FhirController(IFhirService fhirService, SparkSettings settings, IProfileValidationService profileValidation)
     {
         _fhirService = fhirService ?? throw new ArgumentNullException(nameof(fhirService));
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _profileValidation = profileValidation ?? throw new ArgumentNullException(nameof(profileValidation));
     }
 
     // ============= Instance Level Interactions
@@ -132,30 +136,34 @@ public class FhirController : ControllerBase
 
     // ============= Validate
 
-    /// <summary>Validate a specific resource instance.</summary>
+    /// <summary>
+    /// Validate a resource against a profile (<c>?profile=</c> canonical), its declared
+    /// <c>meta.profile</c>, or — by default — its base type.
+    /// </summary>
     [HttpPost("{type}/{id}/$validate"), Tags("Validation")]
-    public async Task<ActionResult<FhirResponse>> Validate(string type, string id, Resource resource)
-    {
-        if (resource.TypeName != type)
-            return new ActionResult<FhirResponse>(
-                Respond.WithError(HttpStatusCode.BadRequest, "Resource type does not match endpoint."));
+    public ActionResult<FhirResponse> Validate(string type, string id, Resource resource) => ValidateResource(type, resource);
 
-        var key = Key.Create(type, id);
-        return new ActionResult<FhirResponse>(
-            await _fhirService.ValidateOperationAsync(key, resource).ConfigureAwait(false));
-    }
-
-    /// <summary>Validate a resource against its type definition.</summary>
+    /// <summary>Validate a resource against a profile, its <c>meta.profile</c>, or its base type.</summary>
     [HttpPost("{type}/$validate"), Tags("Validation")]
-    public async Task<ActionResult<FhirResponse>> Validate(string type, Resource resource)
+    public ActionResult<FhirResponse> Validate(string type, Resource resource) => ValidateResource(type, resource);
+
+    private ActionResult<FhirResponse> ValidateResource(string type, Resource resource)
     {
+        // NOTE: Spark's input formatter parses the body strictly and rejects structurally-invalid
+        // resources (e.g. missing required elements) with a 400 before we get here — so $validate cannot
+        // yet report base-cardinality violations. Doing so would need permissive parsing on this endpoint.
         if (resource.TypeName != type)
             return new ActionResult<FhirResponse>(
                 Respond.WithError(HttpStatusCode.BadRequest, "Resource type does not match endpoint."));
 
-        var key = Key.Create(type);
-        return new ActionResult<FhirResponse>(
-            await _fhirService.ValidateOperationAsync(key, resource).ConfigureAwait(false));
+        // $validate's 'profile' parameter is 0..1; reject repeats rather than join them into a bad canonical.
+        var profiles = Request.Query["profile"];
+        if (profiles.Count > 1)
+            return new ActionResult<FhirResponse>(
+                Respond.WithError(HttpStatusCode.BadRequest, "Only one 'profile' parameter is supported."));
+
+        var outcome = _profileValidation.Validate(resource, profiles.Count == 1 ? profiles[0] : null);
+        return new ActionResult<FhirResponse>(new FhirResponse(HttpStatusCode.OK, outcome));
     }
 
     // ============= Type Level Interactions
