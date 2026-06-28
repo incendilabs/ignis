@@ -12,17 +12,13 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 
-using MongoDB.Driver;
-
-using Testcontainers.MongoDb;
-
 using Xunit;
 
 namespace Ignis.Api.Tests;
 
 public sealed class IntegrationFixture : IAsyncLifetime
 {
-    private readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8").Build();
+    private readonly MongoContainerFixture _container;
 
     private IgnisApiFactory? _factory;
     private IgnisApiFactory? _externalAuthProviderFactory;
@@ -32,21 +28,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
     public IgnisApiFactory ExternalAuthProviderFactory => _externalAuthProviderFactory
         ?? throw new InvalidOperationException("Fixture not initialized. Ensure InitializeAsync has run.");
 
-    private static string BuildConnectionString(string raw)
-    {
-        var parsedUrl = new MongoUrl(raw);
-        var mongoUrl = new MongoUrlBuilder(raw)
-        {
-            DatabaseName = string.IsNullOrWhiteSpace(parsedUrl.DatabaseName)
-                ? "ignis_test"
-                : parsedUrl.DatabaseName,
-        };
-
-        if (string.IsNullOrWhiteSpace(mongoUrl.AuthenticationSource))
-            mongoUrl.AuthenticationSource = "admin";
-
-        return mongoUrl.ToString();
-    }
+    public IntegrationFixture(MongoContainerFixture container) => _container = container;
 
     private static readonly string[] EnvVarKeys =
     [
@@ -78,10 +60,9 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "FeatureManagement__AllowImport",
     ];
 
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync()
     {
-        await _mongo.StartAsync();
-        var connectionString = BuildConnectionString(_mongo.GetConnectionString());
+        var connectionString = _container.ConnectionStringForDatabase("ignis_test_" + Guid.NewGuid().ToString("N"));
 
         Environment.SetEnvironmentVariable("StoreSettings__ConnectionString", connectionString);
         Environment.SetEnvironmentVariable("AuthSettings__ConnectionString", connectionString);
@@ -119,6 +100,8 @@ public sealed class IntegrationFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("AuthSettings__ExternalProviders__0__ClientId", "test-github-id");
         Environment.SetEnvironmentVariable("AuthSettings__ExternalProviders__0__ClientSecret", "test-github-secret");
         _externalAuthProviderFactory = new IgnisApiFactory(connectionString);
+
+        return ValueTask.CompletedTask;
     }
 
     public async Task<string> GetClientCredentialsTokenAsync(
@@ -166,12 +149,12 @@ public sealed class IntegrationFixture : IAsyncLifetime
                 })
             .Build();
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         foreach (var key in EnvVarKeys)
             Environment.SetEnvironmentVariable(key, null);
         _factory?.Dispose();
         _externalAuthProviderFactory?.Dispose();
-        await _mongo.DisposeAsync();
+        return ValueTask.CompletedTask;
     }
 }

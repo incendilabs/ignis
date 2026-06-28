@@ -17,35 +17,17 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 
-using MongoDB.Driver;
-
-using Testcontainers.MongoDb;
-
 namespace Ignis.Api.Tests;
 
 [Collection("IntegrationTests")]
-public class AuthConfigurationTests : IAsyncLifetime
+public class AuthConfigurationTests
 {
-    private readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8").Build();
-
-    private string _connectionString = "";
+    private readonly string _connectionString;
 
     private static CancellationToken CT => TestContext.Current.CancellationToken;
 
-    public async ValueTask InitializeAsync()
-    {
-        await _mongo.StartAsync();
-        var raw = _mongo.GetConnectionString();
-        var mongoUrl = new MongoUrlBuilder(raw) { DatabaseName = "ignis_auth_test" };
-        if (string.IsNullOrWhiteSpace(mongoUrl.AuthenticationSource))
-            mongoUrl.AuthenticationSource = "admin";
-        _connectionString = mongoUrl.ToString();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await _mongo.DisposeAsync();
-    }
+    public AuthConfigurationTests(MongoContainerFixture mongo) =>
+        _connectionString = mongo.ConnectionStringForDatabase("ignis_auth_" + Guid.NewGuid().ToString("N"));
 
     private void SetEnvVars(Dictionary<string, string?> vars)
     {

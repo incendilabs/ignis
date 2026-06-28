@@ -7,4 +7,4 @@
 namespace Ignis.Api.Tests;
 
 [CollectionDefinition("IntegrationTests")]
-public class IntegrationTestsCollection;
+public class IntegrationTestsCollection : ICollectionFixture<MongoContainerFixture>;
