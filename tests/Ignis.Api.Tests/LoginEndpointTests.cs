@@ -11,37 +11,26 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-using MongoDB.Driver;
-
-using Testcontainers.MongoDb;
-
 namespace Ignis.Api.Tests;
 
 [Collection("IntegrationTests")]
 public class LoginEndpointTests : IAsyncLifetime
 {
-    private readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8").Build();
     private readonly HashSet<string> _setEnvVars = new();
-
-    private string _connectionString = "";
+    private readonly string _connectionString;
 
     private static CancellationToken CT => TestContext.Current.CancellationToken;
 
-    public async ValueTask InitializeAsync()
-    {
-        await _mongo.StartAsync();
-        var raw = _mongo.GetConnectionString();
-        var mongoUrl = new MongoUrlBuilder(raw) { DatabaseName = "ignis_login_test" };
-        if (string.IsNullOrWhiteSpace(mongoUrl.AuthenticationSource))
-            mongoUrl.AuthenticationSource = "admin";
-        _connectionString = mongoUrl.ToString();
-    }
+    public LoginEndpointTests(MongoContainerFixture mongo) =>
+        _connectionString = mongo.ConnectionStringForDatabase("ignis_login_" + Guid.NewGuid().ToString("N"));
 
-    public async ValueTask DisposeAsync()
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
+
+    public ValueTask DisposeAsync()
     {
         foreach (var key in _setEnvVars)
             Environment.SetEnvironmentVariable(key, null);
-        await _mongo.DisposeAsync();
+        return ValueTask.CompletedTask;
     }
 
     private void SetEnv(string key, string? value)
