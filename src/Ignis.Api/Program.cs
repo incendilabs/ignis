@@ -14,6 +14,7 @@ using Ignis.Api.Services.Maintenance;
 using Ignis.Api.Services.Operations;
 using Ignis.Auth;
 using Ignis.Auth.Extensions;
+using Ignis.Validation;
 
 using Microsoft.AspNetCore.Authorization;
 
@@ -91,6 +92,7 @@ builder.Services.AddMongoFhirStore(storeSettings);
 builder.Services.AddFhirWithMvc(sparkSettings);
 
 // Register structural profile validation ($validate against IG profiles)
+builder.Services.Configure<ProfileValidationSettings>(builder.Configuration.GetSection("ProfileValidationSettings"));
 builder.Services.AddProfileValidation();
 
 // Maintenance services and operation notifications
@@ -116,6 +118,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.Services.GetRequiredService<IProfileValidationService>();
 
 app.MapOpenApi().AllowAnonymous();
 
