@@ -89,6 +89,14 @@ Spark FHIR engine. Defaults in [appsettings.json](../../src/Ignis.Api/appsetting
 | `SparkSettings:Endpoint`    | Base URL Spark embeds in resource `fullUrl` / `Bundle.link`. Match the public API URL. |
 | `SparkSettings:FhirRelease` | `R4` (only release currently used)                                                     |
 
+## ProfileValidationSettings
+
+FHIR conformance packages the structural profile validator loads for `$validate`. The directory is scanned (non-recursively) for `*.tgz` packages; empty uses the build-staged [`fhir-packages`](../../fhir-packages.targets) folder, and a relative value resolves under the app base directory. Dependencies are **not** fetched at run time — every transitive package must already be present. In Kubernetes, point at a PVC mount (Helm `app.api.fhirPackages`). Point it at an empty directory to turn validation off (no packages load; `$validate` resolves nothing).
+
+| Key                                          | Required | Default | Notes                    |
+| -------------------------------------------- | -------- | ------- | ------------------------ |
+| `ProfileValidationSettings:PackageDirectory` | no       | empty   | PVC mount in Kubernetes. |
+
 ## Serilog
 
 Console logging. Defaults emit human-readable output; switch to compact JSON for log aggregators.
