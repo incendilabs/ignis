@@ -18,6 +18,21 @@ Every environment variable `Ignis.Web` (the BFF) reads.
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IGNIS_WEB_FHIR_BASE_URL` | Base URL for the FHIR API. Defaults to same-origin `/fhir/` on the Web app host; set when the API is served from a different origin.                |
 
+## Local dev server
+
+These are read by `src/Ignis.Web/vite.config.ts` and `src/Ignis.Web/react-router.config.ts` during local development.
+
+| Variable                               | Notes                                                                                            |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `IGNIS_WEB_DEV_PORT`                   | Vite dev server port. Defaults to `5202`.                                                        |
+| `IGNIS_WEB_DEV_HTTPS`                  | Set to `"true"` to serve Web over HTTPS locally.                                                 |
+| `IGNIS_WEB_DEV_HTTPS_KEY`              | Path to the local HTTPS key file, relative to `src/Ignis.Web/vite.config.ts` or absolute.        |
+| `IGNIS_WEB_DEV_HTTPS_CERT`             | Path to the local HTTPS cert file, relative to `src/Ignis.Web/vite.config.ts` or absolute.       |
+| `IGNIS_WEB_DEV_ALLOWED_HOSTS`          | Comma-separated Vite allowed hosts for dev-server requests.                                      |
+| `IGNIS_WEB_DEV_ALLOWED_ACTION_ORIGINS` | Comma-separated hosts allowed to submit React Router actions. Include host and port, no scheme.  |
+
+See [Local Development Setup](../developer/local-dev-setup.md) for a complete local setup.
+
 ## Feature flags
 
 All default to off. Set to `"true"` to enable.
