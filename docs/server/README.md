@@ -39,6 +39,7 @@ Do the steps in order — later steps assume earlier ones are in place.
 | --------------------------------------------------------------- | ------------------------------------------------------ |
 | [API configuration](./api-configuration.md)                     | Every config key the API reads, with env var mapping   |
 | [Web configuration](./web-configuration.md)                     | Every `IGNIS_WEB_*` env var the BFF reads              |
+| [Local development setup](../developer/local-dev-setup.md)          | Local API/Web HTTPS, certs, OAuth, and imports         |
 | [Authentication flow](../auth/authentication.md)                | OAuth / PAR / PKCE sequence diagram                    |
 | [Authenticate with GitHub](../auth/authenticate-with-github.md) | GitHub OAuth App setup                                 |
 | [Ignis.Auth README](../../src/Ignis.Auth/README.md)             | Client definitions and signing certificates            |
