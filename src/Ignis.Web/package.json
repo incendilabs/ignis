@@ -34,7 +34,7 @@
     "@inlang/paraglide-js": "^2.20.1",
     "@inlang/plugin-m-function-matcher": "^2.2.9",
     "@inlang/plugin-message-format": "^4.4.0",
-    "@react-router/dev": "7.16.0",
+    "@react-router/dev": "8.0.1",
     "@tailwindcss/vite": "^4.3.1",
     "@types/node": "^24",
     "@types/react": "^19.2.17",
