@@ -30,9 +30,13 @@ public sealed class ProfileValidationService : IProfileValidationService
 
     public ProfileValidationService(IAsyncResourceResolver resolver, ICodeValidationTerminologyService terminology)
     {
+        // Generate snapshots on demand: profiles resolved from the store are differential-only, and the
+        // schema compiler requires a snapshot. Package profiles already carry one, so this is a pass-through.
+        IAsyncResourceResolver snapshotResolver = new SnapshotSource(resolver);
+
         // Cache the expensive schema compilation; add the system-namespace resolver for FHIRPath System.* types.
         _schemaResolver = new MultiElementSchemaResolver(
-            StructureDefinitionToElementSchemaResolver.CreatedCached(resolver),
+            StructureDefinitionToElementSchemaResolver.CreatedCached(snapshotResolver),
             new SystemNamespaceElementSchemaResolver());
 
         _settings = new ValidationSettings(_schemaResolver, terminology);
