@@ -11,6 +11,7 @@ using Hl7.Fhir.Specification.Source;
 using Hl7.Fhir.Specification.Terminology;
 
 using Ignis.Api.Configuration;
+using Ignis.Api.Services.Resolution;
 using Ignis.Validation;
 
 using Microsoft.Extensions.Options;
@@ -20,14 +21,19 @@ using Task = System.Threading.Tasks.Task;
 namespace Ignis.Api.Extensions;
 
 /// <summary>
-/// Wires the profile validator into the host, loading conformance packages from
-/// <see cref="ProfileValidationSettings.PackageDirectory"/> (default: build-staged <c>fhir-packages</c>).
+/// Wires the profile validator into the host. Conformance is resolved from two sources: FHIR packages in
+/// <see cref="ProfileValidationSettings.PackageDirectory"/> (default: build-staged <c>fhir-packages</c>),
+/// and — for catalog-authored profiles/ValueSets — the FHIR store.
 /// </summary>
 public static class ProfileValidationExtensions
 {
     /// <summary>Registers <see cref="IProfileValidationService"/> as a singleton (resolved at startup).</summary>
     public static IServiceCollection AddProfileValidation(this IServiceCollection services)
     {
+        // Store-backed canonical resolver: lets $validate and terminology use profiles/ValueSets stored in
+        // the catalog. Singleton, but reaches per-request Spark services via IServiceScopeFactory.
+        services.AddSingleton<StoreCanonicalResolver>();
+
         services.AddSingleton<IProfileValidationService>(provider =>
         {
             var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Ignis.ProfileValidation");
@@ -48,16 +54,21 @@ public static class ProfileValidationExtensions
                 packages = [];
             }
 
-            // Validation is additive: no packages is not fatal — $validate just resolves nothing.
+            // Validation is additive: no packages is not fatal — package resolution just falls back to the store.
             if (packages.Length == 0)
-                logger.LogWarning("No FHIR packages available in {Directory}; $validate cannot resolve any profile.", directory);
+                logger.LogWarning("No FHIR packages available in {Directory}; $validate can resolve only catalog-stored profiles.", directory);
             else
                 logger.LogInformation("Profile validator loaded {Count} FHIR package(s) from {Directory}: {Packages}",
                     packages.Length, directory, packages.Select(Path.GetFileName).ToArray());
 
-            IAsyncResourceResolver resolver = packages.Length == 0
+            IAsyncResourceResolver packageSource = packages.Length == 0
                 ? new EmptyResolver()
                 : new FhirPackageSource(ModelInfo.ModelInspector, packages);
+            var storeResolver = provider.GetRequiredService<StoreCanonicalResolver>();
+
+            // Package-first, store-fallback: core/base canonicals resolve from the packages (fast, never hit
+            // the store); only catalog-authored canonicals fall through to Mongo.
+            IAsyncResourceResolver resolver = new MultiResolver(packageSource, storeResolver);
             ICodeValidationTerminologyService terminology = LocalTerminologyService.CreateDefaultForCore(resolver);
 
             return new ProfileValidationService(resolver, terminology);
@@ -67,7 +78,7 @@ public static class ProfileValidationExtensions
     }
 }
 
-/// <summary>Resolves nothing — used when no packages are present so $validate degrades to NotFound instead of throwing.</summary>
+/// <summary>Resolves nothing — used when no packages are present, so package resolution defers to the store.</summary>
 internal sealed class EmptyResolver : IAsyncResourceResolver
 {
     public Task<Resource?> ResolveByUriAsync(string uri) => Task.FromResult<Resource?>(null);
