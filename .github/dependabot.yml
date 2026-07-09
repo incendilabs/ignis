@@ -10,13 +10,25 @@ updates:
     commit-message:
       prefix: "Deps (Web)"
     groups:
+      # Always bump React Router packages together
+      react-router:
+        patterns:
+          - "react-router*"
+          - "@react-router/*"
+      # React core moves in lockstep with its type definitions
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
       minor-and-patch:
         patterns:
           - "*"
         update-types:
           - minor
           - patch
-    # @types/node should be updated manually to ensure alignment with the Node.js 
+    # @types/node should be updated manually to ensure alignment with the Node.js
     # version used in the project
     ignore:
       - dependency-name: "@types/node"
@@ -25,7 +37,7 @@ updates:
   - package-ecosystem: nuget
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
     cooldown:
       default-days: 14
     commit-message:
@@ -38,52 +50,44 @@ updates:
           - minor
           - patch
 
+  # CI + infra: batch everything into a single PR per ecosystem.
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: monthly
     cooldown:
       default-days: 14
     commit-message:
       prefix: "Deps (CI)"
     groups:
-      minor-and-patch:
+      all:
         patterns:
           - "*"
-        update-types:
-          - minor
-          - patch
 
   - package-ecosystem: docker
     directories:
       - /src/Ignis.Api
       - /src/Ignis.Web
     schedule:
-      interval: daily
+      interval: weekly
     cooldown:
       default-days: 14
     commit-message:
       prefix: "Deps (CI)"
     groups:
-      minor-and-patch:
+      all:
         patterns:
           - "*"
-        update-types:
-          - minor
-          - patch
 
   - package-ecosystem: helm
     directory: /infra/helm
     schedule:
-      interval: daily
+      interval: monthly
     cooldown:
       default-days: 14
     commit-message:
       prefix: "Deps (Infra)"
     groups:
-      minor-and-patch:
+      all:
         patterns:
           - "*"
-        update-types:
-          - minor
-          - patch
