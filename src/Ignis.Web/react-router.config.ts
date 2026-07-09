@@ -52,7 +52,4 @@ export default {
     `127.0.0.1:${webPort}`,
     `[::1]:${webPort}`,
   ]),
-  future: {
-    v8_middleware: true,
-  },
 } satisfies Config;
