@@ -1,7 +1,9 @@
 <Solution>
   <Project Path="src/Ignis.Api/Ignis.Api.csproj" />
   <Project Path="src/Ignis.Auth/Ignis.Auth.csproj" />
+  <Project Path="src/Ignis.Terminology/Ignis.Terminology.csproj" />
   <Project Path="src/Ignis.Validation/Ignis.Validation.csproj" />
   <Project Path="tests/Ignis.Api.Tests/Ignis.Api.Tests.csproj" />
+  <Project Path="tests/Ignis.Terminology.Tests/Ignis.Terminology.Tests.csproj" />
   <Project Path="tests/Ignis.Validation.Tests/Ignis.Validation.Tests.csproj" />
 </Solution>

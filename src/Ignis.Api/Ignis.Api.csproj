@@ -8,6 +8,7 @@
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="../Ignis.Auth/Ignis.Auth.csproj" />
+        <ProjectReference Include="../Ignis.Terminology/Ignis.Terminology.csproj" />
         <ProjectReference Include="../Ignis.Validation/Ignis.Validation.csproj" />
     </ItemGroup>
     <ItemGroup>
