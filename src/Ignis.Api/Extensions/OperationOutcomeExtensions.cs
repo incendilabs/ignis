@@ -41,4 +41,21 @@ public static class OperationOutcomeExtensions
         });
         return outcome;
     }
+
+    /// <summary>
+    /// Adds an <see cref="OperationOutcome.IssueSeverity.Error"/> issue with an
+    /// <see cref="OperationOutcome.IssueType.Invalid"/> code — for malformed or
+    /// conflicting client input. (Spark's <c>AddError</c> omits the required
+    /// <c>issue.code</c>, so strict clients reject its outcomes.)
+    /// </summary>
+    public static OperationOutcome AddInvalidIssue(this OperationOutcome outcome, string message)
+    {
+        outcome.Issue.Add(new OperationOutcome.IssueComponent
+        {
+            Severity = OperationOutcome.IssueSeverity.Error,
+            Code = OperationOutcome.IssueType.Invalid,
+            Diagnostics = message,
+        });
+        return outcome;
+    }
 }
