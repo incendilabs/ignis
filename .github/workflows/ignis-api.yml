@@ -35,7 +35,11 @@ jobs:
       run: dotnet build --no-restore --configuration Release
     
     - name: Run tests
-      run: dotnet test --no-build --configuration Release
+      # Sequential per project: the first warms the shared ~/.fhir/packages cache, avoiding a concurrent-unpack race.
+      run: |
+        dotnet test tests/Ignis.Terminology.Tests --no-build --configuration Release
+        dotnet test tests/Ignis.Validation.Tests --no-build --configuration Release
+        dotnet test tests/Ignis.Api.Tests --no-build --configuration Release
 
   docker:
     name: Api - Docker Image

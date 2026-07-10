@@ -4,6 +4,7 @@ WORKDIR /src
 COPY fhir-packages.targets ./
 COPY src/Ignis.Api/Ignis.Api.csproj src/Ignis.Api/
 COPY src/Ignis.Auth/Ignis.Auth.csproj src/Ignis.Auth/
+COPY src/Ignis.Terminology/Ignis.Terminology.csproj src/Ignis.Terminology/
 COPY src/Ignis.Validation/Ignis.Validation.csproj src/Ignis.Validation/
 RUN dotnet restore "src/Ignis.Api/Ignis.Api.csproj" -p:Configuration=Release
 COPY src ./src

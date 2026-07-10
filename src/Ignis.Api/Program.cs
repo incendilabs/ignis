@@ -14,6 +14,7 @@ using Ignis.Api.Services.Maintenance;
 using Ignis.Api.Services.Operations;
 using Ignis.Auth;
 using Ignis.Auth.Extensions;
+using Ignis.Terminology;
 using Ignis.Validation;
 
 using Microsoft.AspNetCore.Authorization;
@@ -95,6 +96,9 @@ builder.Services.AddFhirWithMvc(sparkSettings);
 builder.Services.Configure<ProfileValidationSettings>(builder.Configuration.GetSection("ProfileValidationSettings"));
 builder.Services.AddProfileValidation();
 
+// Register terminology ($expand of ValueSets)
+builder.Services.AddTerminology();
+
 // Maintenance services and operation notifications
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IOperationProgressNotifier, SignalROperationProgressNotifier>();
@@ -120,6 +124,7 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 app.Services.GetRequiredService<IProfileValidationService>();
+app.Services.GetRequiredService<IValueSetExpansionService>();
 
 app.MapOpenApi().AllowAnonymous();
 
