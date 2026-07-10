@@ -1,10 +1,7 @@
 <Project>
 
-  <!--
-    Downloads the FHIR conformance packages used for validation/terminology into a local folder, then
-    copies them into the build output so consumers load them from disk (no network at run time).
-    To add packages or change the FHIR version, edit the FhirPackage item list below.
-  -->
+  <!-- Downloads the FHIR conformance packages and stages them into build output (loaded from disk at run time,
+       no network). Edit the FhirPackage list below to change packages/version. -->
 
   <PropertyGroup>
     <!-- Override $(FhirPackageServer) (CLI -p:, env var, or Directory.Build.props) for a mirror, air-gapped
@@ -17,6 +14,14 @@
     <FhirPackage Include="hl7.fhir.r4.core" Version="4.0.1" />
   </ItemGroup>
 
+  <!-- SDK-tracked copy-to-output so packages re-stage when missing from bin (robust on incremental/parallel
+       builds, unlike a detached copy). Empty until the first download — the fallback below covers that. -->
+  <ItemGroup>
+    <None Include="$(FhirPackageDir)/*.tgz" CopyToOutputDirectory="PreserveNewest" Visible="false">
+      <Link>fhir-packages\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
   <Target Name="DownloadFhirPackages" BeforeTargets="BeforeBuild">
     <MakeDir Directories="$(FhirPackageDir)" />
     <DownloadFile SourceUrl="$(FhirPackageServer)/%(FhirPackage.Identity)/%(FhirPackage.Version)"
@@ -26,22 +31,19 @@
                   Condition="!Exists('$(FhirPackageDir)/%(FhirPackage.Identity)-%(FhirPackage.Version).tgz')" />
   </Target>
 
+  <!-- First-build fallback: the content glob above evaluates before the packages are downloaded. -->
   <Target Name="CopyFhirPackagesToOutput" AfterTargets="Build">
     <ItemGroup>
       <_FhirPackageFile Include="$(FhirPackageDir)/*.tgz" />
     </ItemGroup>
-    <Copy SourceFiles="@(_FhirPackageFile)"
-          DestinationFolder="$(OutDir)fhir-packages"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_FhirPackageFile)" DestinationFolder="$(OutDir)fhir-packages" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CopyFhirPackagesToPublish" AfterTargets="Publish">
     <ItemGroup>
       <_FhirPackageFile Include="$(FhirPackageDir)/*.tgz" />
     </ItemGroup>
-    <Copy SourceFiles="@(_FhirPackageFile)"
-          DestinationFolder="$(PublishDir)fhir-packages"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_FhirPackageFile)" DestinationFolder="$(PublishDir)fhir-packages" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>
