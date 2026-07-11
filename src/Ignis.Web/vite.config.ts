@@ -51,6 +51,10 @@ export default defineConfig(({ mode }) => {
       https: httpsConfig(env),
       allowedHosts: allowedHosts.length > 0 ? allowedHosts : undefined,
     },
+    // Force a single React instance. 
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
     plugins: [
       tailwindcss(),
       reactRouter(),
