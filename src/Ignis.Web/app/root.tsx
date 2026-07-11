@@ -23,7 +23,9 @@ import { ThemeProvider } from "./contexts/theme-provider";
 import { Navbar } from "#app/components/ui/navbar";
 import * as adminConfig from "#app/features/admin/config.server";
 import * as authConfig from "#app/features/auth/config.server";
-import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { getSessionStateFromRequest } from "#app/features/auth/session.server";
+import { SessionStatus } from "#app/features/auth/session-status";
+import { SessionGuard } from "#app/features/auth/SessionGuard";
 
 export const middleware: MiddlewareFunction[] = [
   (ctx, next) => paraglideMiddleware(ctx.request, () => next()),
@@ -39,13 +41,14 @@ export async function loader({ request }: Route.LoaderArgs) {
     admin: adminConfig.isEnabled(),
   };
 
-  const session = features.auth ? await getSessionFromRequest(request) : null;
+  const sessionState = features.auth ? await getSessionStateFromRequest(request) : null;
+  const session = sessionState?.session ?? null;
 
   return {
     features,
     auth: {
-      authenticated: session !== null,
-      accessTokenExpiresAt: session?.tokens?.accessTokenExpiresAt ?? null,
+      status: sessionState?.status ?? SessionStatus.Anonymous,
+      expiresAt: session?.tokens?.accessTokenExpiresAt ?? null,
       user: session?.user
         ? { name: session.user.name, email: session.user.email }
         : null,
@@ -55,7 +58,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export function Layout({ children }: { children: React.ReactNode; }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -89,6 +92,12 @@ export default function App({ loaderData }: Route.ComponentProps) {
       <main className="min-h-[calc(100vh-4rem)]">
         <Outlet />
       </main>
+      {loaderData.features.auth && (
+        <SessionGuard
+          status={loaderData.auth.status}
+          expiresAt={loaderData.auth.expiresAt}
+        />
+      )}
     </ThemeProvider>
   );
 }
