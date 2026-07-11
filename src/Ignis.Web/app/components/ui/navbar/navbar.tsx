@@ -19,11 +19,12 @@ interface NavbarProps {
     auth: boolean;
     admin: boolean;
   };
-  user?: { name: string; email: string } | null;
+  user?: { name: string; email: string; } | null;
 }
 
 export function Navbar({ features, user }: NavbarProps) {
   const fetcher = useFetcher();
+  const displayName = user ? user.name.trim().split(/\s+/)[0] || user.email : null;
 
   return (
     <RatioNavbar sticky>
@@ -41,7 +42,14 @@ export function Navbar({ features, user }: NavbarProps) {
         <ThemeToggle />
         <Menu>
           <Menu.Trigger>
-            {m.nav_menu()}
+            {user ? (
+              <>
+                <Avatar name={user.name || user.email} size="sm" />
+                {displayName}
+              </>
+            ) : (
+              m.nav_menu()
+            )}
             <Menu.Chevron />
           </Menu.Trigger>
           {user && (
