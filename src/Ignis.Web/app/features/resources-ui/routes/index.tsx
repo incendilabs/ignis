@@ -17,6 +17,7 @@ import { redirect } from "react-router";
 
 import { requireSession } from "#app/features/auth/session.server";
 import { m } from "#app/i18n/paraglide/messages";
+import { mapWithConcurrency } from "#app/lib/concurrency";
 import { resourceCategory } from "#app/lib/fhir/categories";
 
 import type { Route } from "./+types/index";
@@ -32,25 +33,6 @@ interface ResourceRow {
 // Cap parallel count requests so a 140-type CapabilityStatement doesn't
 // fire 140 concurrent calls at the FHIR backend on every page load.
 const COUNT_FETCH_CONCURRENCY = 8;
-
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array<R>(items.length);
-  let next = 0;
-  async function worker(): Promise<void> {
-    while (next < items.length) {
-      const i = next;
-      next += 1;
-      results[i] = await fn(items[i]);
-    }
-  }
-  const workerCount = Math.min(limit, items.length);
-  await Promise.all(Array.from({ length: workerCount }, () => worker()));
-  return results;
-}
 
 export async function loader({ request }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");

@@ -20,7 +20,6 @@ import "@eventuras/ratio-ui/ratio-ui.css";
 import "@eventuras/ratio-ui/fonts.css";
 import { paraglideMiddleware } from "#app/i18n/paraglide/server";
 import { ThemeProvider } from "./contexts/theme-provider";
-import { Navbar } from "#app/components/ui/navbar";
 import * as adminConfig from "#app/features/admin/config.server";
 import * as authConfig from "#app/features/auth/config.server";
 import { getSessionStateFromRequest } from "#app/features/auth/session.server";
@@ -88,10 +87,7 @@ export function Layout({ children }: { children: React.ReactNode; }) {
 export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <ThemeProvider>
-      <Navbar features={loaderData.features} user={loaderData.auth.user} />
-      <main className="min-h-[calc(100vh-4rem)]">
-        <Outlet />
-      </main>
+      <Outlet />
       {loaderData.features.auth && (
         <SessionGuard
           status={loaderData.auth.status}

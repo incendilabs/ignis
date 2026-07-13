@@ -21,24 +21,28 @@ interface NavbarProps {
     admin: boolean;
   };
   user?: { name: string; email: string; } | null;
+  /** Hide the brand when the console sidebar already carries the logo. */
+  showBrand?: boolean;
 }
 
-export function Navbar({ features, user }: NavbarProps) {
+export function Navbar({ features, user, showBrand = true }: NavbarProps) {
   const fetcher = useFetcher();
   const location = useLocation();
   const displayName = user ? user.name.trim().split(/\s+/)[0] || user.email : null;
 
   return (
     <RatioNavbar sticky>
-      <RatioNavbar.Brand>
-        <RouterLink
-          to="/"
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity no-underline"
-        >
-          <img src="/images/ignis-logo.png" alt="Ignis" className="h-8 w-8" />
-          <span className="text-xl">Ignis</span>
-        </RouterLink>
-      </RatioNavbar.Brand>
+      {showBrand && (
+        <RatioNavbar.Brand>
+          <RouterLink
+            to="/"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity no-underline"
+          >
+            <img src="/images/ignis-logo.png" alt="Ignis" className="h-8 w-8" />
+            <span className="text-xl">Ignis</span>
+          </RouterLink>
+        </RatioNavbar.Brand>
+      )}
       <RatioNavbar.Content className="justify-end">
         <LanguageSelect className="w-32" />
         <ThemeToggle />
@@ -62,7 +66,7 @@ export function Navbar({ features, user }: NavbarProps) {
             </Menu.Header>
           )}
           <Menu.Link href="/resources">{m.resources_title()}</Menu.Link>
-          {features.admin && <Menu.Link href="/admin">{m.admin_title()}</Menu.Link>}
+          {features.admin && <Menu.Link href="/admin/database">{m.admin_title()}</Menu.Link>}
           {features.auth &&
             (user ? (
               <Menu.Button
