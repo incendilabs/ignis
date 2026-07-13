@@ -18,7 +18,7 @@
   "dependencies": {
     "@eventuras/fides-auth": "^0.9.0",
     "@eventuras/logger": "^0.8.1",
-    "@eventuras/ratio-ui": "^2.10.0",
+    "@eventuras/ratio-ui": "^2.11.0",
     "@microsoft/signalr": "^10.0.0",
     "@react-router/node": "8.0.1",
     "@react-router/serve": "8.0.1",
@@ -35,14 +35,14 @@
     "@inlang/plugin-m-function-matcher": "^2.2.9",
     "@inlang/plugin-message-format": "^4.4.0",
     "@react-router/dev": "8.0.1",
-    "@tailwindcss/vite": "^4.3.1",
+    "@tailwindcss/vite": "^4.3.2",
     "@types/node": "^24",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "^10.6.0",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.62.0",
+    "typescript-eslint": "^8.62.1",
     "vite": "^8.1.0",
     "vitest": "^4.1.9"
   }
