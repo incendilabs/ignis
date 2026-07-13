@@ -19,7 +19,7 @@ export function LanguageSelect({ className }: { className?: string }) {
       aria-label="Language"
       className={className}
       options={locales.map((l) => ({ value: l, label: localeLabels[l] ?? l }))}
-      value={getLocale()}
+      selectedKey={getLocale()}
       onSelectionChange={(value) => { void setLocale(value as (typeof locales)[number]); }}
     />
   );
