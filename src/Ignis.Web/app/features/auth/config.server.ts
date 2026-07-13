@@ -13,6 +13,11 @@ export function isEnabled(): boolean {
   return envBool("IGNIS_WEB_FEATURES_AUTH", { default: false });
 }
 
+/** The application's public origin, e.g. for OAuth redirects and returnTo validation. */
+export function appUrl(): string {
+  return env("IGNIS_WEB_APP_URL", { default: "http://localhost:5202" });
+}
+
 export function oauth(): OAuthConfig {
   const scopes = [
     "openid",
@@ -23,12 +28,11 @@ export function oauth(): OAuthConfig {
     adminScopes.maintenanceDatabaseWrite,
     adminScopes.maintenanceDatabaseDestructive,
   ];
-  const appUrl = env("IGNIS_WEB_APP_URL", { default: "http://localhost:5202" });
   return {
     issuer: env("IGNIS_AUTH_ISSUER"),
     clientId: env("IGNIS_WEB_CLIENT_ID"),
     clientSecret: env("IGNIS_WEB_CLIENT_SECRET"),
-    redirect_uri: `${appUrl}/auth/callback`,
+    redirect_uri: `${appUrl()}/auth/callback`,
     scope: scopes.join(" "),
     usePar: true,
   };

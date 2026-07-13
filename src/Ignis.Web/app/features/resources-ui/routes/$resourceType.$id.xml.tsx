@@ -6,7 +6,7 @@
 
 import { redirect } from "react-router";
 
-import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { requireSession } from "#app/features/auth/session.server";
 import { isValidFhirId, isValidFhirResourceTypeName } from "#app/lib/fhir/validation";
 
 import type { Route } from "./+types/$resourceType.$id.xml";
@@ -19,8 +19,7 @@ import { fetchResourceXml } from "../fhir-client.server";
  */
 export async function loader({ request, params }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
-  const session = await getSessionFromRequest(request);
-  if (session === null) return redirect("/auth/login");
+  const session = await requireSession(request);
 
   const { resourceType, id } = params;
   if (!isValidFhirResourceTypeName(resourceType) || !isValidFhirId(id)) {

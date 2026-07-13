@@ -13,7 +13,7 @@ import { Container } from "@eventuras/ratio-ui/layout/Container";
 import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { redirect } from "react-router";
 
-import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { requireSession } from "#app/features/auth/session.server";
 import { m } from "#app/i18n/paraglide/messages";
 import { isValidFhirResourceTypeName } from "#app/lib/fhir/validation";
 
@@ -27,8 +27,7 @@ import { ResourceLink } from "../ResourceLink";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
-  const session = await getSessionFromRequest(request);
-  if (session === null) return redirect("/auth/login");
+  const session = await requireSession(request);
 
   const resourceType = params.resourceType;
   if (!isValidFhirResourceTypeName(resourceType)) {

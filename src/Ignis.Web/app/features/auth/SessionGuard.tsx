@@ -9,6 +9,8 @@ import { SessionWarning } from "@eventuras/ratio-ui/blocks/SessionWarning";
 
 import { m } from "#app/i18n/paraglide/messages";
 
+import { loginUrl } from "./login-redirect";
+
 import { SessionStatus } from "./session-status";
 
 interface SessionGuardProps {
@@ -61,7 +63,9 @@ export function SessionGuard({ status, expiresAt }: SessionGuardProps) {
       isLoading={loading}
       onLoginNow={() => {
         setLoading(true);
-        window.location.assign("/auth/login");
+        window.location.assign(
+          loginUrl(window.location.pathname + window.location.search),
+        );
       }}
       onDismiss={() => {
         setDismissedFor(dismissKey);

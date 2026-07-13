@@ -10,6 +10,7 @@ import type { Session } from "@eventuras/fides-auth/types";
 import { env } from "#app/env.server";
 
 import { readCookieString, sessionCookie } from "./cookies.server";
+import { redirectToLogin } from "./login-redirect";
 import { SessionStatus } from "./session-status";
 
 export interface SessionState {
@@ -44,4 +45,14 @@ export async function getSessionStateFromRequest(request: Request): Promise<Sess
 export async function getSessionFromRequest(request: Request): Promise<Session | null> {
   const state = await getSessionStateFromRequest(request);
   return state.status === SessionStatus.Valid ? state.session : null;
+}
+
+/**
+ * The session, for loaders that require a signed-in user — or a thrown
+ * redirect to login that returns to the requested URL after the OAuth flow.
+ */
+export async function requireSession(request: Request): Promise<Session> {
+  const session = await getSessionFromRequest(request);
+  if (session === null) throw redirectToLogin(request);
+  return session;
 }

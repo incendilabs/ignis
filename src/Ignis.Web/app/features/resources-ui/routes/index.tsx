@@ -15,7 +15,7 @@ import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { useState } from "react";
 import { redirect } from "react-router";
 
-import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { requireSession } from "#app/features/auth/session.server";
 import { m } from "#app/i18n/paraglide/messages";
 import { resourceCategory } from "#app/lib/fhir/categories";
 
@@ -54,8 +54,7 @@ async function mapWithConcurrency<T, R>(
 
 export async function loader({ request }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
-  const session = await getSessionFromRequest(request);
-  if (session === null) return redirect("/auth/login");
+  const session = await requireSession(request);
 
   const accessToken = session.tokens?.accessToken;
   const types = await fetchResourceTypes(request, accessToken);

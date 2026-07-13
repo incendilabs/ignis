@@ -14,7 +14,7 @@ import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import type { ComponentProps } from "react";
 import { redirect } from "react-router";
 
-import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { requireSession } from "#app/features/auth/session.server";
 import { m } from "#app/i18n/paraglide/messages";
 import { resourceStatus, resourceTitle } from "#app/lib/fhir/summary";
 import { isValidFhirId, isValidFhirResourceTypeName } from "#app/lib/fhir/validation";
@@ -26,8 +26,7 @@ import { fetchResource } from "../fhir-client.server";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
-  const session = await getSessionFromRequest(request);
-  if (session === null) return redirect("/auth/login");
+  const session = await requireSession(request);
 
   const { resourceType, id } = params;
   if (!isValidFhirResourceTypeName(resourceType)) {
