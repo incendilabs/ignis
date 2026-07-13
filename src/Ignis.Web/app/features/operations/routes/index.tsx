@@ -11,7 +11,7 @@ import { Container } from "@eventuras/ratio-ui/layout/Container";
 import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { redirect } from "react-router";
 
-import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { requireSession } from "#app/features/auth/session.server";
 import { scopes } from "#app/features/admin/scopes";
 import { m } from "#app/i18n/paraglide/messages";
 
@@ -22,8 +22,7 @@ import { useOperationsStream } from "../use-operations-stream";
 
 export async function loader({ request }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
-  const session = await getSessionFromRequest(request);
-  if (session === null) return redirect("/auth/login");
+  const session = await requireSession(request);
   const grantedScopes = session.scopes ?? [];
   return { isAuthorized: grantedScopes.includes(scopes.operationsRead) };
 }

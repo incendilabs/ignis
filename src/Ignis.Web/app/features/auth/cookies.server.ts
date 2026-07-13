@@ -32,6 +32,15 @@ export const oauthVerifierCookie = createCookie("oauth_code_verifier", {
   secure: isProd,
 });
 
+/** Where to send the user after the OAuth flow completes; set by /auth/login. */
+export const returnToCookie = createCookie("oauth_return_to", {
+  httpOnly: true,
+  sameSite: "lax",
+  path: "/auth",
+  maxAge: 600,
+  secure: isProd,
+});
+
 export async function readCookieString(
   cookie: Cookie,
   header: string | null,

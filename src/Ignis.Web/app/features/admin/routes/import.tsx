@@ -22,7 +22,7 @@ import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { useState } from "react";
 import { redirect, useFetcher } from "react-router";
 
-import { getSessionFromRequest } from "#app/features/auth/session.server";
+import { getSessionFromRequest, requireSession } from "#app/features/auth/session.server";
 import { OperationsConsole } from "#app/features/operations/components/OperationsConsole";
 import { useOperationsStream } from "#app/features/operations/use-operations-stream";
 import { m } from "#app/i18n/paraglide/messages";
@@ -42,8 +42,7 @@ import {
 
 export async function loader({ request }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
-  const session = await getSessionFromRequest(request);
-  if (session === null) return redirect("/auth/login");
+  const session = await requireSession(request);
   const grantedScopes = session.scopes ?? [];
   const isAuthorized = grantedScopes.includes(archiveImportScope);
 

@@ -5,18 +5,23 @@
  */
 
 import { createEncryptedJWT } from "@eventuras/fides-auth";
-import { buildSessionFromTokens, exchangeAuthorizationCode } from "@eventuras/fides-auth/oauth";
+import {
+  buildSessionFromTokens,
+  exchangeAuthorizationCode,
+  validateReturnUrl,
+} from "@eventuras/fides-auth/oauth";
 import { redirect } from "react-router";
 
 import { env } from "#app/env.server";
 import { Logger } from "#app/logger";
 
 import type { Route } from "./+types/callback";
-import { isEnabled, oauth } from "../config.server";
+import { appUrl, isEnabled, oauth } from "../config.server";
 import {
   oauthStateCookie,
   oauthVerifierCookie,
   readCookieString,
+  returnToCookie,
   sessionCookie,
 } from "../cookies.server";
 
@@ -34,10 +39,13 @@ export async function loader({ request }: Route.LoaderArgs) {
     const headers = new Headers();
     headers.append("Set-Cookie", await oauthStateCookie.serialize("", { maxAge: 0 }));
     headers.append("Set-Cookie", await oauthVerifierCookie.serialize("", { maxAge: 0 }));
+    headers.append("Set-Cookie", await returnToCookie.serialize("", { maxAge: 0 }));
     return redirect("/", { headers });
   }
 
   const cookieHeader = request.headers.get("Cookie");
+  const returnToRaw = await readCookieString(returnToCookie, cookieHeader);
+  const returnTo = validateReturnUrl(returnToRaw, appUrl());
   const state = await readCookieString(oauthStateCookie, cookieHeader);
   const verifier = await readCookieString(oauthVerifierCookie, cookieHeader);
   if (state === null || verifier === null) {
@@ -45,6 +53,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     const headers = new Headers();
     headers.append("Set-Cookie", await oauthStateCookie.serialize("", { maxAge: 0 }));
     headers.append("Set-Cookie", await oauthVerifierCookie.serialize("", { maxAge: 0 }));
+    headers.append("Set-Cookie", await returnToCookie.serialize("", { maxAge: 0 }));
     return redirect("/", { headers });
   }
 
@@ -57,13 +66,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     headers.append("Set-Cookie", await sessionCookie.serialize(jwt));
     headers.append("Set-Cookie", await oauthStateCookie.serialize("", { maxAge: 0 }));
     headers.append("Set-Cookie", await oauthVerifierCookie.serialize("", { maxAge: 0 }));
+    headers.append("Set-Cookie", await returnToCookie.serialize("", { maxAge: 0 }));
 
-    return redirect("/", { headers });
+    return redirect(returnTo.pathname + returnTo.search, { headers });
   } catch (error) {
     logger.error({ error }, "Failed to exchange authorization code");
     const headers = new Headers();
     headers.append("Set-Cookie", await oauthStateCookie.serialize("", { maxAge: 0 }));
     headers.append("Set-Cookie", await oauthVerifierCookie.serialize("", { maxAge: 0 }));
+    headers.append("Set-Cookie", await returnToCookie.serialize("", { maxAge: 0 }));
     return redirect("/", { headers });
   }
 }

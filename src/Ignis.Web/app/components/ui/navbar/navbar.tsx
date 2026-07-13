@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { Link as RouterLink, useFetcher } from "react-router";
+import { Link as RouterLink, useFetcher, useLocation } from "react-router";
 import { Avatar } from "@eventuras/ratio-ui/core/Avatar";
 import { Menu } from "@eventuras/ratio-ui/core/Menu";
 import { Navbar as RatioNavbar } from "@eventuras/ratio-ui/core/Navbar";
 
+import { loginUrl } from "#app/features/auth/login-redirect";
 import { LanguageSelect } from "#app/i18n/LanguageSelect";
 import { m } from "#app/i18n/paraglide/messages";
 
@@ -24,6 +25,7 @@ interface NavbarProps {
 
 export function Navbar({ features, user }: NavbarProps) {
   const fetcher = useFetcher();
+  const location = useLocation();
   const displayName = user ? user.name.trim().split(/\s+/)[0] || user.email : null;
 
   return (
@@ -72,7 +74,7 @@ export function Navbar({ features, user }: NavbarProps) {
                 {m.nav_logout()}
               </Menu.Button>
             ) : (
-              <Menu.Link href="/auth/login">{m.nav_login()}</Menu.Link>
+              <Menu.Link href={loginUrl(location.pathname + location.search)}>{m.nav_login()}</Menu.Link>
             ))}
         </Menu>
       </RatioNavbar.Content>

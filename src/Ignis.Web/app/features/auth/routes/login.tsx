@@ -4,17 +4,22 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { buildPKCEOptions, discoverAndBuildAuthorizationUrl } from "@eventuras/fides-auth/oauth";
+import {
+  buildPKCEOptions,
+  discoverAndBuildAuthorizationUrl,
+  validateReturnUrl,
+} from "@eventuras/fides-auth/oauth";
 import { redirect } from "react-router";
 
 import { Logger } from "#app/logger";
 
-import { isEnabled, oauth } from "../config.server";
-import { oauthStateCookie, oauthVerifierCookie } from "../cookies.server";
+import type { Route } from "./+types/login";
+import { appUrl, isEnabled, oauth } from "../config.server";
+import { oauthStateCookie, oauthVerifierCookie, returnToCookie } from "../cookies.server";
 
 const logger = Logger.create({ namespace: "auth:login" });
 
-export async function loader() {
+export async function loader({ request }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
   try {
     const oauthConfig = oauth();
@@ -24,6 +29,15 @@ export async function loader() {
     const headers = new Headers();
     headers.append("Set-Cookie", await oauthStateCookie.serialize(pkce.state));
     headers.append("Set-Cookie", await oauthVerifierCookie.serialize(pkce.code_verifier));
+
+    const requested = new URL(request.url).searchParams.get("returnTo");
+    if (requested !== null) {
+      const returnTo = validateReturnUrl(requested, appUrl());
+      headers.append(
+        "Set-Cookie",
+        await returnToCookie.serialize(returnTo.pathname + returnTo.search),
+      );
+    }
 
     return redirect(authorizeUrl.toString(), { headers });
   } catch (error) {
