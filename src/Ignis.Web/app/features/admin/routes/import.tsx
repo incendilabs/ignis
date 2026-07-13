@@ -191,8 +191,8 @@ function ArchiveImportForm({ maxUploadBytes }: { maxUploadBytes: number; }) {
           type="button"
           variant="primary"
           loading={isSubmitting}
-          disabled={item === null || isSubmitting}
-          onClick={handleSubmit}
+          isDisabled={item === null || isSubmitting}
+          onPress={handleSubmit}
         >
           {m.import_submit()}
         </Button>

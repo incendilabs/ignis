@@ -223,7 +223,7 @@ function ClearStoreCard() {
           type="button"
           loading={isSubmitting}
           variant="danger"
-          onClick={() => { setIsDialogOpen(true); }}
+          onPress={() => { setIsDialogOpen(true); }}
         >
           {m.admin_database_reset_button()}
         </Button>
