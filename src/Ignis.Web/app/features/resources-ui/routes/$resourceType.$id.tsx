@@ -4,16 +4,19 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import { Badge } from "@eventuras/ratio-ui/core/Badge";
 import { Heading } from "@eventuras/ratio-ui/core/Heading";
 import { Link } from "@eventuras/ratio-ui/core/Link";
 import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Text } from "@eventuras/ratio-ui/core/Text";
 import { Container } from "@eventuras/ratio-ui/layout/Container";
 import { Stack } from "@eventuras/ratio-ui/layout/Stack";
+import type { ComponentProps } from "react";
 import { redirect } from "react-router";
 
 import { getSessionFromRequest } from "#app/features/auth/session.server";
 import { m } from "#app/i18n/paraglide/messages";
+import { resourceStatus, resourceTitle } from "#app/lib/fhir/summary";
 import { isValidFhirId, isValidFhirResourceTypeName } from "#app/lib/fhir/validation";
 
 import type { Route } from "./+types/$resourceType.$id";
@@ -44,7 +47,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   return { ok: true as const, resourceType, id, resource };
 }
 
+/** Maps a FHIR status code onto a badge tone. */
+function statusTone(status: string): ComponentProps<typeof Badge>["status"] {
+  if (["active", "final", "completed"].includes(status)) return "success";
+  if (["draft", "preliminary", "in-progress"].includes(status)) return "warning";
+  if (["entered-in-error", "retired", "cancelled", "stopped"].includes(status)) return "error";
+  return "neutral";
+}
+
 export default function ResourceInstance({ loaderData }: Route.ComponentProps) {
+  const title = loaderData.ok ? resourceTitle(loaderData.resource) : null;
+  const status = loaderData.ok ? resourceStatus(loaderData.resource) : null;
   return (
     <Container as="main">
       <Stack direction="vertical" gap="lg">
@@ -54,9 +67,12 @@ export default function ResourceInstance({ loaderData }: Route.ComponentProps) {
               {m.resources_instance_back({ resourceType: loaderData.resourceType })}
             </Link>
           </Text>
-          <Heading as="h1">
-            {loaderData.resourceType}/{loaderData.id}
-          </Heading>
+          <Stack direction="horizontal" align="center" gap="sm" wrap>
+            <Heading as="h1">
+              {title ?? `${loaderData.resourceType}/${loaderData.id}`}
+            </Heading>
+            {status !== null && <Badge status={statusTone(status)}>{status}</Badge>}
+          </Stack>
         </Stack>
 
         {loaderData.ok ? (

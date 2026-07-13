@@ -4,23 +4,31 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import { Card } from "@eventuras/ratio-ui/core/Card";
+import { CodeBlock } from "@eventuras/ratio-ui/core/CodeBlock";
+import { CopyButton } from "@eventuras/ratio-ui/core/CopyButton";
+import { DataTree, type DataNode } from "@eventuras/ratio-ui/core/DataTree";
 import { DescriptionList } from "@eventuras/ratio-ui/core/DescriptionList";
 import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Tabs } from "@eventuras/ratio-ui/core/Tabs";
 import { Text } from "@eventuras/ratio-ui/core/Text";
+import { ToggleButtonGroup } from "@eventuras/ratio-ui/core/ToggleButtonGroup";
+import { Grid } from "@eventuras/ratio-ui/layout/Grid";
+import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { useMemo, useState } from "react";
 import { type FetcherWithComponents, useFetcher } from "react-router";
 
 import { m } from "#app/i18n/paraglide/messages";
 import { formatPrimitive } from "#app/lib/fhir/format";
 import type { Resource } from "#app/lib/fhir/model";
+import { summaryFields } from "#app/lib/fhir/summary";
 import { buildResourceTree, type FhirNode } from "#app/lib/fhir/tree";
 
 type XmlResult = { ok: true; xml: string; } | { ok: false; };
 
 /**
- * Renders a single FHIR resource. The XML serialization is fetched from the
- * server only when its tab is first opened.
+ * Renders a single FHIR resource as Summary, Content tree, and Source tabs.
+ * The XML serialization is fetched from the server only when first selected.
  */
 export function ResourceDetail({
   resource,
@@ -31,111 +39,211 @@ export function ResourceDetail({
   resourceType: string;
   id: string;
 }) {
-  const nodes = useMemo(() => buildResourceTree(resource), [resource]);
+  const nodes = useMemo(
+    () => buildResourceTree(resource).map((node) => toDataNode(node)),
+    [resource],
+  );
   const json = useMemo(() => JSON.stringify(resource, null, 2), [resource]);
 
   const xml = useFetcher<XmlResult>();
-  const [xmlRequested, setXmlRequested] = useState(false);
+  const [sourceLang, setSourceLang] = useState<"json" | "xml">("json");
 
-  const handleSelectionChange = (key: string) => {
-    if (key === "xml" && !xmlRequested) {
-      setXmlRequested(true);
+  const selectSourceLang = (value: string | null) => {
+    if (value !== "json" && value !== "xml") return;
+    setSourceLang(value);
+    if (value === "xml" && xml.state === "idle" && xml.data === undefined) {
       void xml.load(`/resources/${resourceType}/${id}/xml`);
     }
   };
 
   return (
-    <Tabs defaultSelectedKey="structured" onSelectionChange={handleSelectionChange}>
-      <Tabs.Item id="structured" title={m.resources_instance_view()}>
-        <NodeList nodes={nodes} />
+    <Tabs defaultSelectedKey="summary">
+      <Tabs.Item id="summary" title={m.resources_instance_tab_summary()}>
+        <SummaryTab resource={resource} resourceType={resourceType} />
       </Tabs.Item>
-      <Tabs.Item id="json" title={m.resources_instance_json()}>
-        <CodeBlock>{json}</CodeBlock>
+      <Tabs.Item id="tree" title={m.resources_instance_tab_tree()}>
+        <Card>
+          <DataTree collapsible defaultOpenDepth={2} nodes={nodes} />
+        </Card>
       </Tabs.Item>
-      <Tabs.Item id="xml" title={m.resources_instance_xml()}>
-        <XmlPanel fetcher={xml} />
+      <Tabs.Item id="source" title={m.resources_instance_tab_source()}>
+        <SourceTab
+          lang={sourceLang}
+          onLangChange={selectSourceLang}
+          json={json}
+          xml={xml}
+          id={id}
+        />
       </Tabs.Item>
     </Tabs>
   );
 }
 
-/** Renders the lazily-fetched XML, with loading and error states. */
-function XmlPanel({ fetcher }: { fetcher: FetcherWithComponents<XmlResult>; }) {
-  const { data, state } = fetcher;
-  if (state === "loading" || data === undefined) {
-    return <Text>{m.resources_instance_loading()}</Text>;
-  }
-  if (!data.ok) {
+/** Generic summary: readable top-level fields next to a metadata card. */
+function SummaryTab({
+  resource,
+  resourceType,
+}: {
+  resource: Resource;
+  resourceType: string;
+}) {
+  const fields = summaryFields(resource);
+  const metaRows: { label: string; value: string | undefined; }[] = [
+    { label: m.resources_instance_meta_type(), value: resourceType },
+    { label: m.resources_instance_meta_version(), value: resource.meta?.versionId },
+    { label: m.resources_instance_meta_updated(), value: resource.meta?.lastUpdated },
+  ];
+  const meta = metaRows.filter(
+    (row): row is { label: string; value: string; } => Boolean(row.value),
+  );
+
+  return (
+    <Grid cols={{ lg: 2 }}>
+      <Card>
+        <DescriptionList>
+          {fields.map((field) => (
+            <DescriptionList.Description key={field.label} term={field.label}>
+              {field.label === "id" ? (
+                <>
+                  {field.value} <CopyButton value={field.value} size="sm" />
+                </>
+              ) : (
+                field.value
+              )}
+            </DescriptionList.Description>
+          ))}
+        </DescriptionList>
+      </Card>
+      <Card>
+        <Text size="xs" variant="subtle">
+          {m.resources_instance_metadata()}
+        </Text>
+        <DescriptionList>
+          {meta.map((row) => (
+            <DescriptionList.Description key={row.label} term={row.label}>
+              {row.value}
+            </DescriptionList.Description>
+          ))}
+        </DescriptionList>
+      </Card>
+    </Grid>
+  );
+}
+
+/** Raw JSON/XML in a CodeBlock, with a format toggle in its toolbar. */
+function SourceTab({
+  lang,
+  onLangChange,
+  json,
+  xml,
+  id,
+}: {
+  lang: "json" | "xml";
+  onLangChange: (value: string | null) => void;
+  json: string;
+  xml: FetcherWithComponents<XmlResult>;
+  id: string;
+}) {
+  const selector = (
+    <ToggleButtonGroup
+      size="sm"
+      aria-label={m.resources_instance_tab_source()}
+      options={[
+        { value: "json", label: m.resources_instance_json() },
+        { value: "xml", label: m.resources_instance_xml() },
+      ]}
+      selectedKeys={[lang]}
+      onSelectionChange={(keys) => {
+        const [key] = keys;
+        onLangChange(typeof key === "string" ? key : null);
+      }}
+      disallowEmptySelection
+    />
+  );
+
+  if (lang === "xml") {
+    const { data, state } = xml;
+    if (state === "loading" || data === undefined) {
+      return (
+        <SourcePending selector={selector}>
+          <Text>{m.resources_instance_loading()}</Text>
+        </SourcePending>
+      );
+    }
+    if (!data.ok) {
+      return (
+        <SourcePending selector={selector}>
+          <Panel variant="alert" status="error">
+            <Text>{m.resources_instance_error()}</Text>
+          </Panel>
+        </SourcePending>
+      );
+    }
     return (
-      <Panel variant="alert" status="error">
-        <Text>{m.resources_instance_error()}</Text>
-      </Panel>
+      <CodeBlock
+        code={data.xml}
+        language="XML"
+        filename={`${id}.xml`}
+        languageSelector={selector}
+      />
     );
   }
-  return <CodeBlock>{data.xml}</CodeBlock>;
+
+  return (
+    <CodeBlock
+      code={json}
+      language="JSON"
+      filename={`${id}.json`}
+      languageSelector={selector}
+    />
+  );
 }
 
-/** Monospaced, scrollable block for raw JSON/XML payloads. */
-function CodeBlock({ children }: { children: string; }) {
+/** Keeps the format toggle reachable while XML is loading or failed. */
+function SourcePending({
+  selector,
+  children,
+}: {
+  selector: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <pre className="overflow-x-auto rounded border border-(--border) p-4 text-sm">
+    <Stack direction="vertical" gap="sm">
+      <Stack direction="horizontal" justify="end">
+        {selector}
+      </Stack>
       {children}
-    </pre>
+    </Stack>
   );
 }
 
-/** Renders object fields as term/value rows. */
-function NodeList({ nodes }: { nodes: FhirNode[]; }) {
-  if (nodes.length === 0) return <EmptyValue />;
-  return (
-    <DescriptionList>
-      {nodes.map((node) => (
-        <DescriptionList.Description key={node.path.join(".")} term={node.key}>
-          <NodeValue node={node} />
-        </DescriptionList.Description>
-      ))}
-    </DescriptionList>
-  );
+/**
+ * Label for an array item: FHIR-ish identity when the item carries one
+ * (`linkId`, `code`, tail of `system`), else its position.
+ */
+function arrayItemTerm(node: FhirNode): string {
+  const child = (key: string) =>
+    node.children.find((c) => c.key === key && c.kind === "primitive")?.value;
+  const linkId = child("linkId");
+  if (linkId != null) return `#${String(linkId)}`;
+  const code = child("code");
+  if (code != null) return String(code);
+  const system = child("system");
+  if (system != null) return String(system).split("/").pop() ?? String(system);
+  return `[${node.key}]`;
 }
 
-/** Renders a node's value, recursing into objects and arrays. */
-function NodeValue({ node }: { node: FhirNode; }) {
-  switch (node.kind) {
-    case "primitive":
-      return <PrimitiveValue value={node.value} />;
-    case "object":
-      return <NodeList nodes={node.children} />;
-    case "array":
-      return <ArrayValue items={node.children} />;
+/** Adapts a FhirNode to a DataTree node. */
+function toDataNode(node: FhirNode, term: string = node.key): DataNode {
+  const id = node.path.join(".");
+  if (node.kind === "primitive") {
+    return { id, term, value: formatPrimitive(node.value) };
   }
-}
-
-/** Renders array items stacked and numbered, so they read one by one. */
-function ArrayValue({ items }: { items: FhirNode[]; }) {
-  if (items.length === 0) return <EmptyValue />;
-  return (
-    <ol className="flex flex-col gap-2">
-      {items.map((item) => (
-        <li key={item.path.join(".")} className="flex gap-2">
-          <span className="select-none text-(--muted-foreground)">
-            {Number(item.key) + 1}.
-          </span>
-          <div className="min-w-0 grow">
-            <NodeValue node={item} />
-          </div>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/** Renders a leaf value, with a muted dash for empty/null. */
-function PrimitiveValue({ value }: { value: string | number | boolean | null; }) {
-  const text = formatPrimitive(value);
-  if (text === null) return <EmptyValue />;
-  return <>{text}</>;
-}
-
-function EmptyValue() {
-  return <span className="text-(--muted-foreground)">—</span>;
+  return {
+    id,
+    term,
+    children: node.children.map((child) =>
+      toDataNode(child, node.kind === "array" ? arrayItemTerm(child) : child.key),
+    ),
+  };
 }
