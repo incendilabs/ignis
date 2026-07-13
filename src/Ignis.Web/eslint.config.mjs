@@ -15,6 +15,13 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      // React Router's idiom: loaders throw Response (redirects, 404s).
+      "@typescript-eslint/only-throw-error": [
+        "error",
+        { allow: [{ from: "lib", name: "Response" }] },
+      ],
+    },
   },
   {
     files: ["**/*.mjs"],
