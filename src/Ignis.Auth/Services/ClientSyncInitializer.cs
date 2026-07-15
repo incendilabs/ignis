@@ -130,6 +130,10 @@ public class ClientSyncInitializer
                     }
                     break;
 
+                case GrantTypes.RefreshToken:
+                    descriptor.Permissions.Add(Permissions.GrantTypes.RefreshToken);
+                    break;
+
                 default:
                     _logger.LogWarning(
                         "Unsupported grant type '{GrantType}' for client {ClientId}.",

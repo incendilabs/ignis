@@ -43,6 +43,7 @@ public class IgnisApiFactory : WebApplicationFactory<Program>
                 ["AuthSettings:Clients:0:DisplayName"] = "Test Client",
                 ["AuthSettings:Clients:0:AllowedGrantTypes:0"] = "client_credentials",
                 ["AuthSettings:Clients:0:AllowedGrantTypes:1"] = "authorization_code",
+                ["AuthSettings:Clients:0:AllowedGrantTypes:2"] = "refresh_token",
                 ["AuthSettings:Clients:0:RedirectUris:0"] = "http://localhost/callback",
             };
             foreach (var (key, value) in _extraConfig)

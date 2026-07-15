@@ -129,11 +129,13 @@ public class AuthorizationHandler
         var request = httpContext.GetOpenIddictServerRequest()
             ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-        if (request.IsAuthorizationCodeGrantType())
+        if (request.IsAuthorizationCodeGrantType() || request.IsRefreshTokenGrantType())
         {
+            // OpenIddict has already validated the incoming code/refresh token (and rotates
+            // refresh tokens); the principal carries the originally granted claims and scopes.
             var principal = (await httpContext.AuthenticateAsync(
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal
-                ?? throw new InvalidOperationException("The authorization code principal cannot be retrieved.");
+                ?? throw new InvalidOperationException("The token principal cannot be retrieved.");
 
             return new SignInResult(
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
