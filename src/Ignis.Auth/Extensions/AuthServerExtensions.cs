@@ -156,15 +156,35 @@ public static class AuthServerExtensions
             })
             .AddServer(options =>
             {
+                if (settings.RefreshTokenLifetimeSeconds <= 0)
+                    throw new ArgumentException(
+                        "AuthSettings:RefreshTokenLifetimeSeconds must be greater than zero.",
+                        nameof(settings));
+
                 options
                     .SetTokenEndpointUris("connect/token")
                     .SetAuthorizationEndpointUris("connect/authorize")
                     .SetPushedAuthorizationEndpointUris("connect/par")
                     .AllowClientCredentialsFlow()
                     .AllowAuthorizationCodeFlow()
+                    // Note: offline_access is special-cased by OpenIddict — gated by the
+                    // refresh_token grant permission (ClientSyncInitializer) and our per-user
+                    // scope filter, not by RegisterScopes or client scope permissions.
+                    .AllowRefreshTokenFlow()
+                    .SetRefreshTokenLifetime(TimeSpan.FromSeconds(settings.RefreshTokenLifetimeSeconds))
+                    .DisableSlidingRefreshTokenExpiration()
                     .RequireProofKeyForCodeExchange()
                     .RequirePushedAuthorizationRequests()
                     .RegisterScopes(KnownScopes.All.ToArray());
+
+                if (settings.RefreshTokenReuseLeewaySeconds is { } leeway)
+                {
+                    if (leeway < 0)
+                        throw new ArgumentException(
+                            "AuthSettings:RefreshTokenReuseLeewaySeconds must be zero or positive.",
+                            nameof(settings));
+                    options.SetRefreshTokenReuseLeeway(TimeSpan.FromSeconds(leeway));
+                }
 
                 // Smaller signed-only access tokens; see AuthSettings.DisableAccessTokenEncryption.
                 if (settings.DisableAccessTokenEncryption)

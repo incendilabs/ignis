@@ -43,15 +43,16 @@ MongoDB connection for the FHIR store (resources, history).
 
 OAuth 2.0 / OIDC authorization server (OpenIddict). May share or split the MongoDB database with `StoreSettings`. See [Ignis.Auth README](../../src/Ignis.Auth/README.md) and [Authentication](../auth/authentication.md).
 
-| Key                                | Required  | Notes                                                                                                                                  |
-| ---------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `AuthSettings:ConnectionString`    | yes       | MongoDB URI for OpenIddict state (clients, tokens, authorizations)                                                                     |
-| `AuthSettings:Issuer`              | prod      | Absolute public URL in OIDC discovery. Set when behind a TLS-terminating proxy.                                                        |
-| `AuthSettings:Clients[]`           | yes       | Registered OAuth clients — [Ignis.Auth → Configuration](../../src/Ignis.Auth/README.md#configuration)                                  |
-| `AuthSettings:ExternalProviders[]` | for login | External identity providers — [Authenticate with GitHub](../auth/authenticate-with-github.md)                                          |
-| `AuthSettings:Users[]`             | optional  | Per-user scope assignments — subject format and scope semantics in [Scopes](../admin/scopes.md)                                        |
-| `AuthSettings:Certificates:*`      | prod      | Signing + encryption PFX — [Ignis.Auth → Certificates](../../src/Ignis.Auth/README.md#certificates)                                    |
-| `AuthSettings:Endpoints:LoginPath` | optional  | Override the login challenge path (default `connect/login`)                                                                            |
+| Key                                        | Required  | Notes                                                                                                 |
+| ------------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------- |
+| `AuthSettings:ConnectionString`            | yes       | MongoDB URI for OpenIddict state (clients, tokens, authorizations)                                    |
+| `AuthSettings:Issuer`                      | prod      | Absolute public URL in OIDC discovery. Set when behind a TLS-terminating proxy.                       |
+| `AuthSettings:RefreshTokenLifetimeSeconds` | optional  | Absolute refresh token lifetime before re-login; default `28800` (8 h).                               |
+| `AuthSettings:Clients[]`                   | yes       | Registered OAuth clients — [Ignis.Auth → Configuration](../../src/Ignis.Auth/README.md#configuration) |
+| `AuthSettings:ExternalProviders[]`         | for login | External identity providers — [Authenticate with GitHub](../auth/authenticate-with-github.md)         |
+| `AuthSettings:Users[]`                     | optional  | Per-user scope assignments — subject format and scope semantics in [Scopes](../admin/scopes.md)       |
+| `AuthSettings:Certificates:*`              | prod      | Signing + encryption PFX — [Ignis.Auth → Certificates](../../src/Ignis.Auth/README.md#certificates)   |
+| `AuthSettings:Endpoints:LoginPath`         | optional  | Override the login challenge path (default `connect/login`)                                           |
 
 > [!NOTE]
 > `ExternalProviders[].Type` accepts `GitHub` or `OIDC` — but `OIDC` is unimplemented and throws `NotSupportedException` at startup.

@@ -23,6 +23,18 @@ public class AuthSettings
     /// the token's claims become readable by any holder.
     /// </summary>
     public bool DisableAccessTokenEncryption { get; set; }
+
+    /// <summary>
+    /// Absolute refresh token lifetime (seconds) before a full re-login is required. Default 28800 (8 h);
+    /// see https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    /// </summary>
+    public int RefreshTokenLifetimeSeconds { get; set; } = 28800;
+
+    /// <summary>
+    /// Grace window (seconds) where a redeemed refresh token is still accepted, tolerating
+    /// concurrent refreshes from the same client. Null keeps OpenIddict's default.
+    /// </summary>
+    public int? RefreshTokenReuseLeewaySeconds { get; set; }
     public List<ClientDefinition> Clients { get; set; } = [];
     public AuthEndpointSettings Endpoints { get; set; } = new();
     public AuthCertificateSettings Certificates { get; set; } = new();

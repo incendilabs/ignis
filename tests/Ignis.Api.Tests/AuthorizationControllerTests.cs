@@ -193,6 +193,85 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
     }
 
     [Fact]
+    public async Task RefreshTokenFlow_IssuesRotatesAndRejectsReuse()
+    {
+        using var client = _fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = true,
+        });
+
+        var loginResponse = await client.GetAsync("/test-login", CT);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Auth code flow requesting offline_access, so the exchange issues a refresh token.
+        var (codeVerifier, codeChallenge) = GeneratePkce();
+        var parResponse = await client.PostAsync("/connect/par",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["response_type"] = "code",
+                ["client_id"] = "test-client",
+                ["client_secret"] = "test-secret",
+                ["redirect_uri"] = "http://localhost/callback",
+                ["code_challenge"] = codeChallenge,
+                ["code_challenge_method"] = "S256",
+                ["scope"] = "openid offline_access",
+            }), CT);
+        parResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var parJson = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync(CT));
+        var requestUri = parJson.RootElement.GetProperty("request_uri").GetString();
+        requestUri.Should().NotBeNullOrEmpty();
+
+        var authorizeResponse = await client.GetAsync(
+            $"/connect/authorize?client_id=test-client&request_uri={Uri.EscapeDataString(requestUri!)}", CT);
+        authorizeResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        var code = HttpUtility.ParseQueryString(authorizeResponse.Headers.Location!.Query)["code"];
+        code.Should().NotBeNullOrEmpty("the authorization endpoint should issue a code");
+
+        var tokenResponse = await client.PostAsync("/connect/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "authorization_code",
+                ["code"] = code!,
+                ["redirect_uri"] = "http://localhost/callback",
+                ["client_id"] = "test-client",
+                ["client_secret"] = "test-secret",
+                ["code_verifier"] = codeVerifier,
+            }), CT);
+        tokenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var tokenJson = JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync(CT));
+        var refreshToken = tokenJson.RootElement.GetProperty("refresh_token").GetString();
+        refreshToken.Should().NotBeNullOrEmpty("offline_access was requested and granted");
+
+        // Redeeming the refresh token returns a fresh access token and a rotated refresh token.
+        var refreshResponse = await client.PostAsync("/connect/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = refreshToken!,
+                ["client_id"] = "test-client",
+                ["client_secret"] = "test-secret",
+            }), CT);
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var refreshJson = JsonDocument.Parse(await refreshResponse.Content.ReadAsStringAsync(CT));
+        refreshJson.RootElement.GetProperty("access_token").GetString().Should().NotBeNullOrEmpty();
+        var rotatedToken = refreshJson.RootElement.GetProperty("refresh_token").GetString();
+        rotatedToken.Should().NotBeNullOrEmpty();
+        rotatedToken.Should().NotBe(refreshToken, "refresh tokens are single-use and rotated");
+
+        // The redeemed token is spent — reusing it must be rejected.
+        var reuseResponse = await client.PostAsync("/connect/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = refreshToken!,
+                ["client_id"] = "test-client",
+                ["client_secret"] = "test-secret",
+            }), CT);
+        reuseResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task AuthCodeFlow_WithoutPkce_ReturnsBadRequest()
     {
         using var client = _fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions
