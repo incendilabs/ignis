@@ -35,6 +35,8 @@
   "nav_all_resources": "Alle ressurser",
   "nav_console": "Konsollnavigasjon",
   "nav_dashboard": "Dashbord",
+  "nav_filter_no_match": "Ingen typer matcher filteret.",
+  "nav_filter_types": "Filtrer typer …",
   "nav_login": "Logg inn",
   "nav_logout": "Logg ut",
   "nav_menu": "Meny",

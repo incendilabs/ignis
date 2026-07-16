@@ -5,77 +5,52 @@
  */
 
 import { ActionButton } from "@eventuras/ratio-ui/core/ActionButton";
-import { NavTree, type NavTreeGroup } from "@eventuras/ratio-ui/core/NavTree";
 import { Text } from "@eventuras/ratio-ui/core/Text";
-import {
-  ChevronsLeft,
-  ChevronsRight,
-  Database,
-  FolderOpen,
-  LayoutGrid,
-  ScrollText,
-  Upload,
-} from "@eventuras/ratio-ui/icons";
+import { ChevronsLeft, ChevronsRight } from "@eventuras/ratio-ui/icons";
 import { Box } from "@eventuras/ratio-ui/layout/Box";
 import { Sidebar } from "@eventuras/ratio-ui/layout/Sidebar";
 import { Stack } from "@eventuras/ratio-ui/layout/Stack";
-import { type ReactNode, useEffect, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, Outlet } from "react-router";
 
 import { Navbar } from "#app/components/ui/navbar";
 import * as adminConfig from "#app/features/admin/config.server";
+import { getSessionFromRequest } from "#app/features/auth/session.server";
 import * as operationsConfig from "#app/features/operations/config.server";
 import * as resourcesConfig from "#app/features/resources-ui/config.server";
+import { fetchResourceTypes } from "#app/features/resources-ui/fhir-client.server";
 import { m } from "#app/i18n/paraglide/messages";
-import { locales } from "#app/i18n/paraglide/runtime";
 import { useRootData } from "#app/lib/use-root-data";
 
 import type { Route } from "./+types/console";
+import { ConsoleNav } from "./console-nav";
 
-export function loader() {
-  return {
-    features: {
-      resources: resourcesConfig.isEnabled(),
-      admin: adminConfig.isEnabled(),
-      operations: operationsConfig.isEnabled(),
-    },
+export async function loader({ request }: Route.LoaderArgs) {
+  const features = {
+    resources: resourcesConfig.isEnabled(),
+    admin: adminConfig.isEnabled(),
+    operations: operationsConfig.isEnabled(),
   };
-}
 
-const ICON_SIZE = 18;
-
-/** Adapts NavTree's href contract to react-router's Link. */
-function NavLink({
-  href,
-  children,
-  className,
-}: {
-  href: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <Link to={href} className={className}>
-      {children}
-    </Link>
-  );
-}
-
-/** Strips the optional locale prefix so nav hrefs match the current path. */
-function stripLocale(pathname: string): string {
-  for (const locale of locales) {
-    if (pathname === `/${locale}`) return "/";
-    if (pathname.startsWith(`/${locale}/`)) return pathname.slice(locale.length + 1);
+  // The nav's type list is best-effort: without a session (or with an
+  // unreachable FHIR server) it stays empty — child loaders own the redirects.
+  // Types only — per-type counts would fan out on every console page load.
+  let resourceTypes: string[] = [];
+  if (features.resources) {
+    const session = await getSessionFromRequest(request);
+    if (session !== null) {
+      resourceTypes =
+        (await fetchResourceTypes(request, session.tokens?.accessToken)) ?? [];
+    }
   }
-  return pathname;
+
+  return { features, resourceTypes };
 }
 
 const SIDEBAR_COLLAPSED_KEY = "ignis-sidebar-collapsed";
 
 /** Console chrome for every page except the front page: left sidebar navigation. */
 export default function ConsoleLayout({ loaderData }: Route.ComponentProps) {
-  const { pathname } = useLocation();
-  const { features } = loaderData;
   const root = useRootData();
 
   // SSR renders expanded; the saved preference is applied after hydration.
@@ -89,63 +64,6 @@ export default function ConsoleLayout({ loaderData }: Route.ComponentProps) {
       return !prev;
     });
   };
-
-  const groups: NavTreeGroup[] = [
-    {
-      label: m.nav_workspace(),
-      items: [
-        // The dashboard reads the FHIR capability statement, so it follows the resources feature.
-        ...(features.resources
-          ? [
-              {
-                title: m.nav_dashboard(),
-                href: "/user",
-                icon: <LayoutGrid size={ICON_SIZE} />,
-              },
-              {
-                title: m.resources_title(),
-                icon: <FolderOpen size={ICON_SIZE} />,
-                children: [
-                  { title: m.nav_all_resources(), href: "/resources" },
-                  { title: "Patient", href: "/resources/Patient" },
-                  { title: "Practitioner", href: "/resources/Practitioner" },
-                  { title: "Observation", href: "/resources/Observation" },
-                  { title: "Questionnaire", href: "/resources/Questionnaire" },
-                ],
-              },
-            ]
-          : []),
-      ],
-    },
-    ...(features.admin
-      ? [
-          {
-            label: m.nav_administration(),
-            items: [
-              {
-                title: m.admin_database_title(),
-                href: "/admin/database",
-                icon: <Database size={ICON_SIZE} />,
-              },
-              {
-                title: m.import_title(),
-                href: "/admin/import",
-                icon: <Upload size={ICON_SIZE} />,
-              },
-              ...(features.operations
-                ? [
-                    {
-                      title: m.operations_title(),
-                      href: "/admin/operations",
-                      icon: <ScrollText size={ICON_SIZE} />,
-                    },
-                  ]
-                : []),
-            ],
-          },
-        ]
-      : []),
-  ];
 
   return (
     <Stack direction="horizontal" align="start">
@@ -177,12 +95,10 @@ export default function ConsoleLayout({ loaderData }: Route.ComponentProps) {
           </Stack>
         </Sidebar.Header>
         <Sidebar.Body>
-          <NavTree
-            groups={groups}
-            currentPath={stripLocale(pathname)}
+          <ConsoleNav
+            features={loaderData.features}
+            resourceTypes={loaderData.resourceTypes}
             iconOnly={collapsed}
-            LinkComponent={NavLink}
-            aria-label={m.nav_console()}
           />
         </Sidebar.Body>
       </Sidebar>
