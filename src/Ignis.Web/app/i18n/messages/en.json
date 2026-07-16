@@ -35,6 +35,8 @@
   "nav_all_resources": "All resources",
   "nav_console": "Console navigation",
   "nav_dashboard": "Dashboard",
+  "nav_filter_no_match": "No types match the filter.",
+  "nav_filter_types": "Filter types…",
   "nav_login": "Login",
   "nav_logout": "Log out",
   "nav_menu": "Menu",
