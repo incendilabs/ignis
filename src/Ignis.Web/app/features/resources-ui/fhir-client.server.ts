@@ -12,6 +12,7 @@ import {
   type Resource,
 } from "#app/lib/fhir/model";
 import { fhirResourcePath } from "#app/lib/fhir/http";
+import { mapWithConcurrency } from "#app/lib/concurrency";
 import { Logger } from "#app/logger";
 
 const logger = Logger.create({ namespace: "resources-ui:fhir-client" });
@@ -31,6 +32,34 @@ interface CapabilityStatement {
 
 export interface ResourceListItem {
   id: string;
+}
+
+export interface ResourceTypeCount {
+  type: string;
+  count: number | null;
+}
+
+// Cap parallel count requests so a 140-type CapabilityStatement doesn't
+// fire 140 concurrent calls at the FHIR backend on every page load.
+const COUNT_FETCH_CONCURRENCY = 8;
+
+/**
+ * Every declared resource type with a best-effort instance count,
+ * alphabetically. Null when the CapabilityStatement is unavailable.
+ */
+export async function fetchResourceTypesWithCounts(
+  request: Request,
+  accessToken: string | undefined,
+): Promise<ResourceTypeCount[] | null> {
+  const types = await fetchResourceTypes(request, accessToken);
+  if (types === null) return null;
+
+  const rows = await mapWithConcurrency(types, COUNT_FETCH_CONCURRENCY, async (type) => ({
+    type,
+    count: await fetchResourceCount(request, accessToken, type),
+  }));
+  rows.sort((a, b) => a.type.localeCompare(b.type));
+  return rows;
 }
 
 /**

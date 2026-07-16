@@ -17,42 +17,21 @@ import { redirect } from "react-router";
 
 import { requireSession } from "#app/features/auth/session.server";
 import { m } from "#app/i18n/paraglide/messages";
-import { mapWithConcurrency } from "#app/lib/concurrency";
 import { resourceCategory } from "#app/lib/fhir/categories";
 
 import type { Route } from "./+types/index";
 import { isEnabled } from "../config.server";
-import { fetchResourceCount, fetchResourceTypes } from "../fhir-client.server";
+import { fetchResourceTypesWithCounts } from "../fhir-client.server";
 import { ResourceLink } from "../ResourceLink";
-
-interface ResourceRow {
-  type: string;
-  count: number | null;
-}
-
-// Cap parallel count requests so a 140-type CapabilityStatement doesn't
-// fire 140 concurrent calls at the FHIR backend on every page load.
-const COUNT_FETCH_CONCURRENCY = 8;
 
 export async function loader({ request }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
   const session = await requireSession(request);
 
-  const accessToken = session.tokens?.accessToken;
-  const types = await fetchResourceTypes(request, accessToken);
-  if (types === null) {
+  const rows = await fetchResourceTypesWithCounts(request, session.tokens?.accessToken);
+  if (rows === null) {
     return { ok: false as const, rows: [] };
   }
-
-  const rows: ResourceRow[] = await mapWithConcurrency(
-    types,
-    COUNT_FETCH_CONCURRENCY,
-    async (type) => ({
-      type,
-      count: await fetchResourceCount(request, accessToken, type),
-    }),
-  );
-  rows.sort((a, b) => a.type.localeCompare(b.type));
   return { ok: true as const, rows };
 }
 
