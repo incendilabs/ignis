@@ -16,16 +16,10 @@ import { redirect } from "react-router";
 
 import { requireSession } from "#app/features/auth/session.server";
 import { isEnabled } from "#app/features/resources-ui/config.server";
-import {
-  fetchResourceCount,
-  fetchResourceTypes,
-} from "#app/features/resources-ui/fhir-client.server";
+import { fetchResourceTypesWithCounts } from "#app/features/resources-ui/fhir-client.server";
 import { m } from "#app/i18n/paraglide/messages";
-import { mapWithConcurrency } from "#app/lib/concurrency";
 
 import type { Route } from "./+types/index";
-
-const COUNT_FETCH_CONCURRENCY = 8;
 
 type GreetingSlot = "morning" | "afternoon" | "evening";
 
@@ -38,22 +32,20 @@ export async function loader({ request }: Route.LoaderArgs) {
     hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   const userName = session.user?.name ?? null;
 
-  const accessToken = session.tokens?.accessToken;
-  const types = await fetchResourceTypes(request, accessToken);
-  if (types === null) {
+  const rows = await fetchResourceTypesWithCounts(request, session.tokens?.accessToken);
+  if (rows === null) {
     return { ok: false as const, greetingSlot, userName };
   }
 
-  const counts = await mapWithConcurrency(types, COUNT_FETCH_CONCURRENCY, (type) =>
-    fetchResourceCount(request, accessToken, type),
-  );
-  const knownCounts = counts.filter((count): count is number => count !== null);
+  const knownCounts = rows
+    .map((row) => row.count)
+    .filter((count): count is number => count !== null);
 
   return {
     ok: true as const,
     greetingSlot,
     userName,
-    typeCount: types.length,
+    typeCount: rows.length,
     countedTypes: knownCounts.length,
     instanceCount: knownCounts.length > 0 ? knownCounts.reduce((a, b) => a + b, 0) : null,
   };
