@@ -89,13 +89,18 @@ Spark FHIR engine. Defaults in [appsettings.json](../../src/Ignis.Api/appsetting
 | `SparkSettings:Endpoint`    | Base URL Spark embeds in resource `fullUrl` / `Bundle.link`. Match the public API URL. |
 | `SparkSettings:FhirRelease` | `R4` (only release currently used)                                                     |
 
-## ProfileValidationSettings
+## Validation
 
-FHIR conformance packages the structural profile validator loads for `$validate`. The directory is scanned (non-recursively) for `*.tgz` packages; empty uses the build-staged [`fhir-packages`](../../fhir-packages.targets) folder, and a relative value resolves under the app base directory. Dependencies are **not** fetched at run time — every transitive package must already be present. In Kubernetes, point at a PVC mount (Helm `app.api.fhirPackages`). Point it at an empty directory to turn validation off (no packages load; `$validate` resolves nothing).
+Structural `$validate` behaviour: where conformance packages load from, and how request bodies are parsed.
 
-| Key                                          | Required | Default | Notes                    |
-| -------------------------------------------- | -------- | ------- | ------------------------ |
-| `ProfileValidationSettings:PackageDirectory` | no       | empty   | PVC mount in Kubernetes. |
+`PackageDirectory` is the FHIR conformance packages the profile validator loads. The directory is scanned (non-recursively) for `*.tgz` packages; empty uses the build-staged [`fhir-packages`](../../fhir-packages.targets) folder, and a relative value resolves under the app base directory. Dependencies are **not** fetched at run time — every transitive package must already be present. In Kubernetes, point at a PVC mount (Helm `app.api.fhirPackages`). Point it at an empty directory to turn validation off (no packages load; `$validate` resolves nothing).
+
+`Parsing` controls how `$validate` reads the posted body. `Permissive` (default) turns malformed values into findings and validates the partial resource; `Strict` rejects any body the parser cannot fully read. This is independent of the strict store endpoints (create/update always reject malformed bodies).
+
+| Key                           | Required | Default      | Notes                                     |
+| ----------------------------- | -------- | ------------ | ----------------------------------------- |
+| `Validation:PackageDirectory` | no       | empty        | PVC mount in Kubernetes.                  |
+| `Validation:Parsing`          | no       | `Permissive` | `Permissive` or `Strict` for `$validate`. |
 
 ## Serilog
 

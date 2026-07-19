@@ -13,6 +13,11 @@ using FluentAssertions;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 
+using Ignis.Api.Configuration;
+using Ignis.Validation;
+
+using Microsoft.Extensions.DependencyInjection;
+
 using Xunit;
 
 // Avoid clash with Hl7.Fhir.Model.Task
@@ -281,5 +286,83 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         var json = _serializer.SerializeToString(resource);
         using var content = new StringContent(json, Encoding.UTF8, "application/fhir+json");
         return await _client.PutAsync($"/fhir/{path}", content, CT);
+    }
+
+    // $validate — permissive parsing
+
+    private async Task<HttpResponseMessage> PostValidate(string type, string body)
+    {
+        using var content = new StringContent(body, Encoding.UTF8, "application/fhir+json");
+        return await _client.PostAsync($"/fhir/{type}/$validate", content, CT);
+    }
+
+    [Fact]
+    public async Task Validate_InvalidCodedValue_ReportsIssuesInsteadOfRejecting()
+    {
+        // "mann" is not an administrative-gender code; the strict store parser would 400 on the
+        // enum, but $validate parses permissively and reports it as a finding.
+        var response = await PostValidate("Practitioner", """
+            { "resourceType": "Practitioner", "gender": "mann" }
+            """);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var outcome = _deserializer.Deserialize<OperationOutcome>(await response.Content.ReadAsStringAsync(CT));
+
+        var errorExpressions = outcome.Issue
+            .Where(i => i.Severity == OperationOutcome.IssueSeverity.Error)
+            .SelectMany(i => i.Expression ?? Enumerable.Empty<string>())
+            .OfType<string>();
+        errorExpressions.Should().Contain(e => e.Contains("gender"));
+    }
+
+    [Fact]
+    public async Task Validate_ValidResource_ReturnsOutcomeWithoutErrors()
+    {
+        var response = await PostValidate("Practitioner", """
+            { "resourceType": "Practitioner", "gender": "male" }
+            """);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var outcome = _deserializer.Deserialize<OperationOutcome>(await response.Content.ReadAsStringAsync(CT));
+        outcome.Issue.Should().NotContain(i =>
+            i.Severity == OperationOutcome.IssueSeverity.Error || i.Severity == OperationOutcome.IssueSeverity.Fatal);
+    }
+
+    [Fact]
+    public async Task Validate_UnparseableBody_ReturnsBadRequest()
+    {
+        var response = await PostValidate("Practitioner", "this is not json at all");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Validate_TypeMismatch_ReturnsBadRequest()
+    {
+        var response = await PostValidate("Patient", """
+            { "resourceType": "Practitioner" }
+            """);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Validate_InvalidCodedValue_InStrictMode_ReturnsBadRequest()
+    {
+        // The same body the permissive test reports as a finding: under Validation:Parsing=Strict the
+        // parser rejects it, so the config flag must flip the endpoint from 200-with-findings to 400.
+        using var factory = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.PostConfigure<ValidationSettings>(o => o.Parsing = ResourceParsingMode.Strict)));
+
+        using var client = factory.CreateClient();
+        var token = await _fixture.GetClientCredentialsTokenAsync(CT);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using var content = new StringContent(
+            """{ "resourceType": "Practitioner", "gender": "mann" }""", Encoding.UTF8, "application/fhir+json");
+        var response = await client.PostAsync("/fhir/Practitioner/$validate", content, CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

@@ -29,12 +29,18 @@ public class FhirController : ControllerBase
     private readonly IFhirService _fhirService;
     private readonly SparkSettings _settings;
     private readonly IProfileValidationService _profileValidation;
+    private readonly IValidationResourceParser _validationParser;
 
-    public FhirController(IFhirService fhirService, SparkSettings settings, IProfileValidationService profileValidation)
+    public FhirController(
+        IFhirService fhirService,
+        SparkSettings settings,
+        IProfileValidationService profileValidation,
+        IValidationResourceParser validationParser)
     {
         _fhirService = fhirService ?? throw new ArgumentNullException(nameof(fhirService));
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _profileValidation = profileValidation ?? throw new ArgumentNullException(nameof(profileValidation));
+        _validationParser = validationParser ?? throw new ArgumentNullException(nameof(validationParser));
     }
 
     // ============= Instance Level Interactions
@@ -141,28 +147,41 @@ public class FhirController : ControllerBase
     /// <c>meta.profile</c>, or — by default — its base type.
     /// </summary>
     [HttpPost("{type}/{id}/$validate"), Tags("Validation")]
-    public ActionResult<FhirResponse> Validate(string type, string id, Resource resource) => ValidateResource(type, resource);
+    public Task<ActionResult<FhirResponse>> Validate(string type, string id) => ValidateResourceAsync(type);
 
     /// <summary>Validate a resource against a profile, its <c>meta.profile</c>, or its base type.</summary>
     [HttpPost("{type}/$validate"), Tags("Validation")]
-    public ActionResult<FhirResponse> Validate(string type, Resource resource) => ValidateResource(type, resource);
+    public Task<ActionResult<FhirResponse>> Validate(string type) => ValidateResourceAsync(type);
 
-    private ActionResult<FhirResponse> ValidateResource(string type, Resource resource)
+    private async Task<ActionResult<FhirResponse>> ValidateResourceAsync(string type)
     {
-        // NOTE: Spark's input formatter parses the body strictly and rejects structurally-invalid
-        // resources (e.g. missing required elements) with a 400 before we get here — so $validate cannot
-        // yet report base-cardinality violations. Doing so would need permissive parsing on this endpoint.
-        if (resource.TypeName != type)
-            return new ActionResult<FhirResponse>(
-                Respond.WithError(HttpStatusCode.BadRequest, "Resource type does not match endpoint."));
-
         // $validate's 'profile' parameter is 0..1; reject repeats rather than join them into a bad canonical.
         var profiles = Request.Query["profile"];
         if (profiles.Count > 1)
             return new ActionResult<FhirResponse>(
                 Respond.WithError(HttpStatusCode.BadRequest, "Only one 'profile' parameter is supported."));
 
-        var outcome = _profileValidation.Validate(resource, profiles.Count == 1 ? profiles[0] : null);
+        // Validation parses independently of the strict store endpoints; see
+        // ValidationResourceParser (mode configurable via Validation:Parsing).
+        using var reader = new StreamReader(
+            Request.Body, encoding: null, detectEncodingFromByteOrderMarks: true, bufferSize: -1, leaveOpen: true);
+        var body = await reader.ReadToEndAsync(HttpContext.RequestAborted).ConfigureAwait(false);
+
+        var parsed = _validationParser.Parse(body, Request.ContentType);
+        if (parsed.RejectionMessage is not null)
+            return new ActionResult<FhirResponse>(
+                Respond.WithError(HttpStatusCode.BadRequest, parsed.RejectionMessage));
+
+        var outcome = parsed.OperationOutcome ?? new OperationOutcome();
+        if (parsed.Resource is null)
+            return new ActionResult<FhirResponse>(new FhirResponse(HttpStatusCode.OK, outcome));
+
+        if (parsed.Resource.TypeName != type)
+            return new ActionResult<FhirResponse>(
+                Respond.WithError(HttpStatusCode.BadRequest, "Resource type does not match endpoint."));
+
+        var validation = _profileValidation.Validate(parsed.Resource, profiles.Count == 1 ? profiles[0] : null);
+        outcome.Issue.AddRange(validation.Issue);
         return new ActionResult<FhirResponse>(new FhirResponse(HttpStatusCode.OK, outcome));
     }
 

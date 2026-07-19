@@ -26,7 +26,7 @@ public class ProfileValidationRegistrationTests
         {
             var services = new ServiceCollection();
             services.AddLogging();
-            services.Configure<ProfileValidationSettings>(o => o.PackageDirectory = dir.FullName);
+            services.Configure<ValidationSettings>(o => o.PackageDirectory = dir.FullName);
             services.AddProfileValidation();
 
             // Resolving must not throw even though the directory has no packages.

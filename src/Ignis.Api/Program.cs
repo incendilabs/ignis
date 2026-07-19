@@ -93,7 +93,7 @@ builder.Services.AddMongoFhirStore(storeSettings);
 builder.Services.AddFhirWithMvc(sparkSettings);
 
 // Register structural profile validation ($validate against IG profiles)
-builder.Services.Configure<ProfileValidationSettings>(builder.Configuration.GetSection("ProfileValidationSettings"));
+builder.Services.Configure<ValidationSettings>(builder.Configuration.GetSection("Validation"));
 builder.Services.AddProfileValidation();
 
 // Register terminology ($expand of ValueSets)

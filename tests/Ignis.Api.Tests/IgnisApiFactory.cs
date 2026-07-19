@@ -37,6 +37,7 @@ public class IgnisApiFactory : WebApplicationFactory<Program>
                 ["SparkSettings:Endpoint"] = "https://localhost/fhir",
                 ["SparkSettings:FhirRelease"] = "R4",
                 ["SparkSettings:UseAsynchronousIO"] = "true",
+                ["Validation:Parsing"] = "Permissive",
                 ["AuthSettings:ConnectionString"] = _connectionString,
                 ["AuthSettings:Clients:0:ClientId"] = "test-client",
                 ["AuthSettings:Clients:0:ClientSecret"] = "test-secret",

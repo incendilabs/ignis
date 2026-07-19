@@ -24,7 +24,7 @@ public class TerminologyRegistrationTests
         {
             var services = new ServiceCollection();
             services.AddLogging();
-            services.Configure<ProfileValidationSettings>(o => o.PackageDirectory = dir.FullName);
+            services.Configure<ValidationSettings>(o => o.PackageDirectory = dir.FullName);
             services.AddTerminology();
 
             // Building the singleton must not throw even with no packages (degrades to inline-only expansion).

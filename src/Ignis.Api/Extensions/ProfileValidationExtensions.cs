@@ -22,7 +22,7 @@ namespace Ignis.Api.Extensions;
 
 /// <summary>
 /// Wires the profile validator into the host. Conformance is resolved from two sources: FHIR packages in
-/// <see cref="ProfileValidationSettings.PackageDirectory"/> (default: build-staged <c>fhir-packages</c>),
+/// <see cref="ValidationSettings.PackageDirectory"/> (default: build-staged <c>fhir-packages</c>),
 /// and — for catalog-authored profiles/ValueSets — the FHIR store.
 /// </summary>
 public static class ProfileValidationExtensions
@@ -34,10 +34,15 @@ public static class ProfileValidationExtensions
         // the catalog. Singleton, but reaches per-request Spark services via IServiceScopeFactory.
         services.AddSingleton<StoreCanonicalResolver>();
 
+        services.AddSingleton<IValidationResourceParser>(provider =>
+            new ValidationResourceParser(
+                ModelInfo.ModelInspector,
+                provider.GetRequiredService<IOptions<ValidationSettings>>().Value.Parsing));
+
         services.AddSingleton<IProfileValidationService>(provider =>
         {
             var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Ignis.ProfileValidation");
-            var settings = provider.GetRequiredService<IOptions<ProfileValidationSettings>>().Value;
+            var settings = provider.GetRequiredService<IOptions<ValidationSettings>>().Value;
 
             // Relative paths resolve under the app base; Path.Combine keeps an absolute PackageDirectory as-is.
             var directory = Path.Combine(AppContext.BaseDirectory,

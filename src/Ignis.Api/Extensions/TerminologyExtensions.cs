@@ -19,7 +19,7 @@ namespace Ignis.Api.Extensions;
 
 /// <summary>
 /// Wires the terminology expansion service (<c>Ignis.Terminology</c>) into the host. Builds a Firely
-/// terminology service from the FHIR packages in <see cref="ProfileValidationSettings.PackageDirectory"/>
+/// terminology service from the FHIR packages in <see cref="ValidationSettings.PackageDirectory"/>
 /// (shared with profile validation). This is the FHIR-version-specific seam (uses R4's
 /// <see cref="ModelInfo.ModelInspector"/>); the expansion service itself is version-agnostic.
 /// </summary>
@@ -31,7 +31,7 @@ public static class TerminologyExtensions
         services.AddSingleton<IValueSetExpansionService>(provider =>
         {
             var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Ignis.Terminology");
-            var settings = provider.GetRequiredService<IOptions<ProfileValidationSettings>>().Value;
+            var settings = provider.GetRequiredService<IOptions<ValidationSettings>>().Value;
 
             var directory = Path.Combine(AppContext.BaseDirectory,
                 string.IsNullOrWhiteSpace(settings.PackageDirectory) ? "fhir-packages" : settings.PackageDirectory);
