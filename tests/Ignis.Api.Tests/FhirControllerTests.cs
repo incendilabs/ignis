@@ -79,6 +79,27 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         resource.Should().BeOfType<CapabilityStatement>();
     }
 
+    [Fact]
+    public async Task Metadata_SupportedProfile_ListsPackageConstraintProfiles()
+    {
+        // The core package ships constraint profiles (e.g. vitalsigns on Observation) — enrichment
+        // must advertise them under the type they constrain, while excluding base specializations
+        // (the Observation StructureDefinition itself).
+        var response = await _anonymousClient.GetAsync("/fhir/metadata", CT);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var capability = _deserializer.Deserialize<CapabilityStatement>(
+            await response.Content.ReadAsStringAsync(CT));
+
+        var observation = capability.Rest
+            .SelectMany(rest => rest.Resource)
+            .Single(r => r.Type?.ToString() == "Observation");
+
+        observation.SupportedProfile.Should()
+            .Contain("http://hl7.org/fhir/StructureDefinition/vitalsigns")
+            .And.NotContain("http://hl7.org/fhir/StructureDefinition/Observation");
+    }
+
     // Create + Read
 
     [Fact]
