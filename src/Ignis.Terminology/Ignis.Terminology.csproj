@@ -12,7 +12,7 @@
          version-independently (depends only on Hl7.Fhir.Base), so this library stays FHIR-version agnostic
          (R4/R4B/R5). Version-specific wiring lives in Ignis.Api. -->
     <ItemGroup>
-        <PackageReference Include="Hl7.Fhir.Conformance" Version="6.2.0" />
+        <PackageReference Include="Hl7.Fhir.Conformance" Version="6.2.1" />
     </ItemGroup>
 
 </Project>
