@@ -15,7 +15,26 @@
 | `app.api.sparkSettings.fhirRelease`       | FHIR release version                                  | `R4`                         |
 | `app.api.externalMongodbConnectionString` | External MongoDB connection string                    | `""`                         |
 | `app.api.existingSecret`                  | Use existing Secret (skips chart-managed secret)      | `""`                         |
+| `app.api.extraEnv`                        | Extra `{name, value}` env entries set inline          | `[]`                         |
+| `app.api.fhirPackages.packages`           | Extra FHIR packages (`id@version`) fetched at startup | `[]`                         |
+| `app.api.fhirPackages.registry`           | Registry that the init container fetches from         | `https://packages.fhir.org`  |
 | `app.api.podAnnotations`                  | Annotations applied to the api pod template           | `{}`                         |
+
+Add FHIR conformance packages for `$validate` without rebuilding the image — an
+init container downloads each one on top of the image's built-in set:
+
+```sh
+helm upgrade --install ignis infra/helm \
+  --set 'app.api.fhirPackages.packages[0]=hl7.fhir.no.basis@2.2.0' \
+  --set 'app.api.fhirPackages.packages[1]=hl7.fhir.eu.base@2.0.0'
+```
+
+Downloads need network at startup. For air-gapped clusters, mount a volume of
+`*.tgz` via `extraVolumes`/`extraVolumeMounts` and point the API at it with
+`extraEnv: [{name: ProfileValidationSettings__PackageDirectory, value: /your/mount}]`.
+The same `extraEnv` switches parsing to strict:
+`{name: Validation__Parsing, value: Strict}`. See the
+[validation guide](../../docs/developer/validation.md) for the profile story.
 
 ### Web (`app.web`)
 

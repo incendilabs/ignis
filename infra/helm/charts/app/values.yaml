@@ -34,6 +34,20 @@ api:
   extraVolumeMounts: []
   # Extra volumes for the API pod (e.g. Kubernetes Secrets)
   extraVolumes: []
+  # Extra {name, value} env entries for the API container, e.g. to switch
+  # validation to strict parsing: {name: Validation__Parsing, value: Strict}
+  extraEnv: []
+  # FHIR conformance packages ($validate) added on top of the image's built-in
+  # set without rebuilding it. Each `id@version` is downloaded from
+  # `fhirPackages.registry` at pod startup by an init container into a shared
+  # volume seeded with the baked-in packages; the API reads that volume.
+  # Downloads need network at startup — for air-gapped clusters, mount a volume
+  # of *.tgz via extraVolumes/extraVolumeMounts and set extraEnv
+  # ProfileValidationSettings__PackageDirectory instead.
+  fhirPackages:
+    registry: "https://packages.fhir.org"
+    # e.g. ["hl7.fhir.no.basis@2.2.0", "hl7.fhir.eu.base@2.0.0"]
+    packages: []
   # Hostnames for API HTTPRoute. Leave empty to keep the API internal-only.
   hostnames: []
   # Override the AllowedHosts allow-list passed to ASP.NET HostFiltering.
