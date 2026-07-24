@@ -21,6 +21,32 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1654
+      {{- if .Values.api.fhirPackages.packages }}
+      initContainers:
+        # Seed a shared volume with the image's built-in packages, then download
+        # the extra ones so $validate can resolve their profiles without a rebuild.
+        - name: fetch-fhir-packages
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              cp -f /app/fhir-packages/*.tgz /fhir-packages/ 2>/dev/null || true
+              for spec in {{ range .Values.api.fhirPackages.packages }}{{ . | squote }} {{ end }}; do
+                case "$spec" in
+                  ?*@?*) ;;
+                  *) echo "Invalid fhirPackages entry '$spec'; expected id@version" >&2; exit 1 ;;
+                esac
+                id="${spec%@*}"; ver="${spec##*@}"
+                echo "Fetching ${id}@${ver}"
+                wget -q --tries=3 -O "/fhir-packages/${id}-${ver}.tgz" "{{ .Values.api.fhirPackages.registry }}/${id}/${ver}"
+              done
+              ls -1 /fhir-packages
+          volumeMounts:
+            - name: fhir-packages
+              mountPath: /fhir-packages
+      {{- end }}
       containers:
         - name: ignis-api
           image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
@@ -51,6 +77,13 @@ spec:
             - name: AuthSettings__Issuer
               value: {{ .Values.api.authSettings.issuer | quote }}
             {{- end }}
+            {{- if .Values.api.fhirPackages.packages }}
+            - name: ProfileValidationSettings__PackageDirectory
+              value: /fhir-packages
+            {{- end }}
+            {{- with .Values.api.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.api.existingSecret | default (include "app.api.fullname" .) }}
@@ -76,11 +109,23 @@ spec:
             timeoutSeconds: 3
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
-{{- if .Values.api.extraVolumeMounts }}
+{{- if or .Values.api.fhirPackages.packages .Values.api.extraVolumeMounts }}
           volumeMounts:
-            {{- toYaml .Values.api.extraVolumeMounts | nindent 12 }}
+            {{- if .Values.api.fhirPackages.packages }}
+            - name: fhir-packages
+              mountPath: /fhir-packages
+            {{- end }}
+            {{- with .Values.api.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
 {{- end }}
-{{- if .Values.api.extraVolumes }}
+{{- if or .Values.api.fhirPackages.packages .Values.api.extraVolumes }}
       volumes:
-        {{- toYaml .Values.api.extraVolumes | nindent 8 }}
+        {{- if .Values.api.fhirPackages.packages }}
+        - name: fhir-packages
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.api.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
 {{- end }}
