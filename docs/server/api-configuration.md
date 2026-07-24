@@ -91,7 +91,7 @@ Spark FHIR engine. Defaults in [appsettings.json](../../src/Ignis.Api/appsetting
 
 ## ProfileValidationSettings
 
-FHIR conformance packages the structural profile validator loads for `$validate`. The directory is scanned (non-recursively) for `*.tgz` packages; empty uses the build-staged [`fhir-packages`](../../fhir-packages.targets) folder, and a relative value resolves under the app base directory. Dependencies are **not** fetched at run time — every transitive package must already be present. In Kubernetes, point at a PVC mount (Helm `app.api.fhirPackages`). Point it at an empty directory to turn validation off (no packages load; `$validate` resolves nothing).
+FHIR conformance packages the structural profile validator loads for `$validate`. The directory is scanned (non-recursively) for `*.tgz` packages; empty uses the build-staged [`fhir-packages`](../../fhir-packages.targets) folder, and a relative value resolves under the app base directory. Dependencies are **not** fetched at run time — every transitive package must already be present. In Kubernetes, add packages without rebuilding the image via `app.api.fhirPackages.packages` (an init container downloads them), or set this directly to an air-gapped mount; see the [validation guide](../developer/validation.md#kubernetes-without-rebuilding-the-image). Point it at an empty directory to turn validation off (no packages load; `$validate` resolves nothing).
 
 | Key                                          | Required | Default | Notes                    |
 | -------------------------------------------- | -------- | ------- | ------------------------ |
