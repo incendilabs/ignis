@@ -7,3 +7,22 @@
 **/TestResults/
 .git/
 fhir-packages/
+
+# Local settings and environment files
+**/appsettings.local.json
+**/appsettings.local.*.json
+**/.env
+**/.env.*
+
+# Node modules + web build artifacts (the web image installs/builds fresh)
+**/node_modules/
+src/Ignis.Web/build/
+**/.react-router/
+**/.vite/
+
+# Local dev certificates — private keys must never enter an image
+certs/
+
+# OS / editor cruft
+**/.DS_Store
+**/*.log
