@@ -1,0 +1,2 @@
+# Norwegian base profiles. no.basis has no dependencies beyond r4.core (in the base image).
+hl7.fhir.no.basis@2.2.0

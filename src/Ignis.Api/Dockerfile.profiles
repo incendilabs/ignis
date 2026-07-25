@@ -1,0 +1,30 @@
+# Profile variant of ignis-api: the base image plus the FHIR conformance packages
+# listed in $PROFILE_LIST (e.g. infra/fhir-package-lists/eu.list). Built FROM a published base
+# image, so the app binary is identical — only /app/fhir-packages differs.
+#
+#   docker build -f src/Ignis.Api/Dockerfile.profiles \
+#     --build-arg BASE_IMAGE=<org>/ignis-api:canary \
+#     --build-arg PROFILE_LIST=infra/fhir-package-lists/eu.list -t <org>/ignis-api-eu .
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+ARG PROFILE_LIST
+USER root
+COPY ${PROFILE_LIST} /tmp/profiles.list
+# Download each id@version into the package dir the app already loads at startup.
+RUN set -eu; \
+    mkdir -p /app/fhir-packages; \
+    while IFS= read -r spec || [ -n "$spec" ]; do \
+      case "$spec" in \
+        ''|\#*) continue ;; \
+        ?*@?*) ;; \
+        *) echo "Invalid profile entry '$spec'; expected id@version" >&2; exit 1 ;; \
+      esac; \
+      id="${spec%@*}"; ver="${spec##*@}"; \
+      echo "Fetching ${id}@${ver}"; \
+      wget -q --tries=5 --waitretry=10 --retry-on-http-error=429,500,502,503,504 \
+        -O "/app/fhir-packages/${id}-${ver}.tgz" \
+        "https://packages.fhir.org/${id}/${ver}"; \
+    done < /tmp/profiles.list; \
+    rm /tmp/profiles.list; \
+    chown -R app:app /app/fhir-packages
+USER app

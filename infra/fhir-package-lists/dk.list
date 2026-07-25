@@ -1,0 +1,13 @@
+# Danish core profiles + dependency closure (r4.core is in the base image).
+# ihe.formatcode.fhir pinned to 1.4.0 — dk.core declares the 1.4.x wildcard.
+hl7.fhir.dk.core@3.7.0
+hl7.terminology.r4@7.1.0
+hl7.fhir.uv.extensions.r4@5.3.0
+hl7.fhir.uv.xver-r5.r4@0.1.0
+hl7.fhir.uv.ipa@1.1.0
+hl7.fhir.uv.phd@2.0.0
+hl7.fhir.uv.pocd@0.3.0
+hl7.fhir.uv.smart-app-launch@2.0.0
+ihe.formatcode.fhir@1.4.0
+ihe.iti.balp@1.1.4
+ihe.iti.mhd@4.2.3

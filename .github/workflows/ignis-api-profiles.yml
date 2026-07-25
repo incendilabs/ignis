@@ -1,0 +1,83 @@
+name: Ignis.Api profile variants
+
+# Layers FHIR profile packages onto the base ignis-api image, producing
+# ignis-api-<variant> images (eu, no, se, dk, scandinavian). Manual for now; the matrix
+# and tags are structured to grow a FHIR-version axis and to publish on release later.
+on:
+  workflow_dispatch:
+    inputs:
+      base_tag:
+        description: Base ignis-api tag to layer the profiles onto
+        default: canary
+        required: true
+
+jobs:
+  build:
+    name: Build profile variant (${{ matrix.variant }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each variant needs a matching infra/fhir-package-lists/<variant>.list.
+        variant: ["eu", "no", "se", "dk", "scandinavian"]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Check Docker Hub configuration
+        id: dockerhub
+        env:
+          DOCKERHUB_ORG: ${{ vars.DOCKERHUB_ORG }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -n "$DOCKERHUB_ORG" ] && [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+            echo "can_push=true" >> "$GITHUB_OUTPUT"
+            echo "org=$DOCKERHUB_ORG" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_push=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip (Docker Hub not configured)
+        if: steps.dockerhub.outputs.can_push != 'true'
+        run: echo "Docker Hub not configured — profile variants layer onto a published base image, so there is nothing to build. Skipping."
+
+      - name: Login to Docker Hub
+        if: steps.dockerhub.outputs.can_push == 'true'
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Compute date-sha stamp
+        id: stamp
+        run: echo "tag=$(date -u +%Y%m%d)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Docker metadata
+        if: steps.dockerhub.outputs.can_push == 'true'
+        id: meta
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        with:
+          images: ${{ steps.dockerhub.outputs.org }}/ignis-api-${{ matrix.variant }}
+          tags: |
+            type=raw,value=${{ steps.stamp.outputs.tag }}
+            type=raw,value=canary
+
+      - name: Build and push
+        if: steps.dockerhub.outputs.can_push == 'true'
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: .
+          file: src/Ignis.Api/Dockerfile.profiles
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            BASE_IMAGE=${{ steps.dockerhub.outputs.org }}/ignis-api:${{ inputs.base_tag }}
+            PROFILE_LIST=infra/fhir-package-lists/${{ matrix.variant }}.list
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
