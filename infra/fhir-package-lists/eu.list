@@ -1,0 +1,12 @@
+# HL7 Europe base + International Patient Summary, with their dependency closure.
+# One `id@version` per line (r4.core is already in the base image). Consumed by
+# Dockerfile.profiles to build the ignis-api-eu variant. Verified against
+# packages.fhir.org, July 2026. Include one version per shared dependency (the highest).
+hl7.fhir.eu.base@2.0.0
+hl7.fhir.uv.ips@1.1.0
+hl7.terminology.r4@7.1.0
+hl7.fhir.uv.extensions.r4@5.2.0
+hl7.fhir.eu.extensions.r4@1.3.0
+hl7.fhir.uv.xver-r5.r4@0.1.0
+fhir.dicom@2022.4.20221006
+ihe.pharm.mpd.r4@1.0.0-comment-2
