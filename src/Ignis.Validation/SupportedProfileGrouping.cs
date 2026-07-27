@@ -7,42 +7,54 @@
 namespace Ignis.Validation;
 
 /// <summary>
-/// A StructureDefinition reduced to what deciding "is this a browsable profile"
-/// needs: the type it constrains, its kind and derivation, and its canonical.
+/// StructureDefinition summary.
 /// </summary>
 public readonly record struct ProfileSummary(
     string? ConstrainedType,
     bool IsResourceKind,
     bool IsConstraint,
-    string? Canonical);
+    string? Canonical,
+    string? Name = null,
+    string? Title = null,
+    string? Version = null,
+    string? Status = null);
 
 /// <summary>Version-agnostic grouping of profiles by the resource type they constrain.</summary>
 public static class SupportedProfileGrouping
 {
     /// <summary>
-    /// Keeps resource-kind <em>constraint</em> profiles and groups their canonicals by constrained
-    /// type. Base specializations (the resource types themselves) and non-resource StructureDefinitions
-    /// are dropped, so the result is what a client can validate a resource against.
+    /// The constraint profiles a resource can be validated against, deduped by canonical.
+    /// Base specializations and non-resource StructureDefinitions are excluded.
     /// </summary>
-    public static IReadOnlyDictionary<string, IReadOnlyList<string>> ByType(IEnumerable<ProfileSummary> summaries)
+    public static IReadOnlyList<ProfileSummary> Browsable(IEnumerable<ProfileSummary> summaries)
     {
-        var byType = new Dictionary<string, (List<string> Order, HashSet<string> Seen)>(StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var result = new List<ProfileSummary>();
         foreach (var s in summaries)
         {
             if (!s.IsResourceKind || !s.IsConstraint) continue;
             if (string.IsNullOrEmpty(s.ConstrainedType) || string.IsNullOrEmpty(s.Canonical)) continue;
-
-            if (!byType.TryGetValue(s.ConstrainedType, out var entry))
-                byType[s.ConstrainedType] = entry = ([], new HashSet<string>(StringComparer.Ordinal));
-            // O(1) dedupe, preserving first-seen order; frozen to arrays below.
-            if (entry.Seen.Add(s.Canonical))
-                entry.Order.Add(s.Canonical);
+            if (seen.Add(s.Canonical))
+                result.Add(s);
         }
 
-        // ToArray so callers get a truly immutable list, not a downcastable List<string>.
+        return result.ToArray();
+    }
+
+    /// <summary>The <see cref="Browsable"/> profiles' canonicals, grouped by constrained type.</summary>
+    public static IReadOnlyDictionary<string, IReadOnlyList<string>> ByType(IEnumerable<ProfileSummary> summaries)
+    {
+        var byType = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        foreach (var s in Browsable(summaries))
+        {
+            if (!byType.TryGetValue(s.ConstrainedType!, out var order))
+                byType[s.ConstrainedType!] = order = [];
+            order.Add(s.Canonical!);
+        }
+
         return byType.ToDictionary(
             kv => kv.Key,
-            kv => (IReadOnlyList<string>)kv.Value.Order.ToArray(),
+            kv => (IReadOnlyList<string>)kv.Value.ToArray(),
             StringComparer.Ordinal);
     }
 }

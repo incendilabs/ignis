@@ -66,4 +66,27 @@ public class SupportedProfileGroupingTests
     {
         SupportedProfileGrouping.ByType([]).Should().BeEmpty();
     }
+
+    [Fact]
+    public void Browsable_keeps_constraint_profiles_with_metadata_and_dedupes()
+    {
+        var result = SupportedProfileGrouping.Browsable(
+        [
+            new ProfileSummary("Patient", IsResourceKind: true, IsConstraint: true,
+                "http://example.org/no-basis-Patient",
+                Name: "NoBasisPatient", Title: "Norwegian Patient", Version: "2.2.0", Status: "active"),
+            new ProfileSummary("Patient", IsResourceKind: true, IsConstraint: true,
+                "http://example.org/no-basis-Patient"), // duplicate canonical
+            new ProfileSummary("Patient", IsResourceKind: true, IsConstraint: false,
+                "http://hl7.org/fhir/StructureDefinition/Patient"), // base specialization, not a constraint
+            new ProfileSummary("Extension", IsResourceKind: false, IsConstraint: true,
+                "http://example.org/ext"), // not a resource kind
+        ]);
+
+        // Value equality on the record struct asserts every field survived, not just a chosen few.
+        result.Should().ContainSingle().Which.Should().Be(new ProfileSummary(
+            ConstrainedType: "Patient", IsResourceKind: true, IsConstraint: true,
+            Canonical: "http://example.org/no-basis-Patient",
+            Name: "NoBasisPatient", Title: "Norwegian Patient", Version: "2.2.0", Status: "active"));
+    }
 }
