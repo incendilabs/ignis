@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+using System.Text.RegularExpressions;
+
 using Firely.Fhir.Packages;
 
 using Hl7.Fhir.Model;
@@ -47,6 +49,8 @@ public static class ProfileValidationExtensions
             return PackageConformanceSource.Load(settings, logger);
         });
 
+        services.AddSingleton<IPackageCatalog>(provider => provider.GetRequiredService<PackageConformanceSource>());
+
         services.AddSingleton<ISupportedProfileCatalog>(provider =>
         {
             var packages = provider.GetRequiredService<PackageConformanceSource>();
@@ -70,21 +74,35 @@ public static class ProfileValidationExtensions
     }
 }
 
+/// <summary>The FHIR packages loaded on the server, for read-only introspection.</summary>
+public interface IPackageCatalog
+{
+    /// <summary>The loaded packages, as id + version.</summary>
+    IReadOnlyList<PackageRef> Packages { get; }
+}
+
 /// <summary>
 /// The FHIR packages loaded from disk, exposed both as an <see cref="IAsyncResourceResolver"/> (for
 /// validation) and an <see cref="ISummarySource"/> (for listing supported profiles) — one load, two views.
 /// </summary>
-internal sealed class PackageConformanceSource
+internal sealed class PackageConformanceSource : IPackageCatalog
 {
     public IAsyncResourceResolver Resolver { get; }
 
     /// <summary>Canonical URLs of every StructureDefinition in the packages — the catalog resolves these.</summary>
     public IReadOnlyList<string> StructureDefinitionCanonicals { get; }
 
-    private PackageConformanceSource(IAsyncResourceResolver resolver, IReadOnlyList<string> structureDefinitionCanonicals)
+    /// <summary>The FHIR packages loaded from disk, as id + version parsed from their file names.</summary>
+    public IReadOnlyList<PackageRef> Packages { get; }
+
+    private PackageConformanceSource(
+        IAsyncResourceResolver resolver,
+        IReadOnlyList<string> structureDefinitionCanonicals,
+        IReadOnlyList<PackageRef> packages)
     {
         Resolver = resolver;
         StructureDefinitionCanonicals = structureDefinitionCanonicals;
+        Packages = packages;
     }
 
     public static PackageConformanceSource Load(ProfileValidationSettings settings, ILogger logger)
@@ -108,7 +126,7 @@ internal sealed class PackageConformanceSource
         if (packages.Length == 0)
         {
             logger.LogWarning("No FHIR packages available in {Directory}; $validate can resolve only catalog-stored profiles.", directory);
-            return new PackageConformanceSource(new EmptyResolver(), []);
+            return new PackageConformanceSource(new EmptyResolver(), [], []);
         }
 
         logger.LogInformation("Profile validator loaded {Count} FHIR package(s) from {Directory}: {Packages}",
@@ -116,7 +134,24 @@ internal sealed class PackageConformanceSource
 
         var source = new FhirPackageSource(ModelInfo.ModelInspector, packages);
         var structureDefinitions = source.ListCanonicalUris("StructureDefinition").ToList();
-        return new PackageConformanceSource(source, structureDefinitions);
+        var packageRefs = packages.Select(PackageRef.FromFileName).ToList();
+        return new PackageConformanceSource(source, structureDefinitions, packageRefs);
+    }
+}
+
+/// <summary>A FHIR package loaded from disk, as its id and version.</summary>
+public sealed record PackageRef(string Id, string? Version)
+{
+    // Our packages are staged as "{id}-{version}.tgz" (fhir-packages.targets / Dockerfile.profiles).
+    private static readonly Regex NameVersion = new(@"^(?<id>.+)-(?<version>\d+\.\d+.*)$", RegexOptions.Compiled);
+
+    public static PackageRef FromFileName(string path)
+    {
+        var name = Path.GetFileNameWithoutExtension(path);
+        var match = NameVersion.Match(name);
+        return match.Success
+            ? new PackageRef(match.Groups["id"].Value, match.Groups["version"].Value)
+            : new PackageRef(name, null);
     }
 }
 
