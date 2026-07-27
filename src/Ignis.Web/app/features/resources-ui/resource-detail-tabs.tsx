@@ -6,7 +6,10 @@
 
 import type { ReactNode } from "react";
 
+import { m } from "#app/i18n/paraglide/messages";
 import type { Resource } from "#app/lib/fhir/model";
+
+import { QuestionnaireItemTree } from "./QuestionnaireItemTree";
 
 /** A FHIR resource type name, e.g. "Questionnaire". */
 type ResourceType = string;
@@ -29,7 +32,15 @@ export interface ResourceDetailTab {
 /**
  * Type-specific tabs keyed by FHIR resourceType.
  */
-const registry: Record<ResourceType, ResourceDetailTab[]> = {};
+const registry: Record<ResourceType, ResourceDetailTab[]> = {
+  Questionnaire: [
+    {
+      id: "form",
+      title: () => m.resources_instance_tab_form(),
+      render: ({ resource }) => <QuestionnaireItemTree resource={resource} />,
+    },
+  ],
+};
 
 /** Get extra tabs registered for a resource type. */
 export function resourceDetailTabsFor(resourceType: ResourceType): ResourceDetailTab[] {
