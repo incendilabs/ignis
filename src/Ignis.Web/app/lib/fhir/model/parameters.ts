@@ -10,6 +10,8 @@ import { isResource, type Resource } from "./resource";
 export interface ParametersParameter {
   name?: string;
   valueInteger?: number;
+  valueString?: string;
+  part?: ParametersParameter[];
 }
 
 /**
