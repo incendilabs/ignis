@@ -17,6 +17,7 @@ export default [
     layout("layouts/console.tsx", [
       route("user", "features/user-dashboard/routes/index.tsx"),
       route("admin/database", "features/admin/routes/database.tsx"),
+      route("admin/profiles", "features/admin/routes/profiles.tsx"),
       route("admin/import", "features/admin/routes/import.tsx"),
       route("admin/operations", "features/operations/routes/index.tsx"),
       route("resources", "features/resources-ui/routes/index.tsx"),

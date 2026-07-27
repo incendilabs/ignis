@@ -8,6 +8,7 @@ import { NavTree, type NavTreeGroup, type NavTreeItem } from "@eventuras/ratio-u
 import { Text } from "@eventuras/ratio-ui/core/Text";
 import {
   Database,
+  FileText,
   FolderOpen,
   LayoutGrid,
   ScrollText,
@@ -162,6 +163,11 @@ export function ConsoleNav({
                 title: m.admin_database_title(),
                 href: "/admin/database",
                 icon: <Database size={ICON_SIZE} />,
+              },
+              {
+                title: m.profiles_title(),
+                href: "/admin/profiles",
+                icon: <FileText size={ICON_SIZE} />,
               },
               {
                 title: m.import_title(),
