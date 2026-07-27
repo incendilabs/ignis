@@ -7,7 +7,6 @@
 import { Card } from "@eventuras/ratio-ui/core/Card";
 import { CodeBlock } from "@eventuras/ratio-ui/core/CodeBlock";
 import { CopyButton } from "@eventuras/ratio-ui/core/CopyButton";
-import { DataTree, type DataNode } from "@eventuras/ratio-ui/core/DataTree";
 import { DescriptionList } from "@eventuras/ratio-ui/core/DescriptionList";
 import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Tabs } from "@eventuras/ratio-ui/core/Tabs";
@@ -19,10 +18,11 @@ import { useMemo, useState } from "react";
 import { type FetcherWithComponents, useFetcher } from "react-router";
 
 import { m } from "#app/i18n/paraglide/messages";
-import { formatPrimitive } from "#app/lib/fhir/format";
 import type { Resource } from "#app/lib/fhir/model";
 import { summaryFields } from "#app/lib/fhir/summary";
-import { buildResourceTree, type FhirNode } from "#app/lib/fhir/tree";
+
+import { ResourceTree } from "./ResourceTree";
+import { resourceDetailTabsFor } from "./resource-detail-tabs";
 
 type XmlResult = { ok: true; xml: string; } | { ok: false; };
 
@@ -39,10 +39,6 @@ export function ResourceDetail({
   resourceType: string;
   id: string;
 }) {
-  const nodes = useMemo(
-    () => buildResourceTree(resource).map((node) => toDataNode(node)),
-    [resource],
-  );
   const json = useMemo(() => JSON.stringify(resource, null, 2), [resource]);
 
   const xml = useFetcher<XmlResult>();
@@ -61,9 +57,14 @@ export function ResourceDetail({
       <Tabs.Item id="summary" title={m.resources_instance_tab_summary()}>
         <SummaryTab resource={resource} resourceType={resourceType} />
       </Tabs.Item>
+      {resourceDetailTabsFor(resourceType).map((tab) => (
+        <Tabs.Item key={tab.id} id={tab.id} title={tab.title()}>
+          {tab.render({ resource, resourceType, id })}
+        </Tabs.Item>
+      ))}
       <Tabs.Item id="tree" title={m.resources_instance_tab_tree()}>
         <Card>
-          <DataTree collapsible defaultOpenDepth={2} nodes={nodes} />
+          <ResourceTree resource={resource} />
         </Card>
       </Tabs.Item>
       <Tabs.Item id="source" title={m.resources_instance_tab_source()}>
@@ -215,35 +216,4 @@ function SourcePending({
       {children}
     </Stack>
   );
-}
-
-/**
- * Label for an array item: FHIR-ish identity when the item carries one
- * (`linkId`, `code`, tail of `system`), else its position.
- */
-function arrayItemTerm(node: FhirNode): string {
-  const child = (key: string) =>
-    node.children.find((c) => c.key === key && c.kind === "primitive")?.value;
-  const linkId = child("linkId");
-  if (linkId != null) return `#${String(linkId)}`;
-  const code = child("code");
-  if (code != null) return String(code);
-  const system = child("system");
-  if (system != null) return String(system).split("/").pop() ?? String(system);
-  return `[${node.key}]`;
-}
-
-/** Adapts a FhirNode to a DataTree node. */
-function toDataNode(node: FhirNode, term: string = node.key): DataNode {
-  const id = node.path.join(".");
-  if (node.kind === "primitive") {
-    return { id, term, value: formatPrimitive(node.value) };
-  }
-  return {
-    id,
-    term,
-    children: node.children.map((child) =>
-      toDataNode(child, node.kind === "array" ? arrayItemTerm(child) : child.key),
-    ),
-  };
 }
