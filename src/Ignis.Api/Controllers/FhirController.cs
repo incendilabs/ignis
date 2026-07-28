@@ -236,7 +236,7 @@ public class FhirController : ControllerBase
     [HttpGet, Route("_snapshot"), Tags("System")]
     public async Task<FhirResponse> Snapshot()
     {
-        string snapshot = Request.GetParameter(FhirParameter.SNAPSHOT_ID);
+        string snapshot = Request.GetParameter(FhirParameter.SnapshotId);
         var offset = Request.GetPagingOffsetParameter();
         return await _fhirService.GetPageAsync(snapshot, offset).ConfigureAwait(false);
     }
