@@ -17,7 +17,7 @@
     Updating MongoDB.Driver to 3.9.0 resolves the vulnerable transitive dependencies SharpCompress and Snappier.
     When OpenIddict.MongoDb resolves this upstream we can remove this package again.
      -->
-    <PackageReference Include="MongoDB.Driver" Version="3.9.0" />
+    <PackageReference Include="MongoDB.Driver" Version="3.10.0" />
   </ItemGroup>
 
   <ItemGroup>
