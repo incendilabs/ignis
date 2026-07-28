@@ -31,10 +31,16 @@ public sealed class ProfileAwareCapabilityStatementService : ICapabilityStatemen
 
     public CapabilityStatement GetSparkCapabilityStatement() => _enriched.Value;
 
+    // Fixed canonical namespace for Ignis's built-in operations.
+    private const string OperationBase = "http://incendi.com/fhir/OperationDefinition/";
+
     private CapabilityStatement Build()
     {
         // We own the inner exclusively and build once behind the Lazy
         var statement = _inner.GetSparkCapabilityStatement();
+
+        foreach (var rest in statement.Rest)
+            AdvertiseOperations(rest);
 
         // The catalog resolves package StructureDefinitions asynchronously; block once here.
         // It runs a single time, and the work is in-memory after packages load at startup.
@@ -50,5 +56,21 @@ public sealed class ProfileAwareCapabilityStatementService : ICapabilityStatemen
         }
 
         return statement;
+    }
+
+    private static void AdvertiseOperations(CapabilityStatement.RestComponent rest)
+    {
+        rest.Operation.Add(new CapabilityStatement.OperationComponent
+        {
+            Name = "packages",
+            Definition = OperationBase + "packages",
+        });
+
+        var structureDefinition = rest.Resource.FirstOrDefault(r => r.Type?.ToString() == "StructureDefinition");
+        structureDefinition?.Operation.Add(new CapabilityStatement.OperationComponent
+        {
+            Name = "profiles",
+            Definition = OperationBase + "profiles",
+        });
     }
 }

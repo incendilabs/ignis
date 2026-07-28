@@ -77,4 +77,24 @@ public class ProfilesControllerTests : IClassFixture<IntegrationFixture>, IAsync
             definition.Derivation.Should().Be(StructureDefinition.TypeDerivationRule.Constraint);
         }
     }
+
+    [Fact]
+    public async Task Metadata_AdvertisesTheProfilesAndPackagesOperations()
+    {
+        // metadata is anonymous; the custom operations should be discoverable there.
+        var response = await _anonymousClient.GetAsync("/fhir/metadata", CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var capability = _deserializer.Deserialize<CapabilityStatement>(await response.Content.ReadAsStringAsync(CT));
+
+        const string operationBase = "http://incendi.com/fhir/OperationDefinition/";
+
+        var rest = capability.Rest.Should().ContainSingle().Subject;
+        var packages = rest.Operation.Should().ContainSingle(o => o.Name == "packages").Subject;
+        packages.Definition.Should().Be(operationBase + "packages");
+
+        var structureDefinition = rest.Resource.Single(r => r.Type?.ToString() == "StructureDefinition");
+        var profiles = structureDefinition.Operation.Should().ContainSingle(o => o.Name == "profiles").Subject;
+        profiles.Definition.Should().Be(operationBase + "profiles");
+    }
 }
