@@ -5,3 +5,5 @@
  */
 
 export { formatPrimitive } from "./primitive";
+export { formatResourceWithLines } from "./resource-lines";
+export type { ResourceLines } from "./resource-lines";
