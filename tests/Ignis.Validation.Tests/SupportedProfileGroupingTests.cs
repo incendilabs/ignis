@@ -48,6 +48,23 @@ public class SupportedProfileGroupingTests
     }
 
     [Fact]
+    public void Excludes_cross_version_profiles()
+    {
+        var result = SupportedProfileGrouping.Browsable(
+        [
+            // From hl7.fhir.uv.xver-r5.r4 — an R5 shape published for R4 IG authors to reference.
+            Constraint("Questionnaire", "http://hl7.org/fhir/5.0/StructureDefinition/profile-Questionnaire"),
+            Constraint("Observation", "http://hl7.org/fhir/StructureDefinition/vitalsigns"),
+            // Only hl7.org/fhir carries the version segment; elsewhere it is just a path.
+            Constraint("Patient", "http://example.org/4.0/StructureDefinition/local"),
+        ]);
+
+        result.Select(p => p.Canonical).Should().BeEquivalentTo(
+            "http://hl7.org/fhir/StructureDefinition/vitalsigns",
+            "http://example.org/4.0/StructureDefinition/local");
+    }
+
+    [Fact]
     public void Skips_summaries_missing_a_type_or_canonical_and_dedupes()
     {
         var result = SupportedProfileGrouping.ByType(
