@@ -9,6 +9,7 @@ using Firely.Fhir.Packages;
 using FluentAssertions;
 
 using Hl7.Fhir.Model;
+using Hl7.Fhir.Serialization;
 using Hl7.Fhir.Specification.Source;
 using Hl7.Fhir.Specification.Terminology;
 
@@ -22,6 +23,11 @@ public sealed class R4CoreFixture
 {
     public IProfileValidationService Validator { get; }
 
+    /// <summary>The package source and terminology behind <see cref="Validator"/>, for tests that build their own.</summary>
+    public IAsyncResourceResolver Core { get; }
+
+    public ICodeValidationTerminologyService Terminology { get; }
+
     public R4CoreFixture()
     {
         var directory = Path.Combine(AppContext.BaseDirectory, "fhir-packages");
@@ -30,20 +36,45 @@ public sealed class R4CoreFixture
             throw new InvalidOperationException(
                 $"No FHIR packages found in '{directory}'. They are staged at build time by fhir-packages.targets.");
 
-        IAsyncResourceResolver core = new FhirPackageSource(ModelInfo.ModelInspector, packages);
-        Validator = new ProfileValidationService(core, LocalTerminologyService.CreateDefaultForCore(core));
+        Core = new FhirPackageSource(ModelInfo.ModelInspector, packages);
+        Terminology = LocalTerminologyService.CreateDefaultForCore(Core);
+        Validator = new ProfileValidationService(Core, Terminology);
     }
 }
 
-public sealed class ProfileValidationServiceTests : IClassFixture<R4CoreFixture>
+public sealed class ProfileValidationServiceTests : IClassFixture<R4CoreFixture>, IDisposable
 {
+    private readonly R4CoreFixture _fixture;
     private readonly IProfileValidationService _validator;
+    private readonly List<DirectoryInfo> _staged = [];
 
-    public ProfileValidationServiceTests(R4CoreFixture fixture) => _validator = fixture.Validator;
+    public ProfileValidationServiceTests(R4CoreFixture fixture)
+    {
+        _fixture = fixture;
+        _validator = fixture.Validator;
+    }
+
+    public void Dispose()
+    {
+        foreach (var directory in _staged)
+            directory.Delete(recursive: true);
+    }
 
     private static IEnumerable<string?> Errors(OperationOutcome outcome) => outcome.Issue
         .Where(i => i.Severity is OperationOutcome.IssueSeverity.Error or OperationOutcome.IssueSeverity.Fatal)
         .Select(i => i.Details?.Text ?? i.Diagnostics ?? i.Code.ToString());
+
+    /// <summary>The packages plus one profile staged on disk, since no SDK resolver serves resources from memory.</summary>
+    private IAsyncResourceResolver ResolverWith(StructureDefinition profile)
+    {
+        var directory = Directory.CreateTempSubdirectory("ignis-profile-");
+        _staged.Add(directory);
+        File.WriteAllText(Path.Combine(directory.FullName, "profile.json"), profile.ToJson());
+
+        return new MultiResolver(
+            new CommonDirectorySource(ModelInfo.ModelInspector, directory.FullName),
+            _fixture.Core);
+    }
 
     [Fact]
     public void Valid_resource_validates_clean_against_its_base_type()
@@ -75,6 +106,22 @@ public sealed class ProfileValidationServiceTests : IClassFixture<R4CoreFixture>
         issue.Severity.Should().Be(OperationOutcome.IssueSeverity.Error);
         issue.Code.Should().Be(OperationOutcome.IssueType.NotFound);
         (issue.Details?.Text ?? "").Should().Contain("does-not-exist");
+    }
+
+    [Fact]
+    public void Profile_with_unresolvable_dependencies_is_reported_not_thrown()
+    {
+        var validator = new ProfileValidationService(
+            ResolverWith(UnresolvableProfile.Definition), _fixture.Terminology);
+
+        var outcome = validator.Validate(new Patient(), UnresolvableProfile.Url);
+
+        var issue = outcome.Issue.Should().ContainSingle().Which;
+        issue.Severity.Should().Be(OperationOutcome.IssueSeverity.Error);
+        issue.Code.Should().Be(OperationOutcome.IssueType.NotSupported);
+        (issue.Details?.Text ?? "")
+            .Should().Contain(UnresolvableProfile.Url)
+            .And.Contain(UnresolvableProfile.MissingDependency);
     }
 
     [Fact]

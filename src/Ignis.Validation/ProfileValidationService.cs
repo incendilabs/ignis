@@ -51,27 +51,36 @@ public sealed class ProfileValidationService : IProfileValidationService
             // Treat null or blank (e.g. an empty ?profile= query value) as "no explicit profile".
             var canonical = string.IsNullOrWhiteSpace(profile) ? CoreProfileBase + resource.TypeName : profile;
 
-            var schema = _schemaResolver.GetSchema(new Canonical(canonical));
-            if (schema is null)
-                return ProfileNotResolved(canonical);
+            try
+            {
+                var schema = _schemaResolver.GetSchema(new Canonical(canonical));
+                if (schema is null)
+                    return ProfileNotResolved(canonical);
 
-            // ToPocoNode derives the model metadata from the resource instance, so the library stays
-            // FHIR-version agnostic with no compile-time reference to Hl7.Fhir.R4.
-            ITypedElement node = resource.ToPocoNode();
+                // ToPocoNode derives the model metadata from the resource instance, so the library stays
+                // FHIR-version agnostic with no compile-time reference to Hl7.Fhir.R4.
+                ITypedElement node = resource.ToPocoNode();
 
-            ResultReport report = schema.Validate(node, _settings);
-            var outcome = report.ToOperationOutcome();
+                ResultReport report = schema.Validate(node, _settings);
+                var outcome = report.ToOperationOutcome();
 
-            // OperationOutcome.issue is 1..*; a clean result has none, so report success explicitly.
-            if (outcome.Issue.Count == 0)
-                outcome.Issue.Add(new OperationOutcome.IssueComponent
-                {
-                    Severity = OperationOutcome.IssueSeverity.Information,
-                    Code = OperationOutcome.IssueType.Informational,
-                    Details = new CodeableConcept { Text = "Validation successful; no issues detected." },
-                });
+                // OperationOutcome.issue is 1..*; a clean result has none, so report success explicitly.
+                if (outcome.Issue.Count == 0)
+                    outcome.Issue.Add(new OperationOutcome.IssueComponent
+                    {
+                        Severity = OperationOutcome.IssueSeverity.Information,
+                        Code = OperationOutcome.IssueType.Informational,
+                        Details = new CodeableConcept { Text = "Validation successful; no issues detected." },
+                    });
 
-            return outcome;
+                return outcome;
+            }
+            catch (SchemaResolutionFailedException error)
+            {
+                // A profile whose dependencies are absent from the loaded packages cannot be compiled.
+                // That says something about the profile, not the server, so report it as a finding.
+                return ProfileNotCompiled(canonical, error);
+            }
         }
     }
 
@@ -84,6 +93,24 @@ public sealed class ProfileValidationService : IProfileValidationService
                 Severity = OperationOutcome.IssueSeverity.Error,
                 Code = OperationOutcome.IssueType.NotFound,
                 Details = new CodeableConcept { Text = $"Profile '{canonical}' could not be resolved." },
+            },
+        },
+    };
+
+    /// <summary>Names the dependency that failed, so a package gap is diagnosable from the outcome alone.</summary>
+    private static OperationOutcome ProfileNotCompiled(string canonical, Exception error) => new()
+    {
+        Issue =
+        {
+            new OperationOutcome.IssueComponent
+            {
+                Severity = OperationOutcome.IssueSeverity.Error,
+                Code = OperationOutcome.IssueType.NotSupported,
+                Details = new CodeableConcept
+                {
+                    Text = $"Profile '{canonical}' could not be compiled for validation: "
+                        + (error.InnerException ?? error).Message,
+                },
             },
         },
     };
