@@ -7,7 +7,11 @@
 import { isResource, type Resource } from "./model";
 
 export interface OperationOutcomeIssue {
+  severity?: string;
+  code?: string;
   diagnostics?: string;
+  details?: { text?: string; };
+  expression?: string[];
 }
 
 export interface OperationOutcomePayload extends Resource<"OperationOutcome"> {
@@ -30,6 +34,11 @@ export function getOperationOutcomeDetails(
     operationId: payload.id,
     message: payload.issue?.find((issue) => issue.diagnostics)?.diagnostics,
   };
+}
+
+/** All issues from an OperationOutcome payload; empty when it isn't one. */
+export function getOperationOutcomeIssues(payload: unknown): OperationOutcomeIssue[] {
+  return isOperationOutcomePayload(payload) ? (payload.issue ?? []) : [];
 }
 
 function isOperationOutcomePayload(payload: unknown): payload is OperationOutcomePayload {
