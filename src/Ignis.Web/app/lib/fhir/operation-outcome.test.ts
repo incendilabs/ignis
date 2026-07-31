@@ -45,6 +45,12 @@ describe("getOperationOutcomeDetails", () => {
 
     expect(getOperationOutcomeDetails(payload)).toEqual({ operationId: "op-9" });
   });
+
+  it("keeps the operation id when the issue list is malformed", () => {
+    const payload = { resourceType: "OperationOutcome", id: "op-10", issue: "boom" };
+
+    expect(getOperationOutcomeDetails(payload)).toEqual({ operationId: "op-10" });
+  });
 });
 
 describe("getOperationOutcomeIssues", () => {
@@ -69,5 +75,23 @@ describe("getOperationOutcomeIssues", () => {
     expect(getOperationOutcomeIssues({ resourceType: "Patient" })).toEqual([]);
     expect(getOperationOutcomeIssues({ resourceType: "OperationOutcome" })).toEqual([]);
     expect(getOperationOutcomeIssues(null)).toEqual([]);
+  });
+
+  // Callers map over the result, so a malformed payload must not reach them.
+  it("returns an array even when the payload's issue is not one", () => {
+    const issues = getOperationOutcomeIssues({ resourceType: "OperationOutcome", issue: "boom" });
+
+    expect(issues).toEqual([]);
+    expect(() => issues.map((issue) => issue.severity)).not.toThrow();
+  });
+
+  // Nested arrays are the trap here: `typeof [] === "object"`.
+  it("drops entries that are not objects", () => {
+    const payload = {
+      resourceType: "OperationOutcome",
+      issue: [{ severity: "error" }, null, "boom", ["nested"], 42],
+    };
+
+    expect(getOperationOutcomeIssues(payload)).toEqual([{ severity: "error" }]);
   });
 });
