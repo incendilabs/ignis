@@ -34,7 +34,7 @@ jobs:
             CHANGED=$(git diff --name-only "${PUSH_BEFORE}...${PUSH_AFTER}")
           fi
 
-          echo "api=$(echo "$CHANGED" | grep -Eq '^(src/Ignis\.Api/|tests/Ignis\.Api\.Tests/|\.github/workflows/ignis-api\.yml$|\.github/workflows/main\.yml$)' && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "api=$(echo "$CHANGED" | grep -Eq '^(src/Ignis\.(Api|Auth|Terminology|Validation)/|tests/|Ignis\.slnx$|global\.json$|fhir-packages\.targets$|\.github/workflows/(ignis-api|main)\.yml$)' && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "web=$(echo "$CHANGED" | grep -Eq '^(src/Ignis\.Web/|\.github/workflows/ignis-web\.yml$|\.github/workflows/main\.yml$)' && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "infra=$(echo "$CHANGED" | grep -Eq '^(infra/|\.github/workflows/ignis-infra\.yml$|\.github/workflows/main\.yml$)' && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
