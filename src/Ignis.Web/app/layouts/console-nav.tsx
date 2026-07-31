@@ -12,6 +12,7 @@ import {
   FolderOpen,
   LayoutGrid,
   ScrollText,
+  ShieldCheck,
   Upload,
 } from "@eventuras/ratio-ui/icons";
 import { SearchField } from "@eventuras/ratio-ui/forms/SearchField";
@@ -149,6 +150,11 @@ export function ConsoleNav({
                     onChange: setTypeFilter,
                   }),
                 ],
+              },
+              {
+                title: m.validation_title(),
+                href: "/validation",
+                icon: <ShieldCheck size={ICON_SIZE} />,
               },
             ]
           : []),

@@ -20,6 +20,7 @@ export default [
       route("admin/profiles", "features/admin/routes/profiles.tsx"),
       route("admin/import", "features/admin/routes/import.tsx"),
       route("admin/operations", "features/operations/routes/index.tsx"),
+      route("validation", "features/validation/routes/index.tsx"),
       route("resources", "features/resources-ui/routes/index.tsx"),
       route("resources/:resourceType", "features/resources-ui/routes/$resourceType.tsx"),
       route("resources/:resourceType/:id", "features/resources-ui/routes/$resourceType.$id.tsx"),

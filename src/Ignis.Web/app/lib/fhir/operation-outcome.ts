@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import { isObject } from "./guards";
 import { isResource, type Resource } from "./model";
 
 export interface OperationOutcomeIssue {
@@ -32,13 +33,20 @@ export function getOperationOutcomeDetails(
 
   return {
     operationId: payload.id,
-    message: payload.issue?.find((issue) => issue.diagnostics)?.diagnostics,
+    message: issuesOf(payload).find((issue) => issue.diagnostics)?.diagnostics,
   };
 }
 
 /** All issues from an OperationOutcome payload; empty when it isn't one. */
 export function getOperationOutcomeIssues(payload: unknown): OperationOutcomeIssue[] {
-  return isOperationOutcomePayload(payload) ? (payload.issue ?? []) : [];
+  return isOperationOutcomePayload(payload) ? issuesOf(payload) : [];
+}
+
+function issuesOf(payload: OperationOutcomePayload): OperationOutcomeIssue[] {
+  const issue: unknown = payload.issue;
+  if (!Array.isArray(issue)) return [];
+
+  return issue.filter((entry): entry is OperationOutcomeIssue => isObject(entry));
 }
 
 function isOperationOutcomePayload(payload: unknown): payload is OperationOutcomePayload {

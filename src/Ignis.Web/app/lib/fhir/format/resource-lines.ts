@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import { isObject } from "../guards";
 import type { Resource } from "../model";
 
 /** A formatted resource, plus a lookup from FHIRPath expression to line. */
@@ -45,7 +46,7 @@ export function formatResourceWithLines(
       return;
     }
 
-    if (isPlainObject(value)) {
+    if (isObject(value)) {
       const entries = Object.entries(value).filter(([, child]) => child !== undefined);
       if (entries.length === 0) {
         lines.push(`${indent}${prefix}{}${suffix}`);
@@ -126,8 +127,4 @@ function segments(expression: string): string[] {
     .split(".")
     .map((segment) => segment.trim())
     .filter((segment) => segment.length > 0);
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
