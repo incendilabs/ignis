@@ -1,0 +1,37 @@
+meta {
+  name: Create Patient (invalid gender code)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/Patient
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Patient",
+    "name": [
+      {
+        "family": "Test"
+      }
+    ],
+    "gender": "mann"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  `gender` is bound to `AdministrativeGender`. Expect `400` with
+  `expression: ["Patient.gender"]`.
+}

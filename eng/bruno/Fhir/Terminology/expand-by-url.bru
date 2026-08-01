@@ -1,0 +1,25 @@
+meta {
+  name: Expand ValueSet by url
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{fhirBase}}/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/administrative-gender
+  body: none
+  auth: inherit
+}
+
+params:query {
+  url: http://hl7.org/fhir/ValueSet/administrative-gender
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq ValueSet
+}
+
+docs {
+  Expands a canonical that resolves from the loaded packages. `filter`, `offset` and
+  `count` narrow the result.
+}

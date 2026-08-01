@@ -1,0 +1,42 @@
+meta {
+  name: Update Task (mark completed)
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{fhirBase}}/Task/{{taskId}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Task",
+    "id": "{{taskId}}",
+    "status": "completed",
+    "intent": "order",
+    "description": "Follow up on abnormal heart rate observation",
+    "for": {
+      "reference": "Patient/{{patientId}}"
+    },
+    "owner": {
+      "reference": "Practitioner/{{practitionerId}}"
+    },
+    "authoredOn": "2026-07-22T10:00:00Z",
+    "lastModified": "2026-07-22T12:00:00Z"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq Task
+}
+
+docs {
+  Moves the task to `completed`. Needs `taskId`. Expect `200` with a bumped `meta.versionId`.
+}

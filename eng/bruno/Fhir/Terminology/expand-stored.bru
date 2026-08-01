@@ -1,0 +1,20 @@
+meta {
+  name: Expand stored ValueSet
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{fhirBase}}/ValueSet/{{valueSetId}}/$expand
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq ValueSet
+}
+
+docs {
+  Expands a ValueSet held in the store. Needs `valueSetId` from **Create ValueSet**.
+}

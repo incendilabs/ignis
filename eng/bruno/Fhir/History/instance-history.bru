@@ -1,0 +1,20 @@
+meta {
+  name: Instance history
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{fhirBase}}/Patient/{{patientId}}/_history
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq Bundle
+}
+
+docs {
+  Every version of one patient, as a `history` `Bundle`. Needs `patientId`.
+}

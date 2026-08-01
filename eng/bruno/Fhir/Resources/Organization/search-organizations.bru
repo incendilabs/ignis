@@ -1,0 +1,20 @@
+meta {
+  name: Search Organizations by name
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{fhirBase}}/Organization?name=Incendi
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq Bundle
+}
+
+docs {
+  Expect `200` with a `searchset` `Bundle`.
+}

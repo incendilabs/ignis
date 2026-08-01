@@ -1,0 +1,39 @@
+meta {
+  name: Patch Patient
+  type: http
+  seq: 14
+}
+
+patch {
+  url: {{fhirBase}}/Patient/{{patientId}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "operation",
+        "part": [
+          { "name": "type", "valueCode": "replace" },
+          { "name": "path", "valueString": "Patient.active" },
+          { "name": "value", "valueBoolean": false }
+        ]
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  FHIRPath patch setting `active` to `false`. Needs `patientId`.
+}

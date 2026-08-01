@@ -1,0 +1,25 @@
+meta {
+  name: Meta (read)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/Patient/{{patientId}}/$meta
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Parameters"
+  }
+}
+
+docs {
+  The resource's `meta` (tags, profiles, security labels) as `Parameters`. Needs `patientId`.
+}

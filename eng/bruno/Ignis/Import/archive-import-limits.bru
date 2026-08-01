@@ -1,0 +1,16 @@
+meta {
+  name: Archive import limits
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{fhirBase}}/$archive-import
+  body: none
+  auth: inherit
+}
+
+docs {
+  Configured upload limits as a `Parameters` resource. Requires `operations.import`
+  and the `AllowImport` flag.
+}

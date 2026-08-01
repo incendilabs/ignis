@@ -1,0 +1,15 @@
+meta {
+  name: Everything (instance)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{fhirBase}}/Patient/{{patientId}}/$everything
+  body: none
+  auth: inherit
+}
+
+docs {
+  All resources related to the patient instance, as a `Bundle`. Needs `patientId`.
+}

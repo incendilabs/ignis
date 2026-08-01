@@ -1,0 +1,39 @@
+meta {
+  name: Create Observation (invalid status code)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/Observation
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Observation",
+    "status": "done",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "8867-4"
+        }
+      ]
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  `status` must be an `ObservationStatus` code. Expect `400` at `Observation.status`.
+}

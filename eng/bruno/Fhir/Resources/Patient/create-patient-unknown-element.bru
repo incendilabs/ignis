@@ -1,0 +1,32 @@
+meta {
+  name: Create Patient (unknown element)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{fhirBase}}/Patient
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Patient",
+    "favoriteColor": "blue",
+    "active": true
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  `favoriteColor` is not a `Patient` element. The parser is strict, so expect `400`.
+}

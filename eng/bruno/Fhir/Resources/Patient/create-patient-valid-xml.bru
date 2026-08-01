@@ -1,0 +1,36 @@
+meta {
+  name: Create Patient (valid, XML)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{fhirBase}}/Patient
+  body: xml
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+xml
+  Accept: application/fhir+xml
+}
+
+body:xml {
+  <Patient xmlns="http://hl7.org/fhir">
+    <name>
+      <family value="Test"/>
+      <given value="Ada"/>
+    </name>
+    <gender value="female"/>
+    <birthDate value="1990-01-01"/>
+  </Patient>
+}
+
+assert {
+  res.status: eq 201
+}
+
+docs {
+  Happy path on the XML route. FHIR XML is order-sensitive: `name`, then `gender`,
+  then `birthDate`.
+}

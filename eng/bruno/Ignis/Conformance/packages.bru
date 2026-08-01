@@ -1,0 +1,20 @@
+meta {
+  name: Loaded packages
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{fhirBase}}/$packages
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq Parameters
+}
+
+docs {
+  FHIR packages installed on the server, one `package` parameter each.
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Delete Patient
+  type: http
+  seq: 16
+}
+
+delete {
+  url: {{fhirBase}}/Patient/{{patientId}}
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: lt 300
+}
+
+docs {
+  Deletes the patient. Run last — the other requests need `patientId`. A later read
+  returns `410 Gone`.
+}
