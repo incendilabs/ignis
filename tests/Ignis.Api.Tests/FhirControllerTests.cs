@@ -13,6 +13,8 @@ using FluentAssertions;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 
+using Ignis.Api.Configuration;
+
 using Xunit;
 
 // Avoid clash with Hl7.Fhir.Model.Task
@@ -77,6 +79,50 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
         var body = await response.Content.ReadAsStringAsync(CT);
         var resource = _deserializer.Deserialize<Resource>(body);
         resource.Should().BeOfType<CapabilityStatement>();
+    }
+
+    [Fact]
+    public async Task Metadata_Implementation_CarriesTheDeploymentNotice()
+    {
+        // Spark builds its own statement, so the notice has to survive the enrichment.
+        var response = await _anonymousClient.GetAsync("/fhir/metadata", CT);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var capability = _deserializer.Deserialize<CapabilityStatement>(
+            await response.Content.ReadAsStringAsync(CT));
+
+        capability.Implementation.Should().NotBeNull();
+        capability.Implementation.Description.Should()
+            .Be(new CapabilityStatementSettings().ImplementationDescription);
+    }
+
+    [Fact]
+    public async Task Metadata_Implementation_UsesTheConfiguredDescription()
+    {
+        // A typo in the config section name would silently fall back to the default notice, so
+        // bind through a real env var (the only source minimal hosting sees; see IntegrationFixture).
+        const string configured = "Pilot deployment holding synthetic data only.";
+        Environment.SetEnvironmentVariable(
+            "CapabilityStatementSettings__ImplementationDescription", configured);
+        try
+        {
+            using var factory = _fixture.Factory.WithWebHostBuilder(_ => { });
+            using var client = factory.CreateClient();
+
+            var response = await client.GetAsync("/fhir/metadata", CT);
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var capability = _deserializer.Deserialize<CapabilityStatement>(
+                await response.Content.ReadAsStringAsync(CT));
+
+            capability.Implementation.Should().NotBeNull();
+            capability.Implementation.Description.Should().Be(configured);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(
+                "CapabilityStatementSettings__ImplementationDescription", null);
+        }
     }
 
     [Fact]
