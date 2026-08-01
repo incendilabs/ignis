@@ -1,0 +1,33 @@
+meta {
+  name: Get token
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{tokenUrl}}
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+body:form-urlencoded {
+  grant_type: client_credentials
+  client_id: {{clientId}}
+  client_secret: {{clientSecret}}
+}
+
+script:post-response {
+  // Store the token so the collection's Bearer auth ({{accessToken}}) can use it.
+  if (res.body && res.body.access_token) {
+    bru.setVar("accessToken", res.body.access_token);
+  }
+}
+
+docs {
+  OAuth2 `client_credentials` against `/connect/token`. Stores `accessToken` for every
+  other request — run this first, and again on 401.
+}

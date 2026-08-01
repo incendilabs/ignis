@@ -1,0 +1,24 @@
+meta {
+  name: System history
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{fhirBase}}/_history?_count=5
+  body: none
+  auth: inherit
+}
+
+params:query {
+  _count: 5
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq Bundle
+}
+
+docs {
+  Version history across every resource type on the server.
+}

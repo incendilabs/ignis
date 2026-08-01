@@ -1,0 +1,15 @@
+meta {
+  name: Read Patient
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{fhirBase}}/Patient/{{patientId}}
+  body: none
+  auth: inherit
+}
+
+docs {
+  Reads a `Patient` by id. Needs `patientId` from **Create Patient (valid)**.
+}

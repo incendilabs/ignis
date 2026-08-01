@@ -1,0 +1,42 @@
+meta {
+  name: Create QuestionnaireResponse (invalid status code)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/QuestionnaireResponse
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "QuestionnaireResponse",
+    "status": "done",
+    "item": [
+      {
+        "linkId": "q1",
+        "answer": [
+          {
+            "valueBoolean": true
+          }
+        ]
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  `status` must be a `QuestionnaireResponseStatus` code. Expect `400` at
+  `QuestionnaireResponse.status`.
+}

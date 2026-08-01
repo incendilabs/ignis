@@ -1,0 +1,36 @@
+meta {
+  name: Create Practitioner (invalid gender code)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/Practitioner
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Practitioner",
+    "name": [
+      {
+        "family": "Losen"
+      }
+    ],
+    "gender": "doctor"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  Expect `400` with `expression: ["Practitioner.gender"]`.
+}

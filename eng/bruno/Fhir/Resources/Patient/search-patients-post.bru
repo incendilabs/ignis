@@ -1,0 +1,26 @@
+meta {
+  name: Search Patients (POST)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{fhirBase}}/Patient/_search
+  body: formUrlEncoded
+  auth: inherit
+}
+
+body:form-urlencoded {
+  name: Test
+  _count: 10
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq Bundle
+}
+
+docs {
+  Search parameters in a form body instead of the query string. Same result as
+  **Search Patients**.
+}

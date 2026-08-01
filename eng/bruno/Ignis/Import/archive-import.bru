@@ -1,0 +1,22 @@
+meta {
+  name: Archive import
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/$archive-import
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  file: @file(path/to/archive.zip)
+}
+
+docs {
+  Uploads a zip of FHIR resources for background ingestion; point the
+  `body:multipart-form` block at a real file first. Expect `202` with the operation id.
+
+  Requires `operations.import` and the `AllowImport` flag.
+}

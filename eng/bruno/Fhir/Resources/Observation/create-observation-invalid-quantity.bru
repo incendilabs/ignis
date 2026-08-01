@@ -1,0 +1,43 @@
+meta {
+  name: Create Observation (invalid quantity value)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{fhirBase}}/Observation
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "8867-4"
+        }
+      ]
+    },
+    "valueQuantity": {
+      "value": "not-a-number",
+      "unit": "beats/minute"
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  `valueQuantity.value` must be a number, not a string. Expect `400`.
+}

@@ -1,0 +1,49 @@
+meta {
+  name: Create Observation (valid)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{fhirBase}}/Observation
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "8867-4",
+          "display": "Heart rate"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/{{patientId}}"
+    },
+    "valueQuantity": {
+      "value": 72,
+      "unit": "beats/minute",
+      "system": "http://unitsofmeasure.org",
+      "code": "/min"
+    }
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.resourceType: eq Observation
+}
+
+docs {
+  A heart-rate observation for the patient. Expect `201`.
+}

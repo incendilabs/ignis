@@ -1,0 +1,20 @@
+meta {
+  name: Search Patients
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{fhirBase}}/Patient?name=Test&_count=10
+  body: none
+  auth: inherit
+}
+
+params:query {
+  name: Test
+  _count: 10
+}
+
+docs {
+  Type-level search. Expect `200` with a `searchset` `Bundle`.
+}

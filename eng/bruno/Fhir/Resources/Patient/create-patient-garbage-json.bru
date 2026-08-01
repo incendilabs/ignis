@@ -1,0 +1,28 @@
+meta {
+  name: Create Patient (garbage body, JSON route)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{fhirBase}}/Patient
+  body: text
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:text {
+  this is not json
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  Not JSON at all, sent as `application/fhir+json`. Expect `400` with the parser message.
+}

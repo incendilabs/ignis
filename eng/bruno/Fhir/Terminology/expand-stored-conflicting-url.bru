@@ -1,0 +1,33 @@
+meta {
+  name: Expand stored ValueSet (conflicting url)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{fhirBase}}/ValueSet/{{valueSetId}}/$expand
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Parameters",
+    "parameter": [
+      { "name": "url", "valueUri": "http://hl7.org/fhir/ValueSet/administrative-gender" }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  The id in the path already identifies the ValueSet, so `url` or `valueSet` in the
+  body is rejected. Modifier parameters like `filter` are fine.
+}

@@ -1,0 +1,38 @@
+meta {
+  name: Validate Patient against profile
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/Patient/$validate?profile=http://hl7.org/fhir/StructureDefinition/Patient
+  body: json
+  auth: inherit
+}
+
+params:query {
+  profile: http://hl7.org/fhir/StructureDefinition/Patient
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Patient",
+    "name": [
+      {
+        "family": "Test",
+        "given": ["Ada"]
+      }
+    ],
+    "gender": "female",
+    "birthDate": "1990-01-01"
+  }
+}
+
+docs {
+  Validates against an explicit `?profile=` canonical. `meta.profile` on the resource
+  is validated too.
+}

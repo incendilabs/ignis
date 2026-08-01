@@ -1,0 +1,44 @@
+meta {
+  name: Create Practitioner (valid)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{fhirBase}}/Practitioner
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Practitioner",
+    "name": [
+      {
+        "family": "Losen",
+        "given": ["Leo"],
+        "prefix": ["Dr."]
+      }
+    ],
+    "gender": "female"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.resourceType: eq Practitioner
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("practitionerId", res.body.id);
+  }
+}
+
+docs {
+  Expect `201`. Saves `practitionerId`.
+}

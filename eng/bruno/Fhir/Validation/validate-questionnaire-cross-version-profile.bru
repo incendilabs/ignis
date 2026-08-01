@@ -1,0 +1,40 @@
+meta {
+  name: Validate Questionnaire (cross-version profile)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{fhirBase}}/Questionnaire/$validate?profile=http://hl7.org/fhir/5.0/StructureDefinition/profile-Questionnaire
+  body: json
+  auth: inherit
+}
+
+params:query {
+  profile: http://hl7.org/fhir/5.0/StructureDefinition/profile-Questionnaire
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Questionnaire",
+    "status": "draft",
+    "title": "Cross-version validation example"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq OperationOutcome
+  res.body.issue[0].code: eq not-supported
+}
+
+docs {
+  A cross-version profile pins an extension version the loaded packages do not carry, so
+  its schema will not compile. Expect `200` with a `not-supported` error naming the
+  missing dependency — not a `500`. These profiles are kept out of `$profiles`, so the
+  canonical has to be typed by hand. Needs `hl7.fhir.uv.xver-r5.r4` loaded.
+}

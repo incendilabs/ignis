@@ -1,0 +1,49 @@
+meta {
+  name: Create Patient (valid)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{fhirBase}}/Patient
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Patient",
+    "name": [
+      {
+        "family": "Test",
+        "given": ["Ada"]
+      }
+    ],
+    "gender": "female",
+    "birthDate": "1980-01-01",
+    "active": true
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.resourceType: eq Patient
+}
+
+script:post-response {
+  // Stash the new id and version so the other examples can reuse them.
+  if (res.body && res.body.id) {
+    bru.setVar("patientId", res.body.id);
+  }
+  if (res.body && res.body.meta && res.body.meta.versionId) {
+    bru.setVar("patientVersionId", res.body.meta.versionId);
+  }
+}
+
+docs {
+  Happy path. Expect `201`. Saves `patientId` for the other requests.
+}

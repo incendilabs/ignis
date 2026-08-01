@@ -1,0 +1,33 @@
+meta {
+  name: Create Patient (wrong element order, XML)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{fhirBase}}/Patient
+  body: xml
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+xml
+  Accept: application/fhir+xml
+}
+
+body:xml {
+  <Patient xmlns="http://hl7.org/fhir">
+    <gender value="female"/>
+    <name>
+      <family value="Test"/>
+    </name>
+  </Patient>
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  `gender` before `name`. Expect `400` — element order matters in XML, not in JSON.
+}

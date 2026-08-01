@@ -1,0 +1,36 @@
+meta {
+  name: Validate Patient (unresolvable profile)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{fhirBase}}/Patient/$validate?profile=http://example.org/StructureDefinition/DoesNotExist
+  body: json
+  auth: inherit
+}
+
+params:query {
+  profile: http://example.org/StructureDefinition/DoesNotExist
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Patient",
+    "name": [
+      {
+        "family": "Test",
+        "given": ["Ada"]
+      }
+    ]
+  }
+}
+
+docs {
+  Unknown `?profile=` canonical. Expect `200` with an issue saying the profile could
+  not be resolved.
+}

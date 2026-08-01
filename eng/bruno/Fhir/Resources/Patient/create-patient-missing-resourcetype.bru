@@ -1,0 +1,34 @@
+meta {
+  name: Create Patient (missing resourceType)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{fhirBase}}/Patient
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "name": [
+      {
+        "family": "Test"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  Valid JSON, no `resourceType`. Expect `400` with `code: structure`.
+}

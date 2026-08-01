@@ -1,0 +1,43 @@
+meta {
+  name: Create Encounter (valid)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{fhirBase}}/Encounter
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Encounter",
+    "status": "finished",
+    "class": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      "code": "AMB",
+      "display": "ambulatory"
+    },
+    "subject": {
+      "reference": "Patient/{{patientId}}"
+    }
+  }
+}
+
+vars:pre-request {
+  patientId: 123
+}
+
+assert {
+  res.status: eq 201
+  res.body.resourceType: eq Encounter
+}
+
+docs {
+  An ambulatory encounter for the patient. Expect `201`.
+}

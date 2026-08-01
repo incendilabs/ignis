@@ -1,0 +1,35 @@
+meta {
+  name: Validate Patient against base (same FNR body — passes)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{fhirBase}}/Patient/$validate
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Patient",
+    "identifier": [
+      {
+        "system": "urn:oid:2.16.578.1.12.4.1.4.1"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  The same body against base R4, which allows a missing `Identifier.value` — passes.
+}

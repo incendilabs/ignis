@@ -1,0 +1,41 @@
+meta {
+  name: Validate Patient against no-basis (FNR without value)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{fhirBase}}/Patient/$validate?profile=http://hl7.no/fhir/StructureDefinition/no-basis-Patient
+  body: json
+  auth: inherit
+}
+
+params:query {
+  profile: http://hl7.no/fhir/StructureDefinition/no-basis-Patient
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Patient",
+    "identifier": [
+      {
+        "system": "urn:oid:2.16.578.1.12.4.1.4.1"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq OperationOutcome
+  res.body.issue[0].severity: eq error
+}
+
+docs {
+  The FNR slice in no-basis-Patient requires `value`, omitted here — expect an `error`
+  on `identifier[FNR]`. Needs `hl7.fhir.no.basis` loaded on the server.
+}

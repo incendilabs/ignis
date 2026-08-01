@@ -1,0 +1,46 @@
+meta {
+  name: Create ValueSet (valid)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{fhirBase}}/ValueSet
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "ValueSet",
+    "url": "http://example.org/ValueSet/gender-subset",
+    "status": "active",
+    "compose": {
+      "include": [
+        {
+          "system": "http://hl7.org/fhir/administrative-gender",
+          "concept": [{ "code": "male" }, { "code": "female" }]
+        }
+      ]
+    }
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.resourceType: eq ValueSet
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("valueSetId", res.body.id);
+  }
+}
+
+docs {
+  Expect `201`. Saves `valueSetId` for the stored-expansion requests.
+}

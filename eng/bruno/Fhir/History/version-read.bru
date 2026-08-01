@@ -1,0 +1,21 @@
+meta {
+  name: Read version
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{fhirBase}}/Patient/{{patientId}}/_history/{{patientVersionId}}
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq Patient
+}
+
+docs {
+  Reads one specific version. Needs `patientId` and `patientVersionId`, both saved by
+  **Create Patient (valid)**.
+}

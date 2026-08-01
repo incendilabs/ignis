@@ -1,0 +1,35 @@
+meta {
+  name: Create Encounter (invalid status code)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/Encounter
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Encounter",
+    "status": "closed",
+    "class": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      "code": "AMB"
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  `status` must be an `EncounterStatus` code. Expect `400` at `Encounter.status`.
+}

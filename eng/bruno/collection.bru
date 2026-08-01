@@ -1,0 +1,18 @@
+headers {
+  Accept: application/fhir+json
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+docs {
+  # Ignis FHIR API
+
+  Select the **ignis-local** environment, then run **Ignis → Auth → Get token** first —
+  every request inherits its Bearer token. Setup, scopes and TLS: see the README.
+}

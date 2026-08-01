@@ -1,0 +1,32 @@
+meta {
+  name: Update Patient (invalid gender code)
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{fhirBase}}/Patient/{{patientId}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Patient",
+    "id": "{{patientId}}",
+    "gender": "bogus"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.resourceType: eq OperationOutcome
+}
+
+docs {
+  Per-element errors work the same on update as on create. Needs `patientId`.
+}

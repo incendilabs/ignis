@@ -1,0 +1,21 @@
+meta {
+  name: Supported profiles
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{fhirBase}}/StructureDefinition/$profiles
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq Bundle
+}
+
+docs {
+  Resource-constraint profiles from the loaded packages, as a `searchset` `Bundle` of
+  metadata-only `StructureDefinition`s.
+}

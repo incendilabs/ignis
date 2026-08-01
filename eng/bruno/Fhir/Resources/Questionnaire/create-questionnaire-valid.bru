@@ -1,0 +1,50 @@
+meta {
+  name: Create Questionnaire (valid)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{fhirBase}}/Questionnaire
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Questionnaire",
+    "status": "active",
+    "title": "Intake questionnaire",
+    "item": [
+      {
+        "linkId": "q1",
+        "text": "Have you had food last 6 hours?",
+        "type": "boolean"
+      },
+      {
+        "linkId": "q2",
+        "text": "Known allergies",
+        "type": "string"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.resourceType: eq Questionnaire
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("questionnaireId", res.body.id);
+  }
+}
+
+docs {
+  Expect `201`. Saves `questionnaireId`.
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Clear store (destructive)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{fhirBase}}/$clear-store
+  body: none
+  auth: inherit
+}
+
+docs {
+  ⚠️ DESTRUCTIVE — wipes the entire FHIR store. Dev only.
+
+  Requires `maintenance/database.destructive` and the `AllowClearStore` flag.
+}
