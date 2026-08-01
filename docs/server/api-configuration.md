@@ -98,6 +98,14 @@ FHIR conformance packages the structural profile validator loads for `$validate`
 | -------------------------------------------- | -------- | ------- | ------------------------ |
 | `ProfileValidationSettings:PackageDirectory` | no       | empty   | PVC mount in Kubernetes. |
 
+## CapabilityStatementSettings
+
+What `/fhir/metadata` says this deployment is, as `CapabilityStatement.implementation.description`. The default warns against personal data and deliberately claims nothing about retention or visibility, since those differ per deployment — a server holding real data has to describe itself.
+
+| Key                                                     | Required | Default            | Notes                                       |
+| ------------------------------------------------------- | -------- | ------------------ | ------------------------------------------- |
+| `CapabilityStatementSettings:ImplementationDescription` | no       | test-server notice | Empty leaves Spark's own description alone. |
+
 ## Serilog
 
 Console logging. Defaults emit human-readable output; switch to compact JSON for log aggregators.

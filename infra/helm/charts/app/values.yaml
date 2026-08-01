@@ -48,6 +48,10 @@ api:
     registry: "https://packages.fhir.org"
     # e.g. ["hl7.fhir.no.basis@2.2.0", "hl7.fhir.eu.base@2.0.0"]
     packages: []
+  # What /fhir/metadata says this deployment is. Empty keeps the app's default
+  # test-server notice.
+  capabilityStatement:
+    implementationDescription: ""
   # Hostnames for API HTTPRoute. Leave empty to keep the API internal-only.
   hostnames: []
   # Override the AllowedHosts allow-list passed to ASP.NET HostFiltering.

@@ -6,6 +6,8 @@
 
 using Hl7.Fhir.Model;
 
+using Ignis.Api.Configuration;
+
 using Spark.Engine.Service.FhirServiceExtensions;
 
 namespace Ignis.Api.Services.Validation;
@@ -18,14 +20,17 @@ public sealed class ProfileAwareCapabilityStatementService : ICapabilityStatemen
 {
     private readonly CapabilityStatementService _inner;
     private readonly ISupportedProfileCatalog _catalog;
+    private readonly CapabilityStatementSettings _settings;
     private readonly Lazy<CapabilityStatement> _enriched;
 
     public ProfileAwareCapabilityStatementService(
         CapabilityStatementService inner,
-        ISupportedProfileCatalog catalog)
+        ISupportedProfileCatalog catalog,
+        CapabilityStatementSettings settings)
     {
         _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _enriched = new Lazy<CapabilityStatement>(Build);
     }
 
@@ -38,6 +43,8 @@ public sealed class ProfileAwareCapabilityStatementService : ICapabilityStatemen
     {
         // We own the inner exclusively and build once behind the Lazy
         var statement = _inner.GetSparkCapabilityStatement();
+
+        DescribeImplementation(statement);
 
         foreach (var rest in statement.Rest)
             AdvertiseOperations(rest);
@@ -56,6 +63,19 @@ public sealed class ProfileAwareCapabilityStatementService : ICapabilityStatemen
         }
 
         return statement;
+    }
+
+    /// <summary>
+    /// Adds a description of the deployment to <c>CapabilityStatement.implementation.description</c> if configured.
+    /// </summary>
+    private void DescribeImplementation(CapabilityStatement statement)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.ImplementationDescription))
+            return;
+
+        // description is 1..1 once implementation is present
+        statement.Implementation ??= new CapabilityStatement.ImplementationComponent();
+        statement.Implementation.Description = _settings.ImplementationDescription;
     }
 
     private static void AdvertiseOperations(CapabilityStatement.RestComponent rest)

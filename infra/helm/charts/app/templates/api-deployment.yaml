@@ -81,6 +81,10 @@ spec:
             - name: ProfileValidationSettings__PackageDirectory
               value: /fhir-packages
             {{- end }}
+            {{- with .Values.api.capabilityStatement.implementationDescription }}
+            - name: CapabilityStatementSettings__ImplementationDescription
+              value: {{ . | quote }}
+            {{- end }}
             {{- with .Values.api.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

@@ -96,7 +96,8 @@ builder.Services.AddFhirWithMvc(sparkSettings);
 builder.Services.Configure<ProfileValidationSettings>(builder.Configuration.GetSection("ProfileValidationSettings"));
 builder.Services.AddProfileValidation();
 
-// Advertise package profiles under CapabilityStatement.supportedProfile. 
+// Advertise package profiles under CapabilityStatement.supportedProfile.
+builder.Services.Configure<CapabilityStatementSettings>(builder.Configuration.GetSection("CapabilityStatementSettings"));
 builder.Services.AddProfileAwareCapabilityStatement();
 
 // Register terminology ($expand of ValueSets)

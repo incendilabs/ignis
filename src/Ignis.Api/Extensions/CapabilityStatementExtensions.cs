@@ -6,9 +6,11 @@
 
 using Hl7.Fhir.Model;
 
+using Ignis.Api.Configuration;
 using Ignis.Api.Services.Validation;
 
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 using Spark.Engine;
 using Spark.Engine.Core;
@@ -37,7 +39,8 @@ public static class CapabilityStatementExtensions
                     provider.GetRequiredService<IFhirModel>(),
                     provider.GetRequiredService<ServerVersion>(),
                     FHIRVersion.N4_0_1),
-                provider.GetRequiredService<ISupportedProfileCatalog>()));
+                provider.GetRequiredService<ISupportedProfileCatalog>(),
+                provider.GetRequiredService<IOptions<CapabilityStatementSettings>>().Value));
 
         return services;
     }
