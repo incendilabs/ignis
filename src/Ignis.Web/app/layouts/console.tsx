@@ -13,6 +13,7 @@ import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router";
 
+import { SiteFooter } from "#app/components/ui/footer";
 import { Navbar } from "#app/components/ui/navbar";
 import * as adminConfig from "#app/features/admin/config.server";
 import { getSessionFromRequest } from "#app/features/auth/session.server";
@@ -102,9 +103,20 @@ export default function ConsoleLayout({ loaderData }: Route.ComponentProps) {
           />
         </Sidebar.Body>
       </Sidebar>
-      <Box style={{ flex: 1, minWidth: 0 }}>
+      <Box
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+        }}
+      >
         <Navbar features={root.features} user={root.auth.user} showBrand={false} />
-        <Outlet />
+        <Box style={{ flex: 1 }}>
+          <Outlet />
+        </Box>
+        <SiteFooter links={root.footerLinks} />
       </Box>
     </Stack>
   );

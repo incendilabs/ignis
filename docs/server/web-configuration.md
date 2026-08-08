@@ -17,6 +17,31 @@ Every environment variable `Ignis.Web` (the BFF) reads.
 | Variable                  | Notes                                                                                                                                               |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IGNIS_WEB_FHIR_BASE_URL` | Base URL for the FHIR API. Defaults to same-origin `/fhir/` on the Web app host; set when the API is served from a different origin.                |
+| `IGNIS_WEB_FOOTER_LINKS`  | Links shown in the site footer, as JSON — see below. Unset means no footer.                                                                         |
+
+### Footer links
+
+Which documents a deployment publishes is not something the app can know, so the
+footer's links are configuration rather than message-catalogue entries — labels for
+every language included:
+
+```json
+[
+  { "href": "/pages/terms", "label": { "en": "Terms of use", "nb": "Vilkår" } },
+  { "href": "https://github.com/incendilabs/ignis", "label": "GitHub" }
+]
+```
+
+Both fields take a plain string, used in every language, or an object keyed by locale.
+Writing the href once is the point: a shared URL cannot drift out of step with one
+language's copy of it. A missing translation falls back to the base locale rather than
+dropping the link. Off-site links open in a new tab.
+
+Only `http`, `https`, `mailto` and `tel` hrefs are rendered, along with relative ones;
+anything else is skipped. Setting this variable already means controlling the
+deployment, so this is not a privilege boundary — it is there so the links stay safe
+if they ever come from somewhere less trusted. Configuration that will not parse is
+logged and the footer left out; a footer is not worth a failed boot.
 
 ## Local dev server
 
