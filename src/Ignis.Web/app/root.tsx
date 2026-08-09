@@ -12,6 +12,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -25,7 +26,7 @@ import * as authConfig from "#app/features/auth/config.server";
 import { getSessionStateFromRequest } from "#app/features/auth/session.server";
 import { SessionStatus } from "#app/features/auth/session-status";
 import { SessionGuard } from "#app/features/auth/SessionGuard";
-import { getFooterLinks } from "#app/deployment.server";
+import { getFooterLinks, getHeadScripts } from "#app/deployment.server";
 import { getLocale } from "#app/i18n/paraglide/runtime";
 
 export const middleware: MiddlewareFunction[] = [
@@ -48,6 +49,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return {
     features,
     footerLinks: getFooterLinks(getLocale()),
+    headScripts: getHeadScripts(),
     auth: {
       status: sessionState?.status ?? SessionStatus.Anonymous,
       expiresAt: session?.tokens?.accessTokenExpiresAt ?? null,
@@ -59,6 +61,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export function Layout({ children }: { children: React.ReactNode; }) {
+  const headScripts = useRouteLoaderData<typeof loader>("root")?.headScripts ?? [];
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -66,6 +70,9 @@ export function Layout({ children }: { children: React.ReactNode; }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        {headScripts.map((script, index) => (
+          <script key={`${script.src}#${String(index)}`} src={script.src} {...script.attributes} />
+        ))}
         <script
           dangerouslySetInnerHTML={{
             __html: `
