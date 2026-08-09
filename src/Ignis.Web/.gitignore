@@ -9,3 +9,6 @@
 
 # Paraglide (auto-generated; the directory also has its own .gitignore)
 /app/i18n/paraglide/
+
+# Documentation collected by `npm run docs:collect`
+/.lectio/

@@ -12,16 +12,18 @@ FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432
 COPY . /app/
 COPY --from=dev-deps /app/node_modules /app/node_modules
 WORKDIR /app
-RUN npm run build
+# Get the collected docs 
+RUN mkdir -p /app/.lectio && npm run build
 
 FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd
 RUN apk add --no-cache wget
 COPY --chown=node:node ./package.json package-lock.json /app/
 COPY --chown=node:node --from=prod-deps /app/node_modules /app/node_modules
 COPY --chown=node:node --from=build /app/build /app/build
+COPY --chown=node:node --from=build /app/.lectio /app/.lectio
 WORKDIR /app
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-	CMD wget -qO- http://127.0.0.1:3000/healthz >/dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:3000/healthz >/dev/null || exit 1
 CMD ["npm", "run", "start"]
