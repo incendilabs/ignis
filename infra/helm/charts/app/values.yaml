@@ -90,8 +90,13 @@ web:
   # Extra env vars to set inline (e.g. non-secret feature flags).
   # Format: list of {name, value} entries.
   extraEnv: []
+  # Extra volume mounts for the web container (e.g. for mounted content)
+  extraVolumeMounts: []
+  # Extra volumes for the web pod (e.g. ConfigMaps)
+  extraVolumes: []
   # Annotations applied to the web pod template. Same purpose as
-  # api.podAnnotations.
+  # api.podAnnotations — e.g. reloader.stakater.com/auto: "true" to roll the
+  # pod when a referenced ConfigMap or Secret changes.
   podAnnotations: {}
 
 gateway:
