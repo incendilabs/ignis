@@ -14,10 +14,11 @@ Every environment variable `Ignis.Web` (the BFF) reads.
 
 ## Optional
 
-| Variable                  | Notes                                                                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `IGNIS_WEB_FHIR_BASE_URL` | Base URL for the FHIR API. Defaults to same-origin `/fhir/` on the Web app host; set when the API is served from a different origin.                |
-| `IGNIS_WEB_FOOTER_LINKS`  | Links shown in the site footer, as JSON — see below. Unset means no footer.                                                                         |
+| Variable                  | Notes                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `IGNIS_WEB_FHIR_BASE_URL` | Base URL for the FHIR API. Defaults to same-origin `/fhir/` on the Web app host; set when the API is served from a different origin. |
+| `IGNIS_WEB_FOOTER_LINKS`  | Links shown in the site footer, as JSON — see below. Unset means no footer.                                                          |
+| `IGNIS_WEB_HEAD_SCRIPTS`  | Third-party scripts added to `<head>`, as JSON — see below. Unset means none.                                                        |
 
 ### Footer links
 
@@ -43,18 +44,38 @@ deployment, so this is not a privilege boundary — it is there so the links sta
 if they ever come from somewhere less trusted. Configuration that will not parse is
 logged and the footer left out; a footer is not worth a failed boot.
 
+### Analytics and other head scripts
+
+```json
+[
+  {
+    "src": "https://analytics.example.com/script.js",
+    "defer": true,
+    "data-website-id": "…",
+    "data-exclude-search": "true"
+  }
+]
+```
+
+`src` must be `https`, `http` or a relative path. Beyond `data-*`, only `defer`,
+`async`, `nomodule`, `type`, `integrity`, `crossorigin` and `referrerpolicy` are
+kept; everything else is dropped. Unparseable configuration is logged and no
+script is added.
+
+Scripts load on every page, the console included.
+
 ## Local dev server
 
 These are read by `src/Ignis.Web/vite.config.ts` and `src/Ignis.Web/react-router.config.ts` during local development.
 
-| Variable                               | Notes                                                                                            |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `IGNIS_WEB_DEV_PORT`                   | Vite dev server port. Defaults to `5202`.                                                        |
-| `IGNIS_WEB_DEV_HTTPS`                  | Set to `"true"` to serve Web over HTTPS locally.                                                 |
-| `IGNIS_WEB_DEV_HTTPS_KEY`              | Path to the local HTTPS key file, relative to `src/Ignis.Web/vite.config.ts` or absolute.        |
-| `IGNIS_WEB_DEV_HTTPS_CERT`             | Path to the local HTTPS cert file, relative to `src/Ignis.Web/vite.config.ts` or absolute.       |
-| `IGNIS_WEB_DEV_ALLOWED_HOSTS`          | Comma-separated Vite allowed hosts for dev-server requests.                                      |
-| `IGNIS_WEB_DEV_ALLOWED_ACTION_ORIGINS` | Comma-separated hosts allowed to submit React Router actions. Include host and port, no scheme.  |
+| Variable                               | Notes                                                                                           |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `IGNIS_WEB_DEV_PORT`                   | Vite dev server port. Defaults to `5202`.                                                       |
+| `IGNIS_WEB_DEV_HTTPS`                  | Set to `"true"` to serve Web over HTTPS locally.                                                |
+| `IGNIS_WEB_DEV_HTTPS_KEY`              | Path to the local HTTPS key file, relative to `src/Ignis.Web/vite.config.ts` or absolute.       |
+| `IGNIS_WEB_DEV_HTTPS_CERT`             | Path to the local HTTPS cert file, relative to `src/Ignis.Web/vite.config.ts` or absolute.      |
+| `IGNIS_WEB_DEV_ALLOWED_HOSTS`          | Comma-separated Vite allowed hosts for dev-server requests.                                     |
+| `IGNIS_WEB_DEV_ALLOWED_ACTION_ORIGINS` | Comma-separated hosts allowed to submit React Router actions. Include host and port, no scheme. |
 
 See [Local Development Setup](../developer/local-dev-setup.md) for a complete local setup.
 
