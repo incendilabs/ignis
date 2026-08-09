@@ -8,6 +8,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
+    "docs:collect": "node --input-type=module -e \"const { runCollect } = await import('@eventuras/lectio-docs'); await runCollect()\"",
     "lint": "npm run paraglide:compile && react-router typegen && eslint .",
     "paraglide:compile": "paraglide-js compile --project ./app/i18n/project.inlang --outdir ./app/i18n/paraglide --emit-ts-declarations --strategy url cookie preferredLanguage baseLocale",
     "start": "react-router-serve ./build/server/index.js",
@@ -17,7 +18,9 @@
   },
   "dependencies": {
     "@eventuras/fides-auth": "^0.9.0",
+    "@eventuras/lectio-docs": "^0.5.0",
     "@eventuras/logger": "^0.8.1",
+    "@eventuras/markdown": "^0.15.0",
     "@eventuras/ratio-ui": "^2.16.0",
     "@microsoft/signalr": "^10.0.0",
     "@react-router/node": "8.3.0",

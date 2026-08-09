@@ -11,8 +11,13 @@ export default [
   // resolve. Auth callbacks and healthz stay outside the prefix so the
   // OAuth client registration doesn't have to know about locale variants.
   ...prefix(":locale?", [
-    // The front page keeps the plain top-navbar chrome, without the sidebar.
-    layout("layouts/public.tsx", [index("routes/home.tsx")]),
+    // The front page and the deployment's own documents keep the plain
+    // top-navbar chrome, without the sidebar.
+    layout("layouts/public.tsx", [
+      index("routes/home.tsx"),
+      route("pages/:slug", "features/docs/routes/pages.$slug.tsx"),
+      route("docs/*", "features/docs/routes/docs.$.tsx"),
+    ]),
     // Every page except the front page renders inside the console shell (left sidebar).
     layout("layouts/console.tsx", [
       route("user", "features/user-dashboard/routes/index.tsx"),
