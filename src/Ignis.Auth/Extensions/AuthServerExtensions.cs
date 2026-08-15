@@ -165,6 +165,7 @@ public static class AuthServerExtensions
                     .SetTokenEndpointUris("connect/token")
                     .SetAuthorizationEndpointUris("connect/authorize")
                     .SetPushedAuthorizationEndpointUris("connect/par")
+                    .SetEndSessionEndpointUris("connect/endsession")
                     .AllowClientCredentialsFlow()
                     .AllowAuthorizationCodeFlow()
                     // Note: offline_access is special-cased by OpenIddict — gated by the
@@ -204,7 +205,8 @@ public static class AuthServerExtensions
                 var aspNetCoreBuilder = options
                     .UseAspNetCore()
                     .EnableTokenEndpointPassthrough()
-                    .EnableAuthorizationEndpointPassthrough();
+                    .EnableAuthorizationEndpointPassthrough()
+                    .EnableEndSessionEndpointPassthrough();
 
                 if (useDevelopmentCertificates)
                     aspNetCoreBuilder.DisableTransportSecurityRequirement();

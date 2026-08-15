@@ -150,10 +150,17 @@ public class AuthorizationHandler
         return ForbidWithError(Errors.UnsupportedGrantType, "The specified grant type is not supported.");
     }
 
-    public async Task<IActionResult> LogoutAsync(HttpContext httpContext)
+    /// <summary>
+    /// Ends the session. OpenIddict has already validated post_logout_redirect_uri
+    /// against the client registration; RedirectUri is only the fallback.
+    /// </summary>
+    public async Task<IActionResult> EndSessionAsync(HttpContext httpContext)
     {
         await httpContext.SignOutAsync(AuthConstants.SessionScheme);
-        return new RedirectResult("/");
+
+        return new SignOutResult(
+            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+            new AuthenticationProperties { RedirectUri = "/" });
     }
 
     private async Task<IActionResult> ExchangeClientCredentialsAsync(OpenIddictRequest request)

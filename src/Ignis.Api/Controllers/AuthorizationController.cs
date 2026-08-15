@@ -108,9 +108,9 @@ public class AuthorizationController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public Task<IActionResult> Exchange() => handler.ExchangeAsync(HttpContext);
 
-    /// <summary>Logout endpoint.</summary>
-    [HttpGet("logout")]
-    [HttpPost("logout")]
+    /// <summary>End-session endpoint (RP-initiated logout).</summary>
+    [HttpGet("endsession")]
+    [HttpPost("endsession")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public Task<IActionResult> Logout() => handler.LogoutAsync(HttpContext);
+    public Task<IActionResult> EndSession() => handler.EndSessionAsync(HttpContext);
 }
