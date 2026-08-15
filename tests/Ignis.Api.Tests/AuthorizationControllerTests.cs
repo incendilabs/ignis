@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-using System.Buffers.Text;
 using System.Net;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Web;
 
@@ -105,30 +102,9 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
             AllowAutoRedirect = false,
         });
 
-        var (_, codeChallenge) = GeneratePkce();
+        var (_, codeChallenge) = OAuthTestFlow.GeneratePkce();
+        var response = await OAuthTestFlow.AuthorizeAsync(client, codeChallenge, CT);
 
-        // Push the authorization request via PAR.
-        var parResponse = await client.PostAsync("/connect/par",
-            new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["response_type"] = "code",
-                ["client_id"] = "test-client",
-                ["client_secret"] = "test-secret",
-                ["redirect_uri"] = "http://localhost/callback",
-                ["code_challenge"] = codeChallenge,
-                ["code_challenge_method"] = "S256",
-            }), CT);
-
-        parResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var parJson = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync(CT));
-        var requestUri = parJson.RootElement.GetProperty("request_uri").GetString();
-        requestUri.Should().NotBeNullOrEmpty();
-
-        // Redirect to authorize with the request_uri — should redirect to login.
-        var authorizeUrl = $"/connect/authorize?client_id=test-client&request_uri={Uri.EscapeDataString(requestUri!)}";
-        var response = await client.GetAsync(authorizeUrl, CT);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
         response.Headers.Location!.AbsolutePath.Should().Be("/connect/login");
     }
 
@@ -145,35 +121,14 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
         var loginResponse = await client.GetAsync("/test-login", CT);
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        // 2. Push the authorization request via PAR.
-        var (codeVerifier, codeChallenge) = GeneratePkce();
-        var parResponse = await client.PostAsync("/connect/par",
-            new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["response_type"] = "code",
-                ["client_id"] = "test-client",
-                ["client_secret"] = "test-secret",
-                ["redirect_uri"] = "http://localhost/callback",
-                ["code_challenge"] = codeChallenge,
-                ["code_challenge_method"] = "S256",
-            }), CT);
+        // 2. Run PAR + authorize.
+        var (codeVerifier, codeChallenge) = OAuthTestFlow.GeneratePkce();
+        var authorizeResponse = await OAuthTestFlow.AuthorizeAsync(client, codeChallenge, CT);
 
-        parResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var parJson = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync(CT));
-        var requestUri = parJson.RootElement.GetProperty("request_uri").GetString();
-        requestUri.Should().NotBeNullOrEmpty();
-
-        // 3. Redirect to authorize with the request_uri.
-        var authorizeUrl = $"/connect/authorize?client_id=test-client&request_uri={Uri.EscapeDataString(requestUri!)}";
-        var authorizeResponse = await client.GetAsync(authorizeUrl, CT);
-
-        authorizeResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
-        var location = authorizeResponse.Headers.Location!;
-        var queryParams = HttpUtility.ParseQueryString(location.Query);
-        var code = queryParams["code"];
+        var code = HttpUtility.ParseQueryString(authorizeResponse.Headers.Location!.Query)["code"];
         code.Should().NotBeNullOrEmpty("the authorization endpoint should issue a code");
 
-        // 4. Exchange the authorization code + client_secret for an access token.
+        // 3. Exchange the authorization code + client_secret for an access token.
         var tokenResponse = await client.PostAsync("/connect/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
@@ -205,26 +160,9 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Auth code flow requesting offline_access, so the exchange issues a refresh token.
-        var (codeVerifier, codeChallenge) = GeneratePkce();
-        var parResponse = await client.PostAsync("/connect/par",
-            new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["response_type"] = "code",
-                ["client_id"] = "test-client",
-                ["client_secret"] = "test-secret",
-                ["redirect_uri"] = "http://localhost/callback",
-                ["code_challenge"] = codeChallenge,
-                ["code_challenge_method"] = "S256",
-                ["scope"] = "openid offline_access",
-            }), CT);
-        parResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var parJson = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync(CT));
-        var requestUri = parJson.RootElement.GetProperty("request_uri").GetString();
-        requestUri.Should().NotBeNullOrEmpty();
-
-        var authorizeResponse = await client.GetAsync(
-            $"/connect/authorize?client_id=test-client&request_uri={Uri.EscapeDataString(requestUri!)}", CT);
-        authorizeResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        var (codeVerifier, codeChallenge) = OAuthTestFlow.GeneratePkce();
+        var authorizeResponse = await OAuthTestFlow.AuthorizeAsync(
+            client, codeChallenge, CT, scope: "openid offline_access");
         var code = HttpUtility.ParseQueryString(authorizeResponse.Headers.Location!.Query)["code"];
         code.Should().NotBeNullOrEmpty("the authorization endpoint should issue a code");
 
@@ -307,7 +245,7 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
 
         await client.GetAsync("/test-login", CT);
 
-        var (_, codeChallenge) = GeneratePkce();
+        var (_, codeChallenge) = OAuthTestFlow.GeneratePkce();
 
         // Direct authorize request without using PAR => should be rejected
         var authorizeUrl = "/connect/authorize?" + string.Join("&",
@@ -366,26 +304,8 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
         var loginResponse = await client.GetAsync($"/test-login?subject={Uri.EscapeDataString(subject)}", CT);
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var (codeVerifier, codeChallenge) = GeneratePkce();
-        var parResponse = await client.PostAsync("/connect/par",
-            new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["response_type"] = "code",
-                ["client_id"] = "test-client",
-                ["client_secret"] = "test-secret",
-                ["redirect_uri"] = "http://localhost/callback",
-                ["scope"] = scope,
-                ["code_challenge"] = codeChallenge,
-                ["code_challenge_method"] = "S256",
-            }), CT);
-        parResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var requestUri = JsonDocument.Parse(await parResponse.Content.ReadAsStringAsync(CT))
-            .RootElement.GetProperty("request_uri").GetString();
-
-        var authorizeResponse = await client.GetAsync(
-            $"/connect/authorize?client_id=test-client&request_uri={Uri.EscapeDataString(requestUri!)}", CT);
-        authorizeResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        var (codeVerifier, codeChallenge) = OAuthTestFlow.GeneratePkce();
+        var authorizeResponse = await OAuthTestFlow.AuthorizeAsync(client, codeChallenge, CT, scope);
 
         var code = HttpUtility.ParseQueryString(authorizeResponse.Headers.Location!.Query)["code"];
         code.Should().NotBeNullOrEmpty();
@@ -403,17 +323,5 @@ public class AuthorizationControllerTests : IClassFixture<IntegrationFixture>
         tokenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         return JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync(CT)).RootElement;
-    }
-
-    private static (string codeVerifier, string codeChallenge) GeneratePkce()
-    {
-        var verifierBytes = new byte[32];
-        RandomNumberGenerator.Fill(verifierBytes);
-        var codeVerifier = Base64Url.EncodeToString(verifierBytes);
-
-        var challengeBytes = SHA256.HashData(Encoding.ASCII.GetBytes(codeVerifier));
-        var codeChallenge = Base64Url.EncodeToString(challengeBytes);
-
-        return (codeVerifier, codeChallenge);
     }
 }
