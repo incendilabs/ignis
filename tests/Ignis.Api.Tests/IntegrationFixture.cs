@@ -42,6 +42,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         "AuthSettings__Clients__0__AllowedGrantTypes__2",
         "AuthSettings__RefreshTokenReuseLeewaySeconds",
         "AuthSettings__Clients__0__RedirectUris__0",
+        "AuthSettings__Clients__0__PostLogoutRedirectUris__0",
         "AuthSettings__Clients__0__AllowedScopes__0",
         "AuthSettings__Clients__0__AllowedScopes__1",
         "AuthSettings__Clients__0__AllowedScopes__2",
@@ -80,6 +81,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         // Zero leeway so the reuse-rejection path is testable without waiting out the grace window.
         Environment.SetEnvironmentVariable("AuthSettings__RefreshTokenReuseLeewaySeconds", "0");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__RedirectUris__0", "http://localhost/callback");
+        Environment.SetEnvironmentVariable("AuthSettings__Clients__0__PostLogoutRedirectUris__0", "http://localhost/signed-out");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__0", "maintenance/database.destructive");
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__1", OperationsScopes.Read);
         Environment.SetEnvironmentVariable("AuthSettings__Clients__0__AllowedScopes__2", "openid");

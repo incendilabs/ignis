@@ -45,6 +45,7 @@ public class IgnisApiFactory : WebApplicationFactory<Program>
                 ["AuthSettings:Clients:0:AllowedGrantTypes:1"] = "authorization_code",
                 ["AuthSettings:Clients:0:AllowedGrantTypes:2"] = "refresh_token",
                 ["AuthSettings:Clients:0:RedirectUris:0"] = "http://localhost/callback",
+                ["AuthSettings:Clients:0:PostLogoutRedirectUris:0"] = "http://localhost/signed-out",
             };
             foreach (var (key, value) in _extraConfig)
                 baseConfig[key] = value;
