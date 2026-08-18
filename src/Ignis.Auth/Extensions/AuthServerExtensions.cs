@@ -166,6 +166,7 @@ public static class AuthServerExtensions
                     .SetAuthorizationEndpointUris("connect/authorize")
                     .SetPushedAuthorizationEndpointUris("connect/par")
                     .SetEndSessionEndpointUris("connect/endsession")
+                    .SetRevocationEndpointUris("connect/revocation")
                     .AllowClientCredentialsFlow()
                     .AllowAuthorizationCodeFlow()
                     // Note: offline_access is special-cased by OpenIddict — gated by the
