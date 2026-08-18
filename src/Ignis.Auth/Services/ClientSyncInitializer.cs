@@ -91,6 +91,7 @@ public class ClientSyncInitializer
             Permissions =
             {
                 Permissions.Endpoints.Token,
+                Permissions.Endpoints.Revocation,
             }
         };
 
