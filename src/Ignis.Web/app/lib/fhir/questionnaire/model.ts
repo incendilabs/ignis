@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import type { Canonical, Coding, Resource, Uri } from "../model";
+import type { Canonical, Coding, Extension, Resource, Uri } from "../model";
 
 /**
  * FHIR `Questionnaire.item.type` codes. A reference union — the parsed model
@@ -43,6 +43,7 @@ export interface QuestionnaireItemAnswerOption {
   valueTime?: string;
   valueBoolean?: boolean;
   initialSelected?: boolean;
+  extension?: Extension[];
 }
 
 /** A conditional-display rule (`item.enableWhen`); `answer[x]` kept open. */
@@ -65,6 +66,7 @@ export interface QuestionnaireItem {
   answerOption?: QuestionnaireItemAnswerOption[];
   enableWhen?: QuestionnaireEnableWhen[];
   item?: QuestionnaireItem[];
+  extension?: Extension[];
 }
 
 /**
@@ -83,4 +85,5 @@ export interface Questionnaire extends Resource<"Questionnaire"> {
   title?: string;
   status?: string;
   item?: QuestionnaireItem[];
+  extension?: Extension[];
 }

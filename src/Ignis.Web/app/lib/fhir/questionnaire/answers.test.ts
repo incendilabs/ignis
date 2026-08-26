@@ -51,6 +51,15 @@ describe("resolveAnswerChoices", () => {
     ]);
   });
 
+  it("keeps extensions on inline answerOption", () => {
+    const ordinal = { url: "http://example.test/ordinal", valueDecimal: 3 };
+    const choices = resolveAnswerChoices(
+      emptyQuestionnaire,
+      item({ answerOption: [{ valueCoding: { code: "a" }, extension: [ordinal] }] }),
+    );
+    expect(choices?.[0].extension).toEqual([ordinal]);
+  });
+
   it("resolves a contained answerValueSet via compose.include.concept", () => {
     const resource = {
       resourceType: "Questionnaire",

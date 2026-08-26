@@ -13,4 +13,4 @@ export type {
   QuestionnaireItemAnswerOption,
   QuestionnaireItemType,
 } from "./model";
-export { parseQuestionnaireItems } from "./parse";
+export { parseQuestionnaireExtensions, parseQuestionnaireItems } from "./parse";

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import type { Resource } from "../model";
+import type { Extension, Resource } from "../model";
 import { isObject, asString } from "../guards";
 import type { QuestionnaireItem, QuestionnaireItemAnswerOption } from "./model";
 
@@ -14,6 +14,7 @@ export interface AnswerChoice {
   display?: string;
   system?: string;
   label: string;
+  extension?: Extension[];
 }
 
 /**
@@ -36,17 +37,21 @@ export function resolveAnswerChoices(
 }
 
 function optionToChoice(option: QuestionnaireItemAnswerOption): AnswerChoice {
+  let choice: AnswerChoice;
   if (option.valueCoding) {
     const { code, display, system } = option.valueCoding;
-    return { code, display, system, label: display ?? code ?? "" };
+    choice = { code, display, system, label: display ?? code ?? "" };
+  } else {
+    const scalar =
+      option.valueString ??
+      option.valueInteger?.toString() ??
+      option.valueDate ??
+      option.valueTime ??
+      option.valueBoolean?.toString();
+    choice = { display: scalar, label: scalar ?? "" };
   }
-  const scalar =
-    option.valueString ??
-    option.valueInteger?.toString() ??
-    option.valueDate ??
-    option.valueTime ??
-    option.valueBoolean?.toString();
-  return { display: scalar, label: scalar ?? "" };
+  if (option.extension) choice.extension = option.extension;
+  return choice;
 }
 
 function containedValueSetChoices(resource: Resource, id: string): AnswerChoice[] | null {

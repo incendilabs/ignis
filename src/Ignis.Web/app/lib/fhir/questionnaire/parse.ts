@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import type { Coding, Resource } from "../model";
+import type { Coding, Extension, Resource } from "../model";
+import { parseExtensions } from "../model";
 import { isObject, asString } from "../guards";
 import type {
   QuestionnaireEnableWhen,
@@ -18,6 +19,11 @@ import type {
 export function parseQuestionnaireItems(resource: Resource): QuestionnaireItem[] {
   if (resource.resourceType !== "Questionnaire") return [];
   return toItems(resource.item);
+}
+
+export function parseQuestionnaireExtensions(resource: Resource): Extension[] {
+  if (resource.resourceType !== "Questionnaire") return [];
+  return parseExtensions(resource.extension);
 }
 
 function toItems(value: unknown): QuestionnaireItem[] {
@@ -54,6 +60,8 @@ function toItem(value: unknown): QuestionnaireItem | null {
   if (enableWhen.length > 0) item.enableWhen = enableWhen;
   const nested = toItems(value.item);
   if (nested.length > 0) item.item = nested;
+  const extension = parseExtensions(value.extension);
+  if (extension.length > 0) item.extension = extension;
 
   return item;
 }
@@ -76,6 +84,8 @@ function toAnswerOptions(value: unknown): QuestionnaireItemAnswerOption[] {
     if (typeof entry.initialSelected === "boolean") {
       option.initialSelected = entry.initialSelected;
     }
+    const extension = parseExtensions(entry.extension);
+    if (extension.length > 0) option.extension = extension;
     if (hasAnswerValue(option)) options.push(option);
   }
   return options;
