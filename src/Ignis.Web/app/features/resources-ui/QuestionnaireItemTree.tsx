@@ -14,9 +14,12 @@ import { Tree, type TreeNode } from "@eventuras/ratio-ui/tree";
 import { useMemo } from "react";
 
 import { m } from "#app/i18n/paraglide/messages";
-import type { Resource } from "#app/lib/fhir/model";
+import { formatPrimitive } from "#app/lib/fhir/format";
+import type { Extension, Resource } from "#app/lib/fhir/model";
+import { extensionValue, extensionValueType } from "#app/lib/fhir/model";
 import {
   type AnswerChoice,
+  parseQuestionnaireExtensions,
   parseQuestionnaireItems,
   type QuestionnaireItem,
   resolveAnswerChoices,
@@ -36,8 +39,9 @@ interface OptionNode extends TreeNode {
 
 export function QuestionnaireItemTree({ resource }: { resource: Resource; }) {
   const { nodes, expandedKeys } = useMemo(() => build(resource), [resource]);
+  const extensions = useMemo(() => parseQuestionnaireExtensions(resource), [resource]);
 
-  if (nodes.length === 0) {
+  if (nodes.length === 0 && extensions.length === 0) {
     return (
       <Panel>
         <Text>{m.resources_questionnaire_empty()}</Text>
@@ -46,22 +50,116 @@ export function QuestionnaireItemTree({ resource }: { resource: Resource; }) {
   }
 
   return (
+    <Stack direction="vertical" gap="md">
+      {extensions.length > 0 ? <DefinitionExtensions extensions={extensions} /> : null}
+      {nodes.length > 0 ? (
+        <Card>
+          <Tree
+            aria-label={m.resources_instance_tab_form()}
+            items={nodes}
+            defaultExpandedKeys={expandedKeys}
+            getLabel={nodeLabel}
+            renderNode={(node) => {
+              if (node.kind === "option") return <OptionRow choice={node.choice} />;
+              return node.item.type === "group" ? (
+                <GroupRow item={node.item} />
+              ) : (
+                <QuestionRow item={node.item} />
+              );
+            }}
+          />
+        </Card>
+      ) : null}
+    </Stack>
+  );
+}
+
+/** Extensions carried by the Questionnaire itself — where a profile marks the definition. */
+function DefinitionExtensions({ extensions }: { extensions: Extension[]; }) {
+  return (
     <Card>
-      <Tree
-        aria-label={m.resources_instance_tab_form()}
-        items={nodes}
-        defaultExpandedKeys={expandedKeys}
-        getLabel={nodeLabel}
-        renderNode={(node) => {
-          if (node.kind === "option") return <OptionRow choice={node.choice} />;
-          return node.item.type === "group" ? (
-            <GroupRow item={node.item} />
-          ) : (
-            <QuestionRow item={node.item} />
-          );
-        }}
-      />
+      <Stack direction="vertical" gap="sm">
+        <Heading as="h4">{m.resources_questionnaire_extensions()}</Heading>
+        {extensions.map((extension, index) => (
+          <ExtensionRow key={`${extension.url}.${String(index)}`} extension={extension} />
+        ))}
+      </Stack>
     </Card>
+  );
+}
+
+/** One extension: its defining url, then the value[x] it carries. */
+function ExtensionRow({ extension }: { extension: Extension; }) {
+  const summary = extensionSummary(extension);
+  return (
+    <Stack direction="vertical" gap="xs">
+      <Text as="span" size="sm">
+        {extension.url}
+      </Text>
+      <Stack direction="horizontal" gap="sm" align="center" wrap>
+        {summary.type ? <Chip>{summary.type}</Chip> : null}
+        {summary.text ? (
+          <Text as="span" variant="subtle">
+            {summary.text}
+          </Text>
+        ) : null}
+      </Stack>
+    </Stack>
+  );
+}
+
+/**
+ * How to label an extension's payload: the datatype, plus the value itself when
+ * it is a primitive. Complex values are not flattened — showing their type is
+ * honest, inventing a one-line rendering of them is not.
+ */
+function extensionSummary(extension: Extension): { type: string; text: string; } {
+  const nested = extension.extension;
+  if (nested !== undefined && nested.length > 0) {
+    return {
+      type: "extension",
+      text: m.resources_questionnaire_extensions_nested({ count: nested.length }),
+    };
+  }
+
+  const value = extensionValue(extension);
+  if (value === undefined) return { type: "", text: "" };
+
+  const type = extensionValueType(value.field);
+  const primitive =
+    typeof value.value === "string" ||
+    typeof value.value === "number" ||
+    typeof value.value === "boolean"
+      ? formatPrimitive(value.value)
+      : null;
+
+  return { type, text: primitive ?? "" };
+}
+
+/** Extensions on a tree row, compact: one wrapped line of url-tail chips. */
+function ItemExtensions({ extensions }: { extensions: Extension[]; }) {
+  return (
+    <Stack direction="horizontal" gap="sm" align="center" wrap>
+      {extensions.map((extension, index) => (
+        <ExtensionChip key={`${extension.url}.${String(index)}`} extension={extension} />
+      ))}
+    </Stack>
+  );
+}
+
+/** One extension as its url tail in a chip, then the primitive value or datatype. */
+function ExtensionChip({ extension }: { extension: Extension; }) {
+  const summary = extensionSummary(extension);
+  const detail = summary.text !== "" ? summary.text : summary.type;
+  return (
+    <Stack direction="horizontal" gap="xs" align="center">
+      <Chip>{canonicalTail(extension.url)}</Chip>
+      {detail ? (
+        <Text as="span" variant="subtle">
+          {detail}
+        </Text>
+      ) : null}
+    </Stack>
   );
 }
 
@@ -100,11 +198,14 @@ function nodeLabel(node: QuestionnaireNode): string {
 function GroupRow({ item }: { item: QuestionnaireItem; }) {
   const count = item.item?.length ?? 0;
   return (
-    <Stack direction="horizontal" gap="sm" align="end" wrap>
-      <Heading as="h4">{item.text ?? item.linkId}</Heading>
-      <Text as="span" variant="subtle">
-        {`${item.type} · ${String(count)}`}
-      </Text>
+    <Stack direction="vertical" gap="xs">
+      <Stack direction="horizontal" gap="sm" align="end" wrap>
+        <Heading as="h4">{item.text ?? item.linkId}</Heading>
+        <Text as="span" variant="subtle">
+          {`${item.type} · ${String(count)}`}
+        </Text>
+      </Stack>
+      {item.extension ? <ItemExtensions extensions={item.extension} /> : null}
     </Stack>
   );
 }
@@ -133,6 +234,7 @@ function QuestionRow({ item }: { item: QuestionnaireItem; }) {
           </Text>
         ) : null}
       </Stack>
+      {item.extension ? <ItemExtensions extensions={item.extension} /> : null}
     </Stack>
   );
 }
@@ -145,6 +247,9 @@ function OptionRow({ choice }: { choice: AnswerChoice; }) {
       <Text as="span" variant="subtle">
         {choice.display ?? choice.code ?? choice.label}
       </Text>
+      {choice.extension?.map((extension, index) => (
+        <ExtensionChip key={`${extension.url}.${String(index)}`} extension={extension} />
+      ))}
     </Stack>
   );
 }
