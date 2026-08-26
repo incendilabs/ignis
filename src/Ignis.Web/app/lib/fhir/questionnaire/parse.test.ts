@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { parseQuestionnaireItems } from "./parse";
+import { parseQuestionnaireExtensions, parseQuestionnaireItems } from "./parse";
 
 describe("parseQuestionnaireItems", () => {
   it("returns [] for a non-Questionnaire resource", () => {
@@ -115,5 +115,110 @@ describe("parseQuestionnaireItems", () => {
     expect(items).toHaveLength(2);
     expect(items[0]).toMatchObject({ linkId: "", type: "" });
     expect(items[1]).toMatchObject({ linkId: "ok", type: "display" });
+  });
+
+  it("keeps item extensions, including nested ones", () => {
+    const [item] = parseQuestionnaireItems({
+      resourceType: "Questionnaire",
+      item: [
+        {
+          linkId: "q1",
+          type: "string",
+          extension: [
+            {
+              url: "http://example.test/rendering",
+              extension: [{ url: "http://example.test/style", valueString: "bold" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(item.extension).toHaveLength(1);
+    expect(item.extension?.[0].url).toBe("http://example.test/rendering");
+    expect(item.extension?.[0].extension?.[0]).toMatchObject({
+      url: "http://example.test/style",
+      valueString: "bold",
+    });
+  });
+
+  it("keeps extensions on answer options", () => {
+    const [item] = parseQuestionnaireItems({
+      resourceType: "Questionnaire",
+      item: [
+        {
+          linkId: "q1",
+          type: "choice",
+          answerOption: [
+            {
+              valueCoding: { code: "high" },
+              extension: [{ url: "http://example.test/ordinal", valueDecimal: 3 }],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(item.answerOption?.[0].extension?.[0]).toMatchObject({
+      url: "http://example.test/ordinal",
+      valueDecimal: 3,
+    });
+  });
+
+  it("carries extensions down the nested item tree", () => {
+    const [group] = parseQuestionnaireItems({
+      resourceType: "Questionnaire",
+      item: [
+        {
+          linkId: "g1",
+          type: "group",
+          item: [
+            {
+              linkId: "q1",
+              type: "string",
+              extension: [{ url: "http://example.test/hidden", valueBoolean: true }],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(group.item?.[0].extension?.[0]).toMatchObject({
+      url: "http://example.test/hidden",
+      valueBoolean: true,
+    });
+  });
+});
+
+describe("parseQuestionnaireExtensions", () => {
+  it("returns [] for a non-Questionnaire resource", () => {
+    expect(
+      parseQuestionnaireExtensions({
+        resourceType: "Patient",
+        extension: [{ url: "http://example.test/x", valueString: "a" }],
+      }),
+    ).toEqual([]);
+  });
+
+  it("returns [] when the definition carries none", () => {
+    expect(parseQuestionnaireExtensions({ resourceType: "Questionnaire" })).toEqual([]);
+  });
+
+  it("returns the definition's own extensions, not its items'", () => {
+    const extensions = parseQuestionnaireExtensions({
+      resourceType: "Questionnaire",
+      extension: [{ url: "http://example.test/definition", valueString: "on the definition" }],
+      item: [
+        {
+          linkId: "q1",
+          type: "string",
+          extension: [{ url: "http://example.test/item", valueString: "on the item" }],
+        },
+      ],
+    });
+
+    expect(extensions).toEqual([
+      { url: "http://example.test/definition", valueString: "on the definition" },
+    ]);
   });
 });
