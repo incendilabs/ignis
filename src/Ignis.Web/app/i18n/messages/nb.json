@@ -100,6 +100,8 @@
   "resources_instance_tab_tree": "Innholdstre",
   "resources_instance_xml": "XML",
   "resources_questionnaire_empty": "Dette skjemaet har ingen elementer.",
+  "resources_questionnaire_extensions": "Utvidelser",
+  "resources_questionnaire_extensions_nested": "{count} nøstede",
   "resources_questionnaire_options": "{count} alternativer",
   "resources_questionnaire_repeats": "gjentas",
   "resources_questionnaire_required": "påkrevd",

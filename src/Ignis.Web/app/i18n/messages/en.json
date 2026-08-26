@@ -100,6 +100,8 @@
   "resources_instance_tab_tree": "Content tree",
   "resources_instance_xml": "XML",
   "resources_questionnaire_empty": "This Questionnaire has no items.",
+  "resources_questionnaire_extensions": "Extensions",
+  "resources_questionnaire_extensions_nested": "{count} nested",
   "resources_questionnaire_options": "{count} options",
   "resources_questionnaire_repeats": "repeats",
   "resources_questionnaire_required": "required",
