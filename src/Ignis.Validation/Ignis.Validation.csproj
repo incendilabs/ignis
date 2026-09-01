@@ -12,9 +12,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Firely.Fhir.Validation" Version="3.3.0" />
-        <PackageReference Include="Firely.Fhir.Validation.Compilation" Version="3.3.0" />
-        <PackageReference Include="Hl7.Fhir.Conformance" Version="6.3.0" />
+        <PackageReference Include="Firely.Fhir.Validation" Version="3.3.1" />
+        <PackageReference Include="Firely.Fhir.Validation.Compilation" Version="3.3.1" />
+        <PackageReference Include="Hl7.Fhir.Conformance" Version="6.4.0" />
     </ItemGroup>
 
 </Project>
