@@ -89,6 +89,24 @@ All default to off. Set to `"true"` to enable.
 | `IGNIS_WEB_FEATURES_AUTH`         | Master switch for the OAuth/BFF login flow. Most other features require this.                                      |
 | `IGNIS_WEB_FEATURES_OPERATIONS`   | Enables the operations log at `/admin/operations`. Requires `IGNIS_WEB_FEATURES_ADMIN=true`.                       |
 | `IGNIS_WEB_FEATURES_RESOURCES_UI` | Enables the resource browser at `/resources`. Requires `IGNIS_WEB_FEATURES_AUTH=true`.                             |
+| `IGNIS_WEB_FEATURES_VALIDATION_ANONYMOUS` | Serves the validator at `/validation` to visitors with no session. Needs no other flag — a deployment can publish the validator alone, with auth off entirely. |
+
+Signed-in users reach the validator wherever `IGNIS_WEB_FEATURES_RESOURCES_UI` is on,
+with or without this flag.
+
+### Anonymous validation
+
+This flag only stops the bounce to login; the API decides what it serves
+(`FeatureManagement:AllowAnonymousValidation`, see
+[api-configuration.md](./api-configuration.md#anonymous-validation)). Set here but not
+there, and the page loads while every validation fails.
+
+Two panels come with it, on `/validation`:
+
+- **About this server** — `CapabilityStatement.implementation.description` verbatim, so the
+  real-patient-data warning is the deployment's own words. Hidden when the server says nothing.
+- **Explore the whole server** — for visitors with no session, when
+  `IGNIS_WEB_FEATURES_AUTH` is on. Points at login.
 
 ## Cross-references with the API
 
@@ -100,3 +118,4 @@ These must agree on both sides — update API and Web together.
 | `IGNIS_WEB_APP_URL`       | `AuthSettings:Clients[n]:RedirectUris` (must contain `<IGNIS_WEB_APP_URL>/auth/callback`) |
 | `IGNIS_WEB_CLIENT_ID`     | `AuthSettings:Clients[n]:ClientId`                                                        |
 | `IGNIS_WEB_CLIENT_SECRET` | `AuthSettings:Clients[n]:ClientSecret`                                                    |
+| `IGNIS_WEB_FEATURES_VALIDATION_ANONYMOUS` | `FeatureManagement:AllowAnonymousValidation`                              |
