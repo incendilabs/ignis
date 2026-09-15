@@ -17,7 +17,10 @@ namespace Ignis.Api.Tests;
 /// </summary>
 public sealed class MongoContainerFixture : IAsyncLifetime
 {
-    private readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8").Build();
+    private readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8")
+        // Work around https://jira.mongodb.org/browse/SERVER-121912 on affected Linux kernels.
+        .WithEnvironment("GLIBC_TUNABLES", "glibc.pthread.rseq=1")
+        .Build();
 
     public async ValueTask InitializeAsync() => await _mongo.StartAsync();
 
