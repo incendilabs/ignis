@@ -23,6 +23,7 @@ import { paraglideMiddleware } from "#app/i18n/paraglide/server";
 import { ThemeProvider } from "./contexts/theme-provider";
 import * as adminConfig from "#app/features/admin/config.server";
 import * as authConfig from "#app/features/auth/config.server";
+import * as resourcesConfig from "#app/features/resources-ui/config.server";
 import { getSessionStateFromRequest } from "#app/features/auth/session.server";
 import { SessionStatus } from "#app/features/auth/session-status";
 import { SessionGuard } from "#app/features/auth/SessionGuard";
@@ -41,6 +42,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const features = {
     auth: authConfig.isEnabled(),
     admin: adminConfig.isEnabled(),
+    resources: resourcesConfig.isEnabled(),
   };
 
   const sessionState = features.auth ? await getSessionStateFromRequest(request) : null;
