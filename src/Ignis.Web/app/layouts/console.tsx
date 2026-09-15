@@ -20,6 +20,7 @@ import { getSessionFromRequest } from "#app/features/auth/session.server";
 import * as operationsConfig from "#app/features/operations/config.server";
 import * as resourcesConfig from "#app/features/resources-ui/config.server";
 import { fetchResourceTypes } from "#app/features/resources-ui/fhir-client.server";
+import * as validationConfig from "#app/features/validation/config.server";
 import { m } from "#app/i18n/paraglide/messages";
 import { useRootData } from "#app/lib/use-root-data";
 
@@ -29,6 +30,7 @@ import { ConsoleNav } from "./console-nav";
 export async function loader({ request }: Route.LoaderArgs) {
   const features = {
     resources: resourcesConfig.isEnabled(),
+    validation: validationConfig.isEnabled(),
     admin: adminConfig.isEnabled(),
     operations: operationsConfig.isEnabled(),
   };
