@@ -28,6 +28,11 @@ updates:
         update-types:
           - minor
           - patch
+      # Security fixes arrive as one batch instead of one PR each
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
     # @types/node should be updated manually to ensure alignment with the Node.js
     # version used in the project
     ignore:
@@ -35,7 +40,9 @@ updates:
         update-types:
           - version-update:semver-major
   - package-ecosystem: nuget
-    directory: /
+    directories:
+      - /src/*
+      - /tests/*
     schedule:
       interval: weekly
     cooldown:
@@ -49,6 +56,15 @@ updates:
         update-types:
           - minor
           - patch
+      majors:
+        patterns:
+          - "*"
+        update-types:
+          - major
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   # CI + infra: batch everything into a single PR per ecosystem.
   - package-ecosystem: github-actions
