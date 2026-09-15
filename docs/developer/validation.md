@@ -29,6 +29,10 @@ Canonicals resolve **package-first, store-fallback**: staged packages first, the
 `StructureDefinition`s you `PUT` into the FHIR store — so draft profiles need no
 package at all.
 
+`$validate` needs a token like every other endpoint, unless the deployment sets
+`FeatureManagement:AllowAnonymousValidation` — see
+[Anonymous validation](../server/api-configuration.md#anonymous-validation).
+
 ## Adding profile packages
 
 Profiles ship as `.tgz` **packages** declared in

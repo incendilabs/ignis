@@ -7,13 +7,12 @@
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Utility;
 
+using Ignis.Api.Authorization;
 using Ignis.Api.Services.Validation;
 using Ignis.Validation;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-using OpenIddict.Validation.AspNetCore;
 
 using Spark.Engine.Core;
 
@@ -24,11 +23,13 @@ namespace Ignis.Api.Controllers;
 /// <c>supportedProfile</c> set, with each one's name/title/version/status.
 /// </summary>
 [Route("fhir"), ApiController]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class ProfilesController(ISupportedProfileCatalog catalog) : ControllerBase
 {
     /// <summary>The loaded profiles as a searchset Bundle of StructureDefinition summaries.</summary>
+    /// <remarks>Follows <c>$validate</c> into anonymous access: a validator UI needs the profile
+    /// list, and <c>/fhir/metadata</c> already names the same canonicals.</remarks>
     [HttpGet("StructureDefinition/$profiles"), Tags("Conformance")]
+    [Authorize(Policy = ValidationPolicies.Validate)]
     public async Task<FhirResponse> GetProfiles()
     {
         var profiles = await catalog.ProfilesAsync().ConfigureAwait(false);
