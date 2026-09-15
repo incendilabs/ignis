@@ -10,28 +10,46 @@ import { Container } from "@eventuras/ratio-ui/layout/Container";
 import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { redirect } from "react-router";
 
+import { fetchServerNotice } from "#app/capability.server";
+import { ServerNotice, SignUpPrompt } from "#app/components/ui/notices";
 import { fetchSupportedProfiles } from "#app/features/admin/profiles.server";
-import { requireSession } from "#app/features/auth/session.server";
-import { isEnabled } from "#app/features/resources-ui/config.server";
+import * as authConfig from "#app/features/auth/config.server";
+import { getSessionFromRequest, requireSession } from "#app/features/auth/session.server";
 import { m } from "#app/i18n/paraglide/messages";
 
 import type { Route } from "./+types/index";
+import { isEnabled, sessionRequirement } from "../config.server";
 import { ResourceValidator } from "../ResourceValidator";
 import { validateResource } from "../validate.server";
 
+/** The session where the deployment has one to offer — otherwise null, or a thrown
+ *  redirect to login where validation is not open to everyone. */
+async function optionalSession(request: Request) {
+  switch (sessionRequirement()) {
+    case "required": return await requireSession(request);
+    case "optional": return await getSessionFromRequest(request);
+    case "none": return null;
+  }
+}
+
 export async function loader({ request }: Route.LoaderArgs) {
   if (!isEnabled()) return redirect("/");
-  const session = await requireSession(request);
+  const session = await optionalSession(request);
 
   // Loaded once for the whole flow; step 2 filters them by the resource type
   // that step 1 turned out to hold.
-  const profiles = await fetchSupportedProfiles(request, session.tokens?.accessToken);
-  return { profiles };
+  const [profiles, serverNotice] = await Promise.all([
+    fetchSupportedProfiles(request, session?.tokens?.accessToken),
+    fetchServerNotice(request),
+  ]);
+
+  // A login is only worth offering where there is one to be had.
+  return { profiles, serverNotice, offerLogin: session === null && authConfig.isEnabled() };
 }
 
 export async function action({ request }: Route.ActionArgs) {
   if (!isEnabled()) return { ok: false as const };
-  const session = await requireSession(request);
+  const session = await optionalSession(request);
 
   const form = await request.formData();
   const rawResource = form.get("resource");
@@ -40,7 +58,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   return validateResource(
     request,
-    session.tokens?.accessToken,
+    session?.tokens?.accessToken,
     resourceText,
     typeof profile === "string" ? profile : null,
     {
@@ -58,6 +76,9 @@ export default function ValidationPage({ loaderData }: Route.ComponentProps) {
           <Heading as="h1">{m.validation_title()}</Heading>
           <Lead>{m.validation_description()}</Lead>
         </Stack>
+
+        <ServerNotice notice={loaderData.serverNotice} />
+        {loaderData.offerLogin && <SignUpPrompt />}
 
         <ResourceValidator profiles={loaderData.profiles} />
       </Stack>
