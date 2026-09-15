@@ -12,6 +12,10 @@ using FluentAssertions;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 
+using Ignis.Api.Configuration;
+
+using Microsoft.Extensions.DependencyInjection;
+
 using Xunit;
 
 // Avoid clash with Hl7.Fhir.Model.Task
@@ -52,6 +56,20 @@ public class ProfilesControllerTests : IClassFixture<IntegrationFixture>, IAsync
     {
         var response = await _anonymousClient.GetAsync(ProfilesUrl, CT);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Profiles_WithoutAuth_WhenAnonymousValidationIsAllowed_ReturnsOk()
+    {
+        // A public validator has to offer the profile list its $validate accepts.
+        using var factory = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.PostConfigure<FeatureSettings>(o => o.AllowAnonymousValidation = true)));
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync(ProfilesUrl, CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]

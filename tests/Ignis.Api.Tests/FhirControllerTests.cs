@@ -15,6 +15,8 @@ using Hl7.Fhir.Serialization;
 
 using Ignis.Api.Configuration;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Xunit;
 
 // Avoid clash with Hl7.Fhir.Model.Task
@@ -334,13 +336,54 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
             i.Severity == OperationOutcome.IssueSeverity.Error || i.Severity == OperationOutcome.IssueSeverity.Fatal);
     }
 
+    [Fact]
+    public async Task Validate_WithoutAuth_ReturnsUnauthorized()
+    {
+        var response = await PostFhirResourceAnonymously("Patient/$validate", new Patient { Active = true });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Validate_WithoutAuth_WhenAnonymousValidationIsAllowed_ReturnsOk()
+    {
+        using var factory = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.PostConfigure<FeatureSettings>(o => o.AllowAnonymousValidation = true)));
+        using var client = factory.CreateClient();
+
+        var response = await PostFhirResource(client, "Patient/$validate", new Patient { Active = true });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Read_WithoutAuth_WhenAnonymousValidationIsAllowed_StaysUnauthorized()
+    {
+        // The flag opens $validate only — the rest of the API keeps its fallback policy.
+        using var factory = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.PostConfigure<FeatureSettings>(o => o.AllowAnonymousValidation = true)));
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/fhir/Patient", CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     // Helpers
 
-    private async Task<HttpResponseMessage> PostFhirResource(string path, Resource resource)
+    private Task<HttpResponseMessage> PostFhirResource(string path, Resource resource) =>
+        PostFhirResource(_client, path, resource);
+
+    private Task<HttpResponseMessage> PostFhirResourceAnonymously(string path, Resource resource) =>
+        PostFhirResource(_anonymousClient, path, resource);
+
+    private async Task<HttpResponseMessage> PostFhirResource(HttpClient client, string path, Resource resource)
     {
         var json = _serializer.SerializeToString(resource);
         using var content = new StringContent(json, Encoding.UTF8, "application/fhir+json");
-        return await _client.PostAsync($"/fhir/{path}", content, CT);
+        return await client.PostAsync($"/fhir/{path}", content, CT);
     }
 
     private async Task<HttpResponseMessage> PutFhirResource(string path, Resource resource)

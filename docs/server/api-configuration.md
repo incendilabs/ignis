@@ -76,10 +76,21 @@ Trusted-proxy allow-list for `X-Forwarded-For` / `X-Forwarded-Proto`. Required w
 
 Boolean gates for endpoints that are off by default. Defense-in-depth on top of the corresponding `maintenance/*` scopes.
 
-| Key                                 | Default | When `true`                                                | When `false`              |
-| ----------------------------------- | ------- | ---------------------------------------------------------- | ------------------------- |
-| `FeatureManagement:AllowClearStore` | `false` | `$clear-store` is reachable (still requires `destructive`) | `$clear-store` → `404`    |
-| `FeatureManagement:AllowImport`     | `false` | `$archive-import` is reachable                             | `$archive-import` → `503` |
+| Key                                          | Default | When `true`                                                                  | When `false`                                    |
+| -------------------------------------------- | ------- | ---------------------------------------------------------------------------- | ----------------------------------------------- |
+| `FeatureManagement:AllowClearStore`          | `false` | `$clear-store` is reachable (still requires `destructive`)                   | `$clear-store` → `404`                          |
+| `FeatureManagement:AllowImport`              | `false` | `$archive-import` is reachable                                               | `$archive-import` → `503`                       |
+| `FeatureManagement:AllowAnonymousValidation` | `false` | `$validate` and `StructureDefinition/$profiles` accept unauthenticated calls | Both require a token, like every other endpoint |
+
+### Anonymous validation
+
+`$validate` reads only the posted body, never the store, so a demo server can offer it
+without accounts. The flag opens exactly two endpoints — `$validate` (type and instance
+level) and `StructureDefinition/$profiles`, which a validator UI needs for the profile
+list and which exposes no canonical `/fhir/metadata` does not already advertise.
+
+The Web app gates the same thing with `IGNIS_WEB_FEATURES_VALIDATION_ANONYMOUS` — both
+sides must be set, see [web-configuration.md](./web-configuration.md#feature-flags).
 
 ## SparkSettings
 
