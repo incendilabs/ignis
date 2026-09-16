@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+using Ignis.Api.Authorization;
 using Ignis.Api.Configuration;
 using Ignis.Api.Extensions;
 using Ignis.Api.Filters;
@@ -117,7 +118,12 @@ builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
         .RequireAuthenticatedUser()
-        .Build());
+        .Build())
+    // Opt-in escape hatch from the fallback policy for $validate; see FeatureSettings.
+    .AddPolicy(ValidationPolicies.Validate, policy => policy
+        .AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+        .AddRequirements(new ValidationAccessRequirement()));
+builder.Services.AddSingleton<IAuthorizationHandler, ValidationAccessHandler>();
 
 builder.Services.AddControllers();
 

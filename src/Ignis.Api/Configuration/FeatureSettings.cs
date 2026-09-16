@@ -24,4 +24,8 @@ public sealed class FeatureSettings
     /// <c>503 Service Unavailable</c>.
     /// </summary>
     public bool AllowImport { get; set; }
+
+    /// <summary>When <c>true</c>, <c>$validate</c> and <c>StructureDefinition/$profiles</c>
+    /// take unauthenticated calls — for demo servers. Nothing else opens up.</summary>
+    public bool AllowAnonymousValidation { get; set; }
 }

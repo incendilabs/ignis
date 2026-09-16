@@ -10,6 +10,7 @@ using System.Net;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 
+using Ignis.Api.Authorization;
 using Ignis.Validation;
 
 using Microsoft.AspNetCore.Authorization;
@@ -136,15 +137,20 @@ public class FhirController : ControllerBase
 
     // ============= Validate
 
+    // $validate only reads the posted body, never the store, so a deployment may open it to
+    // anonymous callers — FeatureManagement:AllowAnonymousValidation. Off by default.
+
     /// <summary>
     /// Validate a resource against a profile (<c>?profile=</c> canonical), its declared
     /// <c>meta.profile</c>, or — by default — its base type.
     /// </summary>
     [HttpPost("{type}/{id}/$validate"), Tags("Validation")]
+    [Authorize(Policy = ValidationPolicies.Validate)]
     public ActionResult<FhirResponse> Validate(string type, string id, Resource resource) => ValidateResource(type, resource);
 
     /// <summary>Validate a resource against a profile, its <c>meta.profile</c>, or its base type.</summary>
     [HttpPost("{type}/$validate"), Tags("Validation")]
+    [Authorize(Policy = ValidationPolicies.Validate)]
     public ActionResult<FhirResponse> Validate(string type, Resource resource) => ValidateResource(type, resource);
 
     private ActionResult<FhirResponse> ValidateResource(string type, Resource resource)

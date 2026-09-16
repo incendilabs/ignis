@@ -29,6 +29,7 @@ const PINNED_NAV_TYPES = ["Patient", "Practitioner", "Observation", "Questionnai
 
 export interface ConsoleNavFeatures {
   resources: boolean;
+  validation: boolean;
   admin: boolean;
   operations: boolean;
 }
@@ -151,6 +152,12 @@ export function ConsoleNav({
                   }),
                 ],
               },
+            ]
+          : []),
+        // The validator stands on its own — publishable without the resource browser,
+        // and without a login.
+        ...(features.validation
+          ? [
               {
                 title: m.validation_title(),
                 href: "/validation",

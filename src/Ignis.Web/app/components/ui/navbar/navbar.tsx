@@ -19,6 +19,7 @@ interface NavbarProps {
   features: {
     auth: boolean;
     admin: boolean;
+    resources: boolean;
   };
   user?: { name: string; email: string; } | null;
   /** Hide the brand when the console sidebar already carries the logo. */
@@ -65,7 +66,7 @@ export function Navbar({ features, user, showBrand = true }: NavbarProps) {
               <Menu.Header.Email>{user.email}</Menu.Header.Email>
             </Menu.Header>
           )}
-          <Menu.Link href="/resources">{m.resources_title()}</Menu.Link>
+          {features.resources && <Menu.Link href="/resources">{m.resources_title()}</Menu.Link>}
           {features.admin && <Menu.Link href="/admin/database">{m.admin_title()}</Menu.Link>}
           {features.auth &&
             (user ? (
