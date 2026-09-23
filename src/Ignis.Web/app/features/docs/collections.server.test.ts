@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -20,6 +21,22 @@ async function write(file: string, source: string): Promise<void> {
   const target = path.join(dir, file);
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, source, "utf8");
+}
+
+/**
+ * Writes a document the way a ConfigMap volume presents one: the bytes live in
+ * a timestamped directory, `..data` links to it, and the document's own name is
+ * a symlink through that link.
+ */
+async function writeAsConfigMapVolume(localeDir: string, name: string, source: string) {
+  const mount = path.join(dir, localeDir);
+  const revision = "..2026_08_04_09_00_00.1234567890";
+  await mkdir(path.join(mount, revision), { recursive: true });
+  await writeFile(path.join(mount, revision, name), source, "utf8");
+  if (!existsSync(path.join(mount, "..data"))) {
+    await symlink(revision, path.join(mount, "..data"));
+  }
+  await symlink(path.join("..data", name), path.join(mount, name));
 }
 
 function doc(frontmatter: Record<string, string>, body: string): string {
@@ -104,6 +121,44 @@ describe("the pages collection", () => {
       "Privacy",
       "Terms",
     ]);
+  });
+
+  it("reads documents a ConfigMap volume presents as symlinks", async () => {
+    await writeAsConfigMapVolume("en", "terms-of-use.md", doc({ title: "Terms", slug: "terms" }, "Body."));
+    await writeAsConfigMapVolume("nb", "terms-of-use.md", doc({ title: "Bruksvilkår", slug: "terms", language: "nb" }, "Brødtekst."));
+
+    expect(await getDocument("pages", "terms", "en")).toMatchObject({ title: "Terms" });
+    expect(await getDocument("pages", "terms", "nb")).toMatchObject({ title: "Bruksvilkår" });
+  });
+
+  it("reads a ConfigMap volume mounted at the content root", async () => {
+    await writeAsConfigMapVolume("", "terms-of-use.md", doc({ title: "Terms", slug: "terms" }, "Body."));
+
+    expect(await getDocument("pages", "terms", "en")).toMatchObject({ title: "Terms" });
+  });
+
+  it("ignores a symlink that leaves the content directory", async () => {
+    const outside = await mkdtemp(path.join(tmpdir(), "ignis-secrets-"));
+    try {
+      await writeFile(
+        path.join(outside, "secret.md"),
+        doc({ title: "Secret", slug: "secret" }, "Not ours to publish."),
+        "utf8",
+      );
+      await write("terms-of-use.md", doc({ title: "Terms", slug: "terms" }, "Body."));
+      await symlink(path.join(outside, "secret.md"), path.join(dir, "secret.md"));
+
+      expect(await getDocument("pages", "secret", "en")).toBeNull();
+      expect((await getDocumentTree("pages", "en")).map((node) => node.title)).toEqual(["Terms"]);
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+
+  it("does not mistake a ConfigMap volume's own entries for documents", async () => {
+    await writeAsConfigMapVolume("en", "terms-of-use.md", doc({ title: "Terms", slug: "terms" }, "Body."));
+
+    expect((await getDocumentTree("pages", "en")).map((node) => node.title)).toEqual(["Terms"]);
   });
 });
 
