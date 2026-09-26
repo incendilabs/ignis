@@ -13,7 +13,7 @@ import {
   type PageMeta,
 } from "@eventuras/lectio-docs/content";
 import { existsSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { env } from "#app/env.server";
@@ -21,6 +21,7 @@ import { baseLocale, locales } from "#app/i18n/paraglide/runtime";
 import { Logger } from "#app/logger";
 
 import type { CollectionId } from "./collections.shared";
+import { contentMount, type ContentMount } from "./content-mount.server";
 
 const logger = Logger.create({ namespace: "docs" });
 
@@ -41,16 +42,14 @@ export function isEnabled(collection: CollectionId): boolean {
 
 // ── pages: a directory mounted at runtime ────────────────────────────────────
 
-/**
- * Directory of markdown this deployment publishes.
- */
+/** Directory of markdown this deployment publishes. */
 function contentDir(): string | null {
   const dir = env("IGNIS_WEB_CONTENT_DIR", { default: "" });
   return dir === "" ? null : path.resolve(dir);
 }
 
 // Mounted content can change under a running pod, so it is re-read rather than
-// resolved once — briefly cached. Never in dev, so an edit shows up on reload.
+// resolved once. Never cached in dev, so an edit shows up on reload.
 const MOUNTED_TTL_MS = import.meta.env.DEV ? 0 : 30_000;
 
 let mounted: { dir: string; expiresAt: number; value: Promise<LoadedCollection | null>; } | null =
@@ -69,93 +68,67 @@ function loadMountedPages(): Promise<LoadedCollection | null> {
 }
 
 async function scanDirectory(dir: string): Promise<LoadedCollection | null> {
-  const files = await listMarkdownFiles(dir);
+  const mount = contentMount(dir);
+  const files = await mount.list();
   if (files === null) return null;
 
-  const pages: PageMeta[] = [];
-  const seen = new Set<string>();
-
-  for (const file of files) {
-    const raw = await readDocument(dir, file);
-    if (raw === null) continue;
-
-    const { frontmatter, unsupportedKeys } = parseFrontmatter(raw);
-    if (unsupportedKeys.length > 0) {
-      logger.warn({ context: { file, keys: unsupportedKeys } }, "Frontmatter keys not read");
-    }
-
-    const { slug, locale } = pathToPage(file, { locales, defaultLocale: baseLocale, frontmatter });
-
-    // Ignor duplicate slugs
-    const key = `${locale}\n${slug}`;
-    if (seen.has(key)) {
-      logger.warn({ context: { file, slug, locale } }, "Duplicate document ignored");
-      continue;
-    }
-    seen.add(key);
-
-    pages.push({
-      slug,
-      locale,
-      title: asString(frontmatter.title) ?? slug.slice(1),
-      source: file,
-      file,
-      frontmatter,
-    });
-  }
-
+  const pages = await collectPages(mount, files);
   logger.debug({ context: { dir, pages: pages.length } }, "Mounted collection scanned");
+
   return {
     source: createContentSource({
       manifest: { version: 1, pages },
-      loadBody: (page) => readFile(path.join(dir, page.file), "utf8"),
+      loadBody: async (page) => {
+        const body = await mount.read(page.file);
+        if (body === null) throw new Error(`Document ${page.file} could not be read`);
+        return body;
+      },
       defaultLocale: baseLocale,
     }),
     sourceUrl: null,
   };
 }
 
-async function listMarkdownFiles(dir: string): Promise<string[] | null> {
-  let rootEntries;
-  try {
-    rootEntries = await readdir(dir, { withFileTypes: true });
-  } catch (error) {
-    logger.warn({ error, context: { dir } }, "Content directory could not be read");
-    return null;
-  }
+/** The mount's documents as manifest entries, first slug per locale winning. */
+async function collectPages(mount: ContentMount, files: string[]): Promise<PageMeta[]> {
+  const pages: PageMeta[] = [];
+  const seen = new Set<string>();
 
-  const files: string[] = [];
-  for (const entry of rootEntries) {
-    if (entry.isFile()) {
-      if (entry.name.toLowerCase().endsWith(".md")) files.push(entry.name);
+  for (const file of files) {
+    const raw = await mount.read(file);
+    if (raw === null) continue;
+
+    const page = toPage(file, raw);
+    const key = `${page.locale ?? baseLocale}\n${page.slug}`;
+    if (seen.has(key)) {
+      logger.warn(
+        { context: { file, slug: page.slug, locale: page.locale } },
+        "Duplicate document ignored",
+      );
       continue;
     }
-
-    if (!entry.isDirectory() || !locales.some((locale) => locale === entry.name)) continue;
-
-    const nested = await readdir(path.join(dir, entry.name), { withFileTypes: true }).catch(
-      (error: unknown) => {
-        logger.warn({ error, context: { dir: entry.name } }, "Locale directory could not be read");
-        return [];
-      },
-    );
-    for (const nestedEntry of nested) {
-      if (nestedEntry.isFile() && nestedEntry.name.toLowerCase().endsWith(".md")) {
-        files.push(`${entry.name}/${nestedEntry.name}`);
-      }
-    }
+    seen.add(key);
+    pages.push(page);
   }
 
-  return files.sort((a, b) => a.localeCompare(b));
+  return pages;
 }
 
-async function readDocument(dir: string, file: string): Promise<string | null> {
-  try {
-    return await readFile(path.join(dir, file), "utf8");
-  } catch (error) {
-    logger.warn({ error, context: { file } }, "Document could not be read");
-    return null;
+function toPage(file: string, raw: string): PageMeta {
+  const { frontmatter, unsupportedKeys } = parseFrontmatter(raw);
+  if (unsupportedKeys.length > 0) {
+    logger.warn({ context: { file, keys: unsupportedKeys } }, "Frontmatter keys not read");
   }
+
+  const { slug, locale } = pathToPage(file, { locales, defaultLocale: baseLocale, frontmatter });
+  return {
+    slug,
+    locale,
+    title: asString(frontmatter.title) ?? slug.slice(1),
+    source: file,
+    file,
+    frontmatter,
+  };
 }
 
 // ── docs: a manifest gathered before the build ───────────────────────────────
@@ -177,7 +150,7 @@ function loadBuiltDocs(): Promise<LoadedCollection | null> {
 
 async function readManifest(): Promise<LoadedCollection | null> {
   const dir = docsDir();
-  const manifestPath = path.join(dir, "manifest.json");
+  const manifestPath = docsManifest();
   if (!existsSync(manifestPath)) return null;
 
   try {
