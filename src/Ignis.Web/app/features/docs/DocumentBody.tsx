@@ -7,6 +7,7 @@
 import { resolveRelativePath } from "@eventuras/lectio-docs/content";
 import { MarkdownContent, type MarkdownComponents } from "@eventuras/markdown";
 import { Link } from "@eventuras/ratio-ui/core/Link";
+import { Table } from "@eventuras/ratio-ui/core/Table";
 import type { ComponentProps, ReactNode } from "react";
 import { Link as RouterLink } from "react-router";
 
@@ -38,6 +39,14 @@ export function DocumentBody({
   sourceUrl?: string | null;
 }) {
   const components: MarkdownComponents = {
+    // The ratio renderer set has no table slot yet, so tables would fall
+    // through as bare HTML. Drop these once @eventuras/markdown maps them.
+    table: ({ children }) => <Table>{children}</Table>,
+    thead: ({ children }) => <Table.Header>{children}</Table.Header>,
+    tbody: ({ children }) => <Table.Body>{children}</Table.Body>,
+    tr: ({ children }) => <Table.Row>{children}</Table.Row>,
+    th: ({ children }) => <Table.HeadCell>{children}</Table.HeadCell>,
+    td: ({ children }) => <Table.Cell>{children}</Table.Cell>,
     a: ({ href = "", title, children }: AnchorProps) => {
       const resolved = resolveDocumentHref(href, source, pageBySource, sourceUrl);
 

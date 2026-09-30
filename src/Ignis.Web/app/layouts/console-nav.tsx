@@ -16,12 +16,13 @@ import {
   Upload,
 } from "@eventuras/ratio-ui/icons";
 import { SearchField } from "@eventuras/ratio-ui/forms/SearchField";
-import { type CSSProperties, type ReactNode, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { useState } from "react";
+import { useLocation } from "react-router";
 
+import { NavLink } from "#app/components/ui/nav";
 import { m } from "#app/i18n/paraglide/messages";
+import { deLocalizeHref } from "#app/i18n/paraglide/runtime";
 import { fhirResourcePath } from "#app/lib/fhir/http";
-import { locales } from "#app/i18n/paraglide/runtime";
 
 const ICON_SIZE = 18;
 
@@ -32,34 +33,6 @@ export interface ConsoleNavFeatures {
   validation: boolean;
   admin: boolean;
   operations: boolean;
-}
-
-/**
- * Adapts NavTree's href contract to react-router's Link. Spread the rest:
- * NavTree passes style (depth indent), aria-current and rail semantics.
- */
-function NavLink({
-  href,
-  ...rest
-}: {
-  href: string;
-  children: ReactNode;
-  className?: string;
-  style?: CSSProperties;
-  "aria-current"?: "page";
-  "aria-label"?: string;
-  title?: string;
-}) {
-  return <Link to={href} {...rest} />;
-}
-
-/** Strips the optional locale prefix so nav hrefs match the current path. */
-function stripLocale(pathname: string): string {
-  for (const locale of locales) {
-    if (pathname === `/${locale}`) return "/";
-    if (pathname.startsWith(`/${locale}/`)) return pathname.slice(locale.length + 1);
-  }
-  return pathname;
 }
 
 /** The filterable per-type rows of the Resources branch: filter field, matches, empty state. */
@@ -205,7 +178,7 @@ export function ConsoleNav({
   return (
     <NavTree
       groups={groups}
-      currentPath={stripLocale(pathname)}
+      currentPath={deLocalizeHref(pathname)}
       iconOnly={iconOnly}
       LinkComponent={NavLink}
       aria-label={m.nav_console()}
