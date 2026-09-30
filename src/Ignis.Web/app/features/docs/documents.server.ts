@@ -41,7 +41,7 @@ export async function getDocument(
   return {
     title: page.title,
     slug: page.slug,
-    markdown: page.body,
+    markdown: withoutLeadingTitle(page.body, page.title),
     source: page.source,
     locale: page.locale ?? baseLocale,
     multilingual: source.getLocales().length > 1,
@@ -61,6 +61,17 @@ export async function getDocumentTree(
   locale: string = baseLocale,
 ): Promise<TreeNode[]> {
   return (await loadCollection(collection))?.source.getTree(locale) ?? [];
+}
+
+/** Repo docs open with their title as an h1; the page renders it as the heading. */
+function withoutLeadingTitle(markdown: string, title: string): string {
+  const lines = markdown.split("\n");
+  const first = lines.findIndex((line) => line.trim() !== "");
+  if (first === -1) return markdown;
+
+  const heading = /^#\s+(.*)$/.exec(lines[first].trim());
+  if (heading?.[1].trim() !== title.trim()) return markdown;
+  return lines.slice(first + 1).join("\n");
 }
 
 function asString(value: unknown): string | null {
