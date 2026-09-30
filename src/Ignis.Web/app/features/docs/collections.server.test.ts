@@ -131,6 +131,12 @@ describe("the pages collection", () => {
     expect(await getDocument("pages", "terms", "nb")).toMatchObject({ title: "Bruksvilkår" });
   });
 
+  it("leaves the title out of the body when the document opens with it", async () => {
+    await write("terms-of-use.md", doc({ title: "Terms", slug: "terms" }, "# Terms\n\nBody."));
+
+    expect((await getDocument("pages", "terms", "en"))?.markdown.trim()).toBe("Body.");
+  });
+
   it("reads a ConfigMap volume mounted at the content root", async () => {
     await writeAsConfigMapVolume("", "terms-of-use.md", doc({ title: "Terms", slug: "terms" }, "Body."));
 
