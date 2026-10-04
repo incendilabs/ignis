@@ -11,8 +11,16 @@ export function loginUrl(returnTo: string): string {
   return `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
-/** Redirects to login, remembering the requested URL for after the OAuth flow. */
+export function requestedPage(url: URL): string {
+  // Normalize the pathname to remove any `.data` suffix and handle special cases.
+  const pathname = url.pathname === "/_root.data" ? "/" : url.pathname.replace(/\.data$/, "");
+  const query = new URLSearchParams(url.search);
+  query.delete("_routes");
+  const search = query.toString();
+  return search === "" ? pathname : `${pathname}?${search}`;
+}
+
+/** Redirects to login, remembering the requested page for after the OAuth flow. */
 export function redirectToLogin(request: Request): Response {
-  const url = new URL(request.url);
-  return redirect(loginUrl(url.pathname + url.search));
+  return redirect(loginUrl(requestedPage(new URL(request.url))));
 }
