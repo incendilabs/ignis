@@ -16,6 +16,7 @@ import { Logger } from "#app/logger";
 import type { Route } from "./+types/login";
 import { appUrl, isEnabled, oauth } from "../config.server";
 import { oauthStateCookie, oauthVerifierCookie, returnToCookie } from "../cookies.server";
+import { requestedPage } from "../login-redirect";
 
 const logger = Logger.create({ namespace: "auth:login" });
 
@@ -32,11 +33,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 
     const requested = new URL(request.url).searchParams.get("returnTo");
     if (requested !== null) {
+      // Sanitised again here: the link may be stale or handcrafted.
       const returnTo = validateReturnUrl(requested, appUrl());
-      headers.append(
-        "Set-Cookie",
-        await returnToCookie.serialize(returnTo.pathname + returnTo.search),
-      );
+      headers.append("Set-Cookie", await returnToCookie.serialize(requestedPage(returnTo)));
     }
 
     return redirect(authorizeUrl.toString(), { headers });

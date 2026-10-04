@@ -24,6 +24,7 @@ import {
   returnToCookie,
   sessionCookie,
 } from "../cookies.server";
+import { requestedPage } from "../login-redirect";
 
 const logger = Logger.create({ namespace: "auth:callback" });
 
@@ -68,7 +69,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     headers.append("Set-Cookie", await oauthVerifierCookie.serialize("", { maxAge: 0 }));
     headers.append("Set-Cookie", await returnToCookie.serialize("", { maxAge: 0 }));
 
-    return redirect(returnTo.pathname + returnTo.search, { headers });
+    return redirect(requestedPage(returnTo), { headers });
   } catch (error) {
     logger.error({ error }, "Failed to exchange authorization code");
     const headers = new Headers();
