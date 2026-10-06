@@ -11,9 +11,12 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
 using Ignis.Auth.Authorization;
+using Ignis.Auth.DataProtection;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -39,16 +42,56 @@ public static class AuthServerExtensions
 
         services.AddSingleton(Options.Create(settings));
 
+        var database = GetDatabase(settings.ConnectionString);
+
         services
             .AddSessionCookieAuthentication(settings.Endpoints.LoginPath)
             .AddExternalProviders(settings.ExternalProviders)
-            .AddOpenIddictServer(settings, useDevelopmentCertificates)
-            .AddOpenIddictValidation();
+            .AddOpenIddictServer(settings, database, useDevelopmentCertificates)
+            .AddOpenIddictValidation()
+            .AddDataProtectionKeyStore(database, settings.Certificates, useDevelopmentCertificates);
 
         services.AddTransient<AuthorizationHandler>();
 
         services.AddSingleton<IAuthorizationPolicyProvider, ScopeAuthorizationPolicyProvider>();
         services.AddSingleton<IAuthorizationHandler, ScopeAuthorizationHandler>();
+
+        return services;
+    }
+
+    private static IMongoDatabase GetDatabase(string connectionString) =>
+        new MongoClient(connectionString).GetDatabase(MongoUrl.Create(connectionString).DatabaseName);
+
+    /// <summary>
+    /// Persists the Data Protection key ring in MongoDB so the session cookie survives restarts
+    /// and is shared across replicas. Outside development the keys are encrypted at rest with
+    /// the OpenIddict encryption certificate.
+    /// </summary>
+    private static IServiceCollection AddDataProtectionKeyStore(
+        this IServiceCollection services,
+        IMongoDatabase database,
+        AuthCertificateSettings certs,
+        bool useDevelopmentCertificates)
+    {
+        var builder = services.AddDataProtection()
+            .SetApplicationName(AuthConstants.DataProtectionApplicationName);
+
+        var collection = database.GetCollection<DataProtectionKeyDocument>(AuthConstants.DataProtectionKeysCollection);
+        services.Configure<KeyManagementOptions>(options =>
+            options.XmlRepository = new MongoXmlRepository(collection));
+
+        if (!useDevelopmentCertificates)
+        {
+            var certificate = LoadCertificate(
+                certs.EncryptionCertificatePath,
+                certs.EncryptionCertificatePassword,
+                "AuthSettings:Certificates:EncryptionCertificatePath");
+            // The certificate is not in any X509 store (EphemeralKeySet on Linux), so decryption
+            // must be pointed at this instance explicitly.
+            builder
+                .ProtectKeysWithCertificate(certificate)
+                .UnprotectKeysWithAnyCertificate(certificate);
+        }
 
         return services;
     }
@@ -145,14 +188,14 @@ public static class AuthServerExtensions
     private static IServiceCollection AddOpenIddictServer(
         this IServiceCollection services,
         AuthSettings settings,
+        IMongoDatabase database,
         bool useDevelopmentCertificates)
     {
         services.AddOpenIddict()
             .AddCore(options =>
             {
                 options.UseMongoDb()
-                    .UseDatabase(new MongoClient(settings.ConnectionString)
-                        .GetDatabase(MongoUrl.Create(settings.ConnectionString).DatabaseName));
+                    .UseDatabase(database);
             })
             .AddServer(options =>
             {
