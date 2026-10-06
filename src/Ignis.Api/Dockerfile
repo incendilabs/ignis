@@ -1,14 +1,15 @@
 # Build context: repository root (docker build -f src/Ignis.Api/Dockerfile .)
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:4ac537e13e2f55d1d588ed3e618cb0cb6b82dd8deb17830de43d5086fbde958b AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:4ac537e13e2f55d1d588ed3e618cb0cb6b82dd8deb17830de43d5086fbde958b AS build
+ARG TARGETARCH
 WORKDIR /src
 COPY fhir-packages.targets ./
 COPY src/Ignis.Api/Ignis.Api.csproj src/Ignis.Api/
 COPY src/Ignis.Auth/Ignis.Auth.csproj src/Ignis.Auth/
 COPY src/Ignis.Terminology/Ignis.Terminology.csproj src/Ignis.Terminology/
 COPY src/Ignis.Validation/Ignis.Validation.csproj src/Ignis.Validation/
-RUN dotnet restore "src/Ignis.Api/Ignis.Api.csproj" -p:Configuration=Release
+RUN dotnet restore "src/Ignis.Api/Ignis.Api.csproj" -a $TARGETARCH -p:Configuration=Release
 COPY src ./src
-RUN dotnet publish "src/Ignis.Api/Ignis.Api.csproj" -c Release -o /app/publish --no-restore
+RUN dotnet publish "src/Ignis.Api/Ignis.Api.csproj" -c Release -a $TARGETARCH -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:6bb0fab0ef31f44f710a668c39c2263ae810f5adf868afa34cbd86815912c7fe
 WORKDIR /app
