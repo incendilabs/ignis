@@ -57,6 +57,10 @@ OAuth 2.0 / OIDC authorization server (OpenIddict). May share or split the Mongo
 > [!NOTE]
 > `ExternalProviders[].Type` accepts `GitHub` or `OIDC` — but `OIDC` is unimplemented and throws `NotSupportedException` at startup.
 
+### Data Protection keys
+
+The ASP.NET Core Data Protection key ring — which encrypts the login session cookie — is stored in the `DataProtectionKeys` collection of the `AuthSettings:ConnectionString` database, so sessions survive restarts and are shared across replicas. Outside development the keys are encrypted at rest with the `AuthSettings:Certificates` encryption certificate: replacing that certificate makes the stored keys unreadable and logs every user out.
+
 ## ForwardedHeaders
 
 Trusted-proxy allow-list for `X-Forwarded-For` / `X-Forwarded-Proto`. Required when behind a reverse proxy, load balancer, or ingress. Middleware only registers when at least one proxy or network is configured; invalid values fail fast with `InvalidConfigurationException`.
