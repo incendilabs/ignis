@@ -108,7 +108,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ steps.dockerhub.outputs.org }}/ignis-web,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=web-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=web-${{ matrix.arch }}
+          cache-to: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('type=gha,mode=max,scope=web-{0}', matrix.arch) || '' }}
 
       - name: Export digest
         if: steps.dockerhub.outputs.can_push == 'true'
@@ -135,7 +135,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: false
           cache-from: type=gha,scope=web-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=web-${{ matrix.arch }}
+          cache-to: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('type=gha,mode=max,scope=web-{0}', matrix.arch) || '' }}
 
   manifest:
     name: Web - Docker Manifest
