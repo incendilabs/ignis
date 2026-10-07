@@ -8,14 +8,6 @@ import { createCookie, type Cookie } from "react-router";
 
 const isProd = process.env.NODE_ENV === "production";
 
-export const sessionCookie = createCookie("ignis_session", {
-  httpOnly: true,
-  sameSite: "lax",
-  path: "/",
-  maxAge: 60 * 60 * 24 * 7,
-  secure: isProd,
-});
-
 export const oauthStateCookie = createCookie("oauth_state", {
   httpOnly: true,
   sameSite: "lax",

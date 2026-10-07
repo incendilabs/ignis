@@ -4,12 +4,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { createEncryptedJWT } from "@eventuras/fides-auth";
+import { CookieTooLargeError, SESSION_EVENT } from "@eventuras/fides-auth";
 import {
   buildSessionFromTokens,
   exchangeAuthorizationCode,
   validateReturnUrl,
 } from "@eventuras/fides-auth/oauth";
+import { persistSession } from "@eventuras/fides-auth/server";
 import { redirect } from "react-router";
 
 import { env } from "#app/env.server";
@@ -22,9 +23,9 @@ import {
   oauthVerifierCookie,
   readCookieString,
   returnToCookie,
-  sessionCookie,
 } from "../cookies.server";
 import { requestedPage } from "../login-redirect";
+import { LEGACY_SESSION_COOKIE, sessionCookieStore } from "../session-cookies.server";
 
 const logger = Logger.create({ namespace: "auth:callback" });
 
@@ -61,17 +62,26 @@ export async function loader({ request }: Route.LoaderArgs) {
   try {
     const tokens = await exchangeAuthorizationCode(oauth(), url, verifier, state);
     const session = buildSessionFromTokens(tokens);
-    const jwt = await createEncryptedJWT(session, env("IGNIS_WEB_SESSION_SECRET"));
 
-    const headers = new Headers();
-    headers.append("Set-Cookie", await sessionCookie.serialize(jwt));
+    // Throws CookieTooLargeError rather than letting the browser drop the cookie and loop.
+    const cookies = sessionCookieStore(request);
+    await persistSession(cookies, session, env("IGNIS_WEB_SESSION_SECRET"), {
+      event: SESSION_EVENT.CREATED,
+    });
+    await cookies.delete(LEGACY_SESSION_COOKIE);
+
+    const headers = cookies.headers;
     headers.append("Set-Cookie", await oauthStateCookie.serialize("", { maxAge: 0 }));
     headers.append("Set-Cookie", await oauthVerifierCookie.serialize("", { maxAge: 0 }));
     headers.append("Set-Cookie", await returnToCookie.serialize("", { maxAge: 0 }));
 
     return redirect(requestedPage(returnTo), { headers });
   } catch (error) {
-    logger.error({ error }, "Failed to exchange authorization code");
+    if (error instanceof CookieTooLargeError) {
+      logger.error({ error, cookieName: error.cookieName, size: error.size }, "Session cookie too large");
+    } else {
+      logger.error({ error }, "Failed to exchange authorization code");
+    }
     const headers = new Headers();
     headers.append("Set-Cookie", await oauthStateCookie.serialize("", { maxAge: 0 }));
     headers.append("Set-Cookie", await oauthVerifierCookie.serialize("", { maxAge: 0 }));
