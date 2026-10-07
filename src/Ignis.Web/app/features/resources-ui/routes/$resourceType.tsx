@@ -95,12 +95,12 @@ export default function ResourceTypeDetails({ loaderData }: Route.ComponentProps
               </Table.Body>
             </Table>
           ) : (
-            <Panel variant="notice" status="info">
+            <Panel status="info">
               <Text>{m.resources_detail_empty()}</Text>
             </Panel>
           )
         ) : (
-          <Panel variant="alert" status="error">
+          <Panel accent="flush" status="error">
             <Text>{m.resources_detail_error()}</Text>
           </Panel>
         )}

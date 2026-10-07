@@ -135,7 +135,7 @@ function ResourceStep({
       />
 
       {parsed !== null && !parsed.ok && (
-        <Panel variant="alert" status="error">
+        <Panel accent="flush" status="error">
           <Text>{parsed.message}</Text>
         </Panel>
       )}
@@ -184,7 +184,7 @@ function ProfileStep({
     <Stack direction="vertical" gap="md">
       {profiles === null ? (
         <>
-          <Panel variant="notice" status="warning">
+          <Panel status="warning">
             <Text>{m.validation_profiles_unavailable()}</Text>
           </Panel>
           <TextField
@@ -207,7 +207,7 @@ function ProfileStep({
             }}
           />
           {!hasLoadedProfiles && (
-            <Panel variant="notice" status="info">
+            <Panel status="info">
               <Text>{m.validation_no_profiles_for_type({ type: resourceType })}</Text>
             </Panel>
           )}
@@ -249,21 +249,21 @@ function ResultStep({
   return (
     <Stack direction="vertical" gap="md">
       {isValidating || result === undefined ? (
-        <Panel variant="notice" status="info">
+        <Panel status="info">
           <Text>{m.validation_validating()}</Text>
         </Panel>
       ) : !result.ok ? (
-        <Panel variant="alert" status="error">
+        <Panel accent="flush" status="error">
           <Text>{m.validation_request_failed()}</Text>
         </Panel>
       ) : (
         <>
           {problems.length === 0 ? (
-            <Panel variant="notice" status="success">
+            <Panel status="success">
               <Text>{m.validation_no_problems()}</Text>
             </Panel>
           ) : (
-            <Panel variant="alert" status="error">
+            <Panel accent="flush" status="error">
               <Text>{m.validation_problems_found({ count: problems.length })}</Text>
             </Panel>
           )}

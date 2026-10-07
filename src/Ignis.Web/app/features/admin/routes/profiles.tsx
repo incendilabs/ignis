@@ -64,11 +64,11 @@ function ProfilesTab({ profiles }: { profiles: ProfileInfo[] | null }) {
     <Stack direction="vertical" gap="md">
       <Text>{m.profiles_description()}</Text>
       {profiles === null ? (
-        <Panel variant="alert" status="error">
+        <Panel accent="flush" status="error">
           <Text>{m.profiles_error()}</Text>
         </Panel>
       ) : profiles.length === 0 ? (
-        <Panel variant="notice" status="info">
+        <Panel status="info">
           <Text>{m.profiles_empty()}</Text>
         </Panel>
       ) : (
@@ -88,11 +88,11 @@ function PackagesTab({ packages }: { packages: PackageInfo[] | null }) {
     <Stack direction="vertical" gap="md">
       <Text>{m.profiles_packages_description()}</Text>
       {packages === null ? (
-        <Panel variant="alert" status="error">
+        <Panel accent="flush" status="error">
           <Text>{m.profiles_packages_error()}</Text>
         </Panel>
       ) : packages.length === 0 ? (
-        <Panel variant="notice" status="info">
+        <Panel status="info">
           <Text>{m.profiles_packages_empty()}</Text>
         </Panel>
       ) : (

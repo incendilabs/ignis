@@ -19,7 +19,7 @@ export function SignUpPrompt() {
   const location = useLocation();
 
   return (
-    <Panel variant="callout" status="info">
+    <Panel surface="outline" status="info">
       <Stack direction="vertical" gap="sm" align="start">
         <Text weight="bold">{m.signup_prompt_title()}</Text>
         <Text>{m.signup_prompt_body()}</Text>

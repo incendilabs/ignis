@@ -59,7 +59,7 @@ export function DocumentPage({
             </Stack>
 
             {untranslated && (
-              <Panel variant="callout" status="info">
+              <Panel surface="outline" status="info">
                 <Text>{m.content_untranslated()}</Text>
               </Panel>
             )}

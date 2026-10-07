@@ -30,7 +30,7 @@ export default function Home() {
           <Text size="lg">{m.home_subtitle()}</Text>
         </header>
 
-        <Panel variant="callout" status="info" className="mb-12">
+        <Panel surface="outline" status="info" className="mb-12">
           <Text>{m.home_about()}</Text>
         </Panel>
 
