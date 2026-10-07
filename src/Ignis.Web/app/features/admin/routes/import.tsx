@@ -180,7 +180,7 @@ function ArchiveImportForm({ maxUploadBytes }: { maxUploadBytes: number; }) {
       />
 
       {rejection ? (
-        <Panel variant="alert" status="error">
+        <Panel accent="flush" status="error">
           <Text>{rejection}</Text>
         </Panel>
       ) : null}

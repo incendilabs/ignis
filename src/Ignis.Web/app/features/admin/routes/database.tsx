@@ -112,7 +112,8 @@ export default function AdminIndex({ loaderData }: Route.ComponentProps) {
             </Stack>
 
             <Panel
-              variant={loaderData.databaseStatus.ok ? "callout" : "alert"}
+              accent={loaderData.databaseStatus.ok ? "none" : "flush"}
+              surface={loaderData.databaseStatus.ok ? "outline" : "filled"}
               status={loaderData.databaseStatus.ok ? "success" : "error"}
             >
               <Text>{loaderData.databaseStatus.message}</Text>
@@ -124,7 +125,7 @@ export default function AdminIndex({ loaderData }: Route.ComponentProps) {
                 {loaderData.canClearStore ? <ClearStoreCard /> : null}
               </Grid>
             ) : (
-              <Panel variant="notice" status="info">
+              <Panel status="info">
                 <Text>{m.admin_database_no_operations()}</Text>
               </Panel>
             )}

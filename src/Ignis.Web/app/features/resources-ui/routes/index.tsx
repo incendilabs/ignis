@@ -100,7 +100,7 @@ export default function ResourcesIndex({ loaderData }: Route.ComponentProps) {
             </Table>
           </>
         ) : (
-          <Panel variant="alert" status="error">
+          <Panel accent="flush" status="error">
             <Text>{m.resources_capability_error()}</Text>
           </Panel>
         )}

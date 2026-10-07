@@ -89,7 +89,7 @@ export default function ConsoleLayout({ loaderData }: Route.ComponentProps) {
               </Stack>
             </Link>
             <ActionButton
-              ariaLabel={collapsed ? m.nav_sidebar_expand() : m.nav_sidebar_collapse()}
+              aria-label={collapsed ? m.nav_sidebar_expand() : m.nav_sidebar_collapse()}
               aria-pressed={collapsed}
               onClick={toggleSidebar}
             >

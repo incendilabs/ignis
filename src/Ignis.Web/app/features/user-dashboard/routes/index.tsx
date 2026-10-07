@@ -86,7 +86,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
             </Card>
           </Grid>
         ) : (
-          <Panel variant="alert" status="error">
+          <Panel accent="flush" status="error">
             <Text>{m.resources_capability_error()}</Text>
           </Panel>
         )}

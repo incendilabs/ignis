@@ -13,7 +13,8 @@ import type { OperationResult } from "../maintenance.shared";
 export function OperationResultPanel({ result }: { result: OperationResult; }) {
   return (
     <Panel
-      variant={result.ok ? "callout" : "alert"}
+      accent={result.ok ? "none" : "flush"}
+      surface={result.ok ? "outline" : "filled"}
       status={result.ok ? "success" : "error"}
     >
       <Stack direction="vertical" gap="xs">

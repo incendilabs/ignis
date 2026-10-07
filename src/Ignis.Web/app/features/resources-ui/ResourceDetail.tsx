@@ -174,7 +174,7 @@ function SourceTab({
     if (!data.ok) {
       return (
         <SourcePending selector={selector}>
-          <Panel variant="alert" status="error">
+          <Panel accent="flush" status="error">
             <Text>{m.resources_instance_error()}</Text>
           </Panel>
         </SourcePending>

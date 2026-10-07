@@ -16,7 +16,7 @@ export function ServerNotice({ notice }: { notice: string | null; }) {
   if (notice === null) return null;
 
   return (
-    <Panel variant="callout" status="warning">
+    <Panel surface="outline" status="warning">
       <Stack direction="vertical" gap="none">
         <Text weight="bold">{m.server_notice_title()}</Text>
         <Text>{notice}</Text>

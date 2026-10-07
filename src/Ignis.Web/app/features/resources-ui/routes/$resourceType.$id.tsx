@@ -84,7 +84,7 @@ export default function ResourceInstance({ loaderData }: Route.ComponentProps) {
             id={loaderData.id}
           />
         ) : (
-          <Panel variant="alert" status="error">
+          <Panel accent="flush" status="error">
             <Text>{m.resources_instance_error()}</Text>
           </Panel>
         )}
