@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { createEncryptedJWT } from "@eventuras/fides-auth";
+import { persistSession } from "@eventuras/fides-auth/server";
 import type { Session } from "@eventuras/fides-auth/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { sessionCookie } from "./cookies.server";
+import { sessionCookieStore } from "./session-cookies.server";
 import { getSessionFromRequest, getSessionStateFromRequest } from "./session.server";
 import { SessionStatus } from "./session-status";
 
@@ -25,9 +25,13 @@ function accessTokenExpiringIn(seconds: number): string {
 }
 
 async function requestWithSession(session: Session): Promise<Request> {
-  const jwt = await createEncryptedJWT(session, SECRET);
-  const setCookie = await sessionCookie.serialize(jwt);
-  const cookie = setCookie.split(";")[0]; // strip attributes, keep name=value
+  const cookies = sessionCookieStore(new Request("https://app.example/"));
+  await persistSession(cookies, session, SECRET);
+  // Strip attributes, keep name=value of each split cookie.
+  const cookie = cookies.headers
+    .getSetCookie()
+    .map((setCookie) => setCookie.split(";")[0])
+    .join("; ");
   return new Request("https://app.example/", { headers: { Cookie: cookie } });
 }
 
@@ -73,6 +77,26 @@ describe("getSessionStateFromRequest", () => {
 
     expect(state.status).toBe("EXPIRED");
     expect(state.session?.user?.name).toBe("Leo Losen");
+  });
+
+  it("reports EXPIRED from accessTokenExpiresAt when the access token is opaque (JWE)", async () => {
+    vi.stubEnv("IGNIS_WEB_SESSION_SECRET", SECRET);
+    const session = sessionWith("opaque.jwe.access.token.value");
+    session.tokens = { ...session.tokens, accessTokenExpiresAt: new Date(Date.now() - 10_000).toISOString() };
+    const request = await requestWithSession(session);
+
+    const state = await getSessionStateFromRequest(request);
+
+    expect(state.status).toBe(SessionStatus.Expired);
+  });
+
+  it("treats a legacy single-cookie session as ANONYMOUS", async () => {
+    vi.stubEnv("IGNIS_WEB_SESSION_SECRET", SECRET);
+    const request = new Request("https://app.example/", { headers: { Cookie: "ignis_session=legacy" } });
+
+    const state = await getSessionStateFromRequest(request);
+
+    expect(state.status).toBe(SessionStatus.Anonymous);
   });
 });
 

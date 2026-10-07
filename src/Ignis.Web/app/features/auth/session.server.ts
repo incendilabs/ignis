@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { validateSessionJwt } from "@eventuras/fides-auth";
+import { tryReadSession } from "@eventuras/fides-auth/server";
 import type { Session } from "@eventuras/fides-auth/types";
 
 import { env } from "#app/env.server";
 
-import { readCookieString, sessionCookie } from "./cookies.server";
 import { redirectToLogin } from "./login-redirect";
+import { sessionCookieStore } from "./session-cookies.server";
 import { SessionStatus } from "./session-status";
 
 export interface SessionState {
@@ -24,18 +24,32 @@ export interface SessionState {
  * distinct from "never logged in" so the UI can prompt a re-login.
  */
 export async function getSessionStateFromRequest(request: Request): Promise<SessionState> {
-  const sessionJwt = await readCookieString(sessionCookie, request.headers.get("Cookie"));
-  if (sessionJwt === null) return { status: SessionStatus.Anonymous, session: null };
+  const { session } = await tryReadSession(sessionCookieStore(request), env("IGNIS_WEB_SESSION_SECRET"));
+  if (session === null) return { status: SessionStatus.Anonymous, session: null };
 
-  const result = await validateSessionJwt(sessionJwt, env("IGNIS_WEB_SESSION_SECRET"));
-  if (result.session && (result.status === SessionStatus.Valid || result.status === SessionStatus.Expired)) {
-    return {
-      status: result.status,
-      session: result.session,
-      accessTokenExpiresIn: result.accessTokenExpiresIn,
-    };
+  const accessTokenExpiresIn = secondsUntilAccessTokenExpires(session);
+  const expired = accessTokenExpiresIn !== undefined && accessTokenExpiresIn <= 0;
+  return {
+    status: expired ? SessionStatus.Expired : SessionStatus.Valid,
+    session,
+    accessTokenExpiresIn,
+  };
+}
+
+// accessTokenExpiresAt first: OpenIddict access tokens are JWE, so their `exp` can't be read here.
+function secondsUntilAccessTokenExpires(session: Session): number | undefined {
+  const expiresAt = session.tokens?.accessTokenExpiresAt;
+  const expiresAtMs = expiresAt ? Date.parse(expiresAt) : NaN;
+  if (Number.isFinite(expiresAtMs)) return Math.floor((expiresAtMs - Date.now()) / 1000);
+
+  const payload = session.tokens?.accessToken?.split(".")[1];
+  if (payload === undefined) return undefined;
+  try {
+    const { exp } = JSON.parse(Buffer.from(payload, "base64url").toString()) as { exp?: unknown };
+    return typeof exp === "number" ? Math.floor(exp - Date.now() / 1000) : undefined;
+  } catch {
+    return undefined;
   }
-  return { status: SessionStatus.Anonymous, session: null };
 }
 
 /**
