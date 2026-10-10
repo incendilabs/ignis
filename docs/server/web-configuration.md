@@ -7,7 +7,7 @@ Every environment variable `Ignis.Web` (the BFF) reads.
 | Variable                   | Notes                                                                                                                                                                                                          |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IGNIS_AUTH_ISSUER`        | Public URL of the authorization server (normally the API URL). Must match `AuthSettings:Issuer` on the API.                                                                                                    |
-| `IGNIS_WEB_APP_URL`        | Public URL of the Web app — scheme + host[:port], no path, no trailing slash. OAuth redirect URI is built as `<IGNIS_WEB_APP_URL>/auth/callback`, which must appear in the client's `RedirectUris` on the API. |
+| `IGNIS_WEB_APP_URL`        | Public URL of the Web app — scheme + host[:port], no path. The only origin the production server serves. OAuth redirect URI is built as `<IGNIS_WEB_APP_URL>/auth/callback`, which must appear in the client's `RedirectUris` on the API. |
 | `IGNIS_WEB_CLIENT_ID`      | OAuth client ID registered in `Ignis.Api`. Must match an entry in `AuthSettings:Clients`.                                                                                                                      |
 | `IGNIS_WEB_CLIENT_SECRET`  | Matching client secret.                                                                                                                                                                                        |
 | `IGNIS_WEB_SESSION_SECRET` | 32 bytes of hex, encrypts the BFF session cookie. Generate with `openssl rand -hex 32`. **Rotating invalidates all logged-in sessions.**                                                                       |
@@ -63,6 +63,19 @@ kept; everything else is dropped. Unparseable configuration is logged and no
 script is added.
 
 Scripts load on every page, the console included.
+
+## Production server
+
+`npm start` runs `src/Ignis.Web/server.ts`. It serves one origin, `IGNIS_WEB_APP_URL`,
+and won't start without it. `Host` and `X-Forwarded-*` are ignored, so no proxy
+configuration is needed. Form actions from any other origin are rejected.
+The value is scheme and host only (no path, no IPv6 address). Auth cookies are `Secure`
+when it is `https`.
+
+| Variable | Notes                                                                          |
+| -------- | ------------------------------------------------------------------------------ |
+| `PORT`   | Listen port. Defaults to `3000`.                                               |
+| `HOST`   | Address to listen on. Unset listens on all interfaces; leave it unset in pods. |
 
 ## Local dev server
 

@@ -18,30 +18,32 @@ jobs:
         run: helm dependency update infra/helm
 
       - name: Lint (default values)
-        run: helm lint infra/helm --set db.auth.password=ci-test
+        run: helm lint infra/helm --set db.auth.password=ci-test --set app.web.appUrl=http://localhost:3000
 
       - name: Lint (production values)
-        run: helm lint infra/helm -f infra/helm/values-production.yaml --set db.auth.password=ci-test
+        run: helm lint infra/helm -f infra/helm/values-production.yaml --set db.auth.password=ci-test --set app.web.hostname=ignis.example.com
 
       - name: Template (default)
-        run: helm template ignis infra/helm --set db.auth.password=ci-test > /dev/null
+        run: helm template ignis infra/helm --set db.auth.password=ci-test --set app.web.appUrl=http://localhost:3000 > /dev/null
 
       - name: Template (external MongoDB)
         run: |
           helm template ignis infra/helm \
             --set db.enabled=false \
+            --set app.web.appUrl=http://localhost:3000 \
             --set app.api.externalMongodbConnectionString="mongodb://test:27017/ignis" > /dev/null
 
       - name: Template (production)
         run: |
           helm template ignis infra/helm \
             -f infra/helm/values-production.yaml \
-            --set db.auth.password=ci-test > /dev/null
+            --set db.auth.password=ci-test \
+            --set app.web.hostname=ignis.example.com > /dev/null
 
       - name: Validate with kubeconform
         run: |
           curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
-          helm template ignis infra/helm --set db.auth.password=ci-test | \
+          helm template ignis infra/helm --set db.auth.password=ci-test --set app.web.appUrl=http://localhost:3000 | \
             ./kubeconform -strict -summary \
               -skip HTTPRoute,Gateway,GatewayClass \
               -kubernetes-version 1.30.0

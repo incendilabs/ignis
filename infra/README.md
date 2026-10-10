@@ -31,16 +31,19 @@ helm dependency update infra/helm
 export MONGO_PASSWORD=$(openssl rand -hex 32)
 
 helm install ignis infra/helm \
-  --set db.auth.password="$MONGO_PASSWORD"
+  --set db.auth.password="$MONGO_PASSWORD" \
+  --set app.web.appUrl=http://localhost:3000
 
 # Access the API
 kubectl port-forward svc/ignis-api 8080:8080
 # Visit http://localhost:8080/fhir
+
+# Access the Web app, on the URL given as app.web.appUrl
+kubectl port-forward svc/ignis-web 3000:3000
 ```
 
-With default values, the chart keeps the API and Web internal-only. Add
-`app.api.hostnames` and/or `app.web.hostnames` when you want the Gateway to
-publish routes for them.
+This keeps the API and Web internal-only. Add `app.api.hostnames` and/or
+`app.web.hostname` when you want the Gateway to publish routes for them.
 
 ## Components
 
@@ -98,24 +101,19 @@ helm install ignis infra/helm \
 
 ## Hostnames
 
-API and Web require separate hostnames to be published through the Gateway. Pass them as lists:
+API and Web require separate hostnames to be published through the Gateway:
 
 ```bash
 helm install ignis infra/helm \
   --set db.auth.password="$MONGO_PASSWORD" \
   --set 'app.api.hostnames[0]=api.ignis.example.com' \
-  --set 'app.web.hostnames[0]=ignis.example.com'
+  --set app.web.hostname=ignis.example.com
 ```
 
-Multiple hostnames per service are supported:
-
-```bash
---set 'app.web.hostnames[0]=ignis.example.com' \
---set 'app.web.hostnames[1]=ignis.example.org'
-```
-
-Leaving a hostname list empty keeps that service internal-only and skips the
-corresponding `HTTPRoute`.
+The Web app serves one origin, so it takes a single hostname. The chart sets
+`IGNIS_WEB_APP_URL` to `https://<hostname>`; set `app.web.appUrl` for http (no TLS
+yet) or a port. The chart's value overrides `IGNIS_WEB_APP_URL` from a Secret.
+An empty hostname keeps the service internal-only, with no `HTTPRoute`.
 
 ## TLS
 

@@ -40,16 +40,21 @@ function unique(values: (string | null)[]): string[] {
 
 const env = loadLocalEnv();
 const webPort = env.IGNIS_WEB_DEV_PORT || "5202";
+// `react-router build` runs with NODE_ENV=production; `react-router dev` does not.
+const isProductionBuild = process.env.NODE_ENV === "production";
 
 export default {
   // Config options...
   // Server-side render by default, to enable SPA mode set this to `false`
   ssr: true,
-  allowedActionOrigins: unique([
-    ...csv(env.IGNIS_WEB_DEV_ALLOWED_ACTION_ORIGINS),
-    hostFromUrl(env.IGNIS_WEB_APP_URL),
-    `localhost:${webPort}`,
-    `127.0.0.1:${webPort}`,
-    `[::1]:${webPort}`,
-  ]),
+  // Dev only: the production server pins the origin to IGNIS_WEB_APP_URL instead.
+  allowedActionOrigins: isProductionBuild
+    ? []
+    : unique([
+        ...csv(env.IGNIS_WEB_DEV_ALLOWED_ACTION_ORIGINS),
+        hostFromUrl(env.IGNIS_WEB_APP_URL),
+        `localhost:${webPort}`,
+        `127.0.0.1:${webPort}`,
+        `[::1]:${webPort}`,
+      ]),
 } satisfies Config;

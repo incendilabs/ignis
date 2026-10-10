@@ -1,4 +1,34 @@
+{{- if .Values.web.hostnames }}
+{{- fail "web.hostnames is replaced by web.hostname (a single string): the Web app serves one origin." }}
+{{- end }}
 {{- if .Values.web.enabled }}
+{{- $hostname := .Values.web.hostname | default "" }}
+{{- $appUrl := .Values.web.appUrl | default "" | trimSuffix "/" }}
+{{- if and $hostname (not (regexMatch "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$" $hostname)) }}
+{{- fail (printf "web.hostname must be a lowercase hostname without scheme, port or path, got %q" $hostname) }}
+{{- end }}
+{{- if and (not $appUrl) $hostname }}
+{{- $appUrl = printf "https://%s" $hostname }}
+{{- end }}
+{{- if not $appUrl }}
+{{- fail "The Web app needs its public URL: set web.hostname, or web.appUrl (e.g. http://localhost:3000 for port-forwarding). Disable it with web.enabled=false." }}
+{{- end }}
+{{- if not (regexMatch "^https?://[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?(:[0-9]{1,5})?$" $appUrl) }}
+{{- fail (printf "web.appUrl must be scheme, hostname and optional port, like https://ignis.example.com, got %q" $appUrl) }}
+{{- end }}
+{{- $appHostParts := (urlParse $appUrl).host | splitList ":" }}
+{{- if and (eq (len $appHostParts) 2) (gt (int (last $appHostParts)) 65535) }}
+{{- fail (printf "web.appUrl port must be at most 65535, got %q" $appUrl) }}
+{{- end }}
+{{- $appHost := first $appHostParts | lower }}
+{{- if and $hostname (ne $appHost $hostname) }}
+{{- fail (printf "web.appUrl host %q must match web.hostname %q: the route and the app would disagree" $appHost $hostname) }}
+{{- end }}
+{{- range .Values.web.extraEnv }}
+{{- if eq .name "IGNIS_WEB_APP_URL" }}
+{{- fail "Set the Web app URL with web.hostname or web.appUrl, not IGNIS_WEB_APP_URL in web.extraEnv." }}
+{{- end }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,10 +60,12 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
-          {{- with .Values.web.extraEnv }}
           env:
+            - name: IGNIS_WEB_APP_URL
+              value: {{ $appUrl | quote }}
+            {{- with .Values.web.extraEnv }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- end }}
           {{- with .Values.web.existingSecrets }}
           envFrom:
             {{- range . }}

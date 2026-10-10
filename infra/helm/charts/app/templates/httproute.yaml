@@ -1,5 +1,5 @@
 {{- $apiRouteEnabled := and .Values.gateway.enabled (gt (len .Values.api.hostnames) 0) }}
-{{- $webRouteEnabled := and .Values.gateway.enabled .Values.web.enabled (gt (len .Values.web.hostnames) 0) }}
+{{- $webRouteEnabled := and .Values.gateway.enabled .Values.web.enabled .Values.web.hostname }}
 {{- if $apiRouteEnabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -43,9 +43,7 @@ spec:
       namespace: {{ .Values.gateway.namespace }}
       {{- end }}
   hostnames:
-    {{- range .Values.web.hostnames }}
-    - {{ . | quote }}
-    {{- end }}
+    - {{ .Values.web.hostname | quote }}
   rules:
     - matches:
         - path:

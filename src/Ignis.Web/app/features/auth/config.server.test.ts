@@ -26,6 +26,13 @@ describe("oauth", () => {
       "maintenance/database.destructive",
     ]);
   });
+
+  it("builds the redirect URI from the app origin, ignoring a trailing slash", () => {
+    stubRequiredEnv();
+    vi.stubEnv("IGNIS_WEB_APP_URL", "https://app.example/");
+
+    expect(oauth().redirect_uri).toBe("https://app.example/auth/callback");
+  });
 });
 
 function stubRequiredEnv() {
