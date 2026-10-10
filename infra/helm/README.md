@@ -45,7 +45,8 @@ The same `extraEnv` switches parsing to strict:
 | `app.web.image.repository` | Web image repository                                  | `ignis-web`     |
 | `app.web.image.tag`        | Web image tag                                         | `latest`        |
 | `app.web.resources`        | CPU/memory resource limits                            | See values.yaml |
-| `app.web.hostnames`        | Hostnames for Web HTTPRoute; empty disables the route | `[]`            |
+| `app.web.hostname`         | The one public hostname for Web; empty disables the route | `""`        |
+| `app.web.appUrl`           | `IGNIS_WEB_APP_URL`; defaults to `https://<hostname>` | `""`            |
 | `app.web.existingSecrets`  | Names of Secrets mounted as env vars via `envFrom`    | `[]`            |
 | `app.web.extraEnv`         | Extra `{name, value}` env entries set inline          | `[]`            |
 | `app.web.podAnnotations`   | Annotations applied to the web pod template           | `{}`            |
@@ -57,11 +58,11 @@ kubectl create secret generic ignis-web-oauth \
   --from-literal=IGNIS_WEB_CLIENT_ID=ignis-web \
   --from-literal=IGNIS_WEB_CLIENT_SECRET=... \
   --from-literal=IGNIS_WEB_SESSION_SECRET="$(openssl rand -hex 32)" \
-  --from-literal=IGNIS_AUTH_ISSUER=https://api.example.com \
-  --from-literal=IGNIS_WEB_APP_URL=https://ignis.example.com
+  --from-literal=IGNIS_AUTH_ISSUER=https://api.example.com
 
 helm install ignis infra/helm \
   --set db.auth.password="$MONGO_PASSWORD" \
+  --set app.web.hostname=ignis.example.com \
   --set 'app.web.existingSecrets[0]=ignis-web-oauth' \
   --set 'app.web.extraEnv[0].name=IGNIS_WEB_FEATURES_AUTH' \
   --set-string 'app.web.extraEnv[0].value=true' \

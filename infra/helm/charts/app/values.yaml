@@ -78,12 +78,15 @@ web:
     limits:
       cpu: 200m
       memory: 256Mi
-  # Hostnames for Web HTTPRoute. Leave empty to keep the Web app internal-only.
-  hostnames: []
+  # The Web app's one public hostname. Empty keeps it internal-only (no HTTPRoute).
+  hostname: ""
+  # IGNIS_WEB_APP_URL. Defaults to https://<hostname>; required when hostname is empty.
+  # Set it for http or a port. It overrides the same key in existingSecrets.
+  appUrl: ""
   # Names of pre-existing Secrets whose keys become env vars on the web pod
   # (mounted via envFrom). Useful for spreading credentials across multiple
   # Secrets — e.g. one synced by External Secrets, one with the session key.
-  # Typical keys: IGNIS_AUTH_ISSUER, IGNIS_WEB_APP_URL, IGNIS_WEB_CLIENT_ID,
+  # Typical keys: IGNIS_AUTH_ISSUER, IGNIS_WEB_CLIENT_ID,
   # IGNIS_WEB_CLIENT_SECRET, IGNIS_WEB_SESSION_SECRET, IGNIS_WEB_FHIR_BASE_URL,
   # IGNIS_WEB_FEATURES_AUTH, IGNIS_WEB_FEATURES_ADMIN, IGNIS_WEB_FEATURES_OPERATIONS.
   existingSecrets: []

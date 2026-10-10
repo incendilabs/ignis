@@ -6,14 +6,17 @@
 
 import { createCookie, type Cookie } from "react-router";
 
-const isProd = process.env.NODE_ENV === "production";
+import { appUrl } from "./config.server";
+
+// Browsers drop Secure cookies on plain http, so follow the app URL, not NODE_ENV.
+export const secure = appUrl().startsWith("https:");
 
 export const oauthStateCookie = createCookie("oauth_state", {
   httpOnly: true,
   sameSite: "lax",
   path: "/auth",
   maxAge: 600,
-  secure: isProd,
+  secure,
 });
 
 export const oauthVerifierCookie = createCookie("oauth_code_verifier", {
@@ -21,7 +24,7 @@ export const oauthVerifierCookie = createCookie("oauth_code_verifier", {
   sameSite: "lax",
   path: "/auth",
   maxAge: 600,
-  secure: isProd,
+  secure,
 });
 
 /** Where to send the user after the OAuth flow completes; set by /auth/login. */
@@ -30,7 +33,7 @@ export const returnToCookie = createCookie("oauth_return_to", {
   sameSite: "lax",
   path: "/auth",
   maxAge: 600,
-  secure: isProd,
+  secure,
 });
 
 export async function readCookieString(

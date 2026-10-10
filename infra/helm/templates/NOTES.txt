@@ -16,9 +16,14 @@ To access the API locally:
 
 {{- if .Values.app.web.enabled }}
 
-To access the Web UI locally:
-  kubectl port-forward svc/{{ include "ignis.fullname" . }}-web 3000:3000
-  # Then visit http://localhost:3000
+{{- $appUrl := .Values.app.web.appUrl | default (printf "https://%s" (.Values.app.web.hostname | default "")) | trimSuffix "/" }}
+
+The Web UI is served on {{ $appUrl }}
+{{- if hasPrefix "http://localhost:" $appUrl }}
+  kubectl port-forward svc/{{ include "ignis.fullname" . }}-web {{ trimPrefix "http://localhost:" $appUrl }}:3000
+{{- else }}
+  Forms and login work only on that address, not through a port-forward.
+{{- end }}
 {{- end }}
 
 {{- if .Values.db.enabled }}

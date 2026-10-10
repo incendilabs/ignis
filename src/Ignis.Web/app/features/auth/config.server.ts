@@ -9,13 +9,15 @@ import type { OAuthConfig } from "@eventuras/fides-auth/oauth";
 import { env, envBool } from "#app/env.server";
 import { scopes as adminScopes } from "#app/features/admin/scopes";
 
+import { parseAppUrl } from "../../../origin.server";
+
 export function isEnabled(): boolean {
   return envBool("IGNIS_WEB_FEATURES_AUTH", { default: false });
 }
 
 /** The application's public origin, e.g. for OAuth redirects and returnTo validation. */
 export function appUrl(): string {
-  return env("IGNIS_WEB_APP_URL", { default: "http://localhost:5202" });
+  return parseAppUrl(env("IGNIS_WEB_APP_URL", { default: "http://localhost:5202" })).origin;
 }
 
 export function oauth(): OAuthConfig {

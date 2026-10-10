@@ -7,7 +7,7 @@
 import type { CookieOptions } from "@eventuras/fides-auth";
 import type { CookieStore } from "@eventuras/fides-auth/server";
 
-const isProd = process.env.NODE_ENV === "production";
+import { secure } from "./cookies.server";
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
@@ -34,9 +34,9 @@ export function sessionCookieStore(request: Request, headers = new Headers()): R
   };
 }
 
-// Keep the lifetime and dev-over-http behaviour of the other Ignis cookies.
+// Keep the lifetime and Secure rule of the other Ignis cookies.
 function sessionOptions(options?: CookieOptions): CookieOptions {
-  return { ...options, path: "/", maxAge: SESSION_MAX_AGE_SECONDS, secure: isProd };
+  return { ...options, path: "/", maxAge: SESSION_MAX_AGE_SECONDS, secure };
 }
 
 function parseCookieHeader(header: string | null): Map<string, string> {
