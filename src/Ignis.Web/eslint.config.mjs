@@ -28,6 +28,10 @@ export default defineConfig(
     ...tseslint.configs.disableTypeChecked,
   },
   {
+    files: ["server.mjs"],
+    languageOptions: { globals: { process: "readonly", console: "readonly" } },
+  },
+  {
     ignores: [
       "build/**",
       ".react-router/**",
