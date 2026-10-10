@@ -25,15 +25,6 @@ function csv(value: string | undefined): string[] {
   return value?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
 }
 
-function hostFromUrl(value: string | undefined): string | null {
-  if (!value) return null;
-  try {
-    return new URL(value).host;
-  } catch {
-    return null;
-  }
-}
-
 function unique(values: (string | null)[]): string[] {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
 }
@@ -47,7 +38,6 @@ export default {
   ssr: true,
   allowedActionOrigins: unique([
     ...csv(env.IGNIS_WEB_DEV_ALLOWED_ACTION_ORIGINS),
-    hostFromUrl(env.IGNIS_WEB_APP_URL),
     `localhost:${webPort}`,
     `127.0.0.1:${webPort}`,
     `[::1]:${webPort}`,

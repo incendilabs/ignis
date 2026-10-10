@@ -64,6 +64,17 @@ script is added.
 
 Scripts load on every page, the console included.
 
+## Production server
+
+`npm start` runs `src/Ignis.Web/server.mjs`, an Express server that trusts forwarded
+headers from the proxy. React Router rejects actions whose `Origin` doesn't match the
+request's scheme and host, so this is required behind a TLS-terminating proxy.
+
+| Variable                | Notes                                                                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                  | Listen port. Defaults to `3000`.                                                                                       |
+| `IGNIS_WEB_TRUST_PROXY` | Express `trust proxy` value: preset names and/or CIDRs. Defaults to `loopback, linklocal, uniquelocal` (private nets). |
+
 ## Local dev server
 
 These are read by `src/Ignis.Web/vite.config.ts` and `src/Ignis.Web/react-router.config.ts` during local development.
