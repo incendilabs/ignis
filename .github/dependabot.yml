@@ -47,9 +47,14 @@ updates:
       interval: weekly
     cooldown:
       default-days: 14
+      exclude:
+        - "Spark.*"
     commit-message:
       prefix: "Deps (Api)"
     groups:
+      spark:
+        patterns:
+          - "Spark.*"
       minor-and-patch:
         patterns:
           - "*"
