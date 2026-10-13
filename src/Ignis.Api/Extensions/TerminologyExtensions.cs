@@ -4,60 +4,48 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-using Firely.Fhir.Packages;
-
-using Hl7.Fhir.Model;
 using Hl7.Fhir.Specification.Source;
 using Hl7.Fhir.Specification.Terminology;
 
-using Ignis.Api.Configuration;
+using Ignis.Api.Services.Resolution;
 using Ignis.Terminology;
-
-using Microsoft.Extensions.Options;
 
 namespace Ignis.Api.Extensions;
 
 /// <summary>
-/// Wires the terminology expansion service (<c>Ignis.Terminology</c>) into the host. Builds a Firely
-/// terminology service from the FHIR packages in <see cref="ProfileValidationSettings.PackageDirectory"/>
-/// (shared with profile validation). This is the FHIR-version-specific seam (uses R4's
-/// <see cref="ModelInfo.ModelInspector"/>); the expansion service itself is version-agnostic.
+/// Wires the terminology expansion service (<c>Ignis.Terminology</c>) into the host, resolving canonicals
+/// from the same two sources as <c>$validate</c>: the FHIR packages, then the FHIR store. This is the
+/// FHIR-version-specific seam; the expansion service itself is version-agnostic.
 /// </summary>
 public static class TerminologyExtensions
 {
     /// <summary>Registers <see cref="IValueSetExpansionService"/> as a singleton (resolved at startup).</summary>
     public static IServiceCollection AddTerminology(this IServiceCollection services)
     {
+        services.AddConformanceSources();
+
         services.AddSingleton<IValueSetExpansionService>(provider =>
         {
-            var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Ignis.Terminology");
-            var settings = provider.GetRequiredService<IOptions<ProfileValidationSettings>>().Value;
+            var packages = provider.GetRequiredService<PackageConformanceSource>();
+            var storeResolver = provider.GetRequiredService<StoreCanonicalResolver>();
 
-            var directory = Path.Combine(AppContext.BaseDirectory,
-                string.IsNullOrWhiteSpace(settings.PackageDirectory) ? "fhir-packages" : settings.PackageDirectory);
+            // Look in the FHIR packages first, then the store, so a ValueSet saved in the catalog can be
+            // expanded by its canonical url.
+            IAsyncResourceResolver resolver = new MultiResolver(packages.Resolver, storeResolver);
 
-            string[] packages;
-            try
+            // The mime-type and language services return an empty expansion for any url, also ones they do
+            // not own, so they must come after the resolver-backed service.
+            var local = new TerminologyServiceRoutingSettings(new LocalTerminologyService(resolver));
+            var mimeTypes = new TerminologyServiceRoutingSettings(new MimeTypeTerminologyService())
             {
-                packages = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.tgz") : [];
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                PreferredValueSets = [MimeTypeTerminologyService.MIMETYPE_VALUESET_R4_AND_UP],
+            };
+            var languages = new TerminologyServiceRoutingSettings(new LanguageTerminologyService())
             {
-                logger.LogWarning(ex, "Could not read FHIR package directory {Directory}.", directory);
-                packages = [];
-            }
+                PreferredValueSets = [LanguageTerminologyService.LANGUAGE_VALUESET],
+            };
 
-            if (packages.Length == 0)
-                logger.LogWarning("No FHIR packages available in {Directory}; $expand can only expand inline ValueSets.", directory);
-
-            // EmptyResolver (from ProfileValidationExtensions, same assembly) resolves nothing, so with no
-            // packages $expand still works for inline ValueSets and degrades gracefully otherwise.
-            IAsyncResourceResolver resolver = packages.Length == 0
-                ? new EmptyResolver()
-                : new FhirPackageSource(ModelInfo.ModelInspector, packages);
-            ITerminologyService terminology = LocalTerminologyService.CreateDefaultForCore(resolver);
-
-            return new ValueSetExpansionService(terminology);
+            return new ValueSetExpansionService(new MultiTerminologyService(local, mimeTypes, languages));
         });
 
         return services;

@@ -17,6 +17,7 @@ using Ignis.Api.Services.Resolution;
 using Ignis.Api.Services.Validation;
 using Ignis.Validation;
 
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 using Task = System.Threading.Tasks.Task;
@@ -36,18 +37,7 @@ public static class ProfileValidationExtensions
     /// </summary>
     public static IServiceCollection AddProfileValidation(this IServiceCollection services)
     {
-        // Store-backed canonical resolver: lets $validate and terminology use profiles/ValueSets stored in
-        // the catalog. Singleton, but reaches per-request Spark services via IServiceScopeFactory.
-        services.AddSingleton<StoreCanonicalResolver>();
-
-        // The FHIR packages, loaded once and shared: as a resolver (for validation) and as a summary
-        // source (for the supported-profile catalog).
-        services.AddSingleton(provider =>
-        {
-            var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Ignis.ProfileValidation");
-            var settings = provider.GetRequiredService<IOptions<ProfileValidationSettings>>().Value;
-            return PackageConformanceSource.Load(settings, logger);
-        });
+        services.AddConformanceSources();
 
         services.AddSingleton<IPackageCatalog>(provider => provider.GetRequiredService<PackageConformanceSource>());
 
@@ -68,6 +58,22 @@ public static class ProfileValidationExtensions
             ICodeValidationTerminologyService terminology = LocalTerminologyService.CreateDefaultForCore(resolver);
 
             return new ProfileValidationService(resolver, terminology);
+        });
+
+        return services;
+    }
+
+    /// <summary>Registers the FHIR packages and the store as canonical sources, shared by $validate and $expand.</summary>
+    internal static IServiceCollection AddConformanceSources(this IServiceCollection services)
+    {
+        // A singleton that reaches per-request Spark services through IServiceScopeFactory.
+        services.TryAddSingleton<StoreCanonicalResolver>();
+
+        services.TryAddSingleton(provider =>
+        {
+            var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("Ignis.ProfileValidation");
+            var settings = provider.GetRequiredService<IOptions<ProfileValidationSettings>>().Value;
+            return PackageConformanceSource.Load(settings, logger);
         });
 
         return services;
@@ -125,7 +131,7 @@ internal sealed class PackageConformanceSource : IPackageCatalog
         // Validation is additive: no packages is not fatal — package resolution just falls back to the store.
         if (packages.Length == 0)
         {
-            logger.LogWarning("No FHIR packages available in {Directory}; $validate can resolve only catalog-stored profiles.", directory);
+            logger.LogWarning("No FHIR packages available in {Directory}; $validate and $expand can resolve only catalog-stored canonicals.", directory);
             return new PackageConformanceSource(new EmptyResolver(), [], []);
         }
 

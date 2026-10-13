@@ -1,0 +1,31 @@
+meta {
+  name: Expand stored ValueSet by url
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{fhirBase}}/ValueSet/$expand?url={{valueSetUrl}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  url: {{valueSetUrl}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq ValueSet
+  res.body.url: eq {{valueSetUrl}}
+  res.body.expansion.contains: length 2
+  res.body.expansion.contains[0].code: eq male
+  res.body.expansion.contains[1].code: eq female
+}
+
+docs {
+  Expands the ValueSet from **Create ValueSet (valid)** by its canonical `url` instead of
+  its id, the way a Questionnaire's `answerValueSet` refers to it. The url is looked up in
+  the FHIR packages first, then in the store. Run the create request first; it saves
+  `valueSetUrl`.
+}

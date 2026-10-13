@@ -90,6 +90,23 @@ public class TerminologyControllerTests : IClassFixture<IntegrationFixture>, IAs
     }
 
     [Fact]
+    public async Task Expand_StoredValueSet_ByUrl_ReturnsCodes()
+    {
+        var stored = GenderSubset();
+        stored.Url = $"http://ignis.test/ValueSet/gender-{Guid.NewGuid():N}";
+
+        var createResponse = await PostFhir("ValueSet", stored);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Expand by canonical url, the way a Questionnaire's answerValueSet refers to a ValueSet.
+        var response = await _client.GetAsync($"/fhir/ValueSet/$expand?url={Uri.EscapeDataString(stored.Url)}", CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var expanded = _deserializer.Deserialize<ValueSet>(await response.Content.ReadAsStringAsync(CT));
+        CodesOf(expanded).Should().BeEquivalentTo(new[] { "male", "female" });
+    }
+
+    [Fact]
     public async Task Expand_StoredValueSet_ById_ViaPost_ReturnsCodes()
     {
         var stored = GenderSubset();
@@ -142,8 +159,8 @@ public class TerminologyControllerTests : IClassFixture<IntegrationFixture>, IAs
 
         var response = await _client.GetAsync($"/fhir/ValueSet/$expand?url={Uri.EscapeDataString(unknown)}", CT);
 
-        // Firely resolves an unknown ValueSet url to an empty expansion (it does not throw), so no real codes
-        // are surfaced. Stricter 404-on-unresolvable handling could be a later refinement.
+        // The resolver-backed service finds nothing, and the mime-type and language services then return an
+        // empty expansion. Returning 404 for an unknown url could be a later improvement.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync(CT);
         body.Should().NotContain("\"male\"");
