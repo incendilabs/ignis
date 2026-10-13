@@ -38,9 +38,10 @@ assert {
 script:post-response {
   if (res.body && res.body.id) {
     bru.setVar("valueSetId", res.body.id);
+    bru.setVar("valueSetUrl", res.body.url);
   }
 }
 
 docs {
-  Expect `201`. Saves `valueSetId` for the stored-expansion requests.
+  Expect `201`. Saves `valueSetId` and `valueSetUrl` for the stored-expansion requests.
 }
