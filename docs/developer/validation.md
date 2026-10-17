@@ -21,9 +21,9 @@ profiles say the same at the European level.
 The profile is chosen in order: `?profile=<canonical>`, then the resource's
 `meta.profile`, then the base resource type.
 
-A malformed body (invalid codes, wrong structure) is rejected with a **400** by the
-strict input formatter before validation runs — so `$validate` reports profile
-findings only on resources that already parse.
+A body that is valid JSON but not valid FHIR (invalid codes, wrong structure) is rejected
+with a **400** and an `OperationOutcome` locating each parse error, before validation
+runs — so `$validate` reports profile findings only on resources that already parse.
 
 Canonicals resolve **package-first, store-fallback**: staged packages first, then
 `StructureDefinition`s you `PUT` into the FHIR store — so draft profiles need no

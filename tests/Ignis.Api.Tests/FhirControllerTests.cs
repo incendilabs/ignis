@@ -336,6 +336,44 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
             i.Severity == OperationOutcome.IssueSeverity.Error || i.Severity == OperationOutcome.IssueSeverity.Fatal);
     }
 
+    // Spark's strict input formatter throws on these; ErrorHandler must turn that into a 400 with an
+    // OperationOutcome rather than an empty 500. Valid JSON that is not valid FHIR gets located issues.
+    [Theory]
+    [InlineData("""{"resourceType":"Patient","text":{"status":"generated","div":"<div xmlns=\"http://w3.org\">x</div>"}}""", true)]
+    [InlineData("""{"resourceType":"Patient","text":{"status":"generated","div":"<div>x</div>"}}""", true)]
+    [InlineData("""{"resourceType":"Patient","foo":1}""", true)]
+    [InlineData("""{"resourceType":"Patient","gender":"nope"}""", true)]
+    [InlineData("""{"resourceType":"Patient","birthDate":"12.10.2026"}""", true)]
+    [InlineData("""{"name":[{"family":"X"}]}""", false)]
+    [InlineData("""{"resourceType":"Patient",""", false)]
+    public async Task Validate_UnparseableBody_Returns400WithErrorOutcome(string body, bool located)
+    {
+        var response = await PostFhirJson("Patient/$validate", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var outcome = await AssertErrorOutcome(response);
+        if (located)
+            outcome.Issue.Should().Contain(i => i.Expression.Any() || i.Location.Any());
+    }
+
+    [Fact]
+    public async Task ValidateById_UnparseableBody_Returns400WithErrorOutcome()
+    {
+        var response = await PostFhirJson("Patient/x1/$validate", """{"resourceType":"Patient","gender":"nope"}""");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await AssertErrorOutcome(response);
+    }
+
+    [Fact]
+    public async Task Create_UnparseableBody_Returns400WithErrorOutcome()
+    {
+        var response = await PostFhirJson("Patient", """{"resourceType":"Patient","gender":"nope"}""");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await AssertErrorOutcome(response);
+    }
+
     [Fact]
     public async Task Validate_WithoutAuth_ReturnsUnauthorized()
     {
@@ -379,11 +417,27 @@ public class FhirControllerTests : IClassFixture<IntegrationFixture>, IAsyncLife
     private Task<HttpResponseMessage> PostFhirResourceAnonymously(string path, Resource resource) =>
         PostFhirResource(_anonymousClient, path, resource);
 
-    private async Task<HttpResponseMessage> PostFhirResource(HttpClient client, string path, Resource resource)
+    private Task<HttpResponseMessage> PostFhirResource(HttpClient client, string path, Resource resource) =>
+        PostFhirJson(client, path, _serializer.SerializeToString(resource));
+
+    private Task<HttpResponseMessage> PostFhirJson(string path, string json) =>
+        PostFhirJson(_client, path, json);
+
+    private async Task<HttpResponseMessage> PostFhirJson(HttpClient client, string path, string json)
     {
-        var json = _serializer.SerializeToString(resource);
         using var content = new StringContent(json, Encoding.UTF8, "application/fhir+json");
         return await client.PostAsync($"/fhir/{path}", content, CT);
+    }
+
+    private async Task<OperationOutcome> AssertErrorOutcome(HttpResponseMessage response)
+    {
+        // Spark's ErrorHandler appends an issue without the required `code` (upstream bug), so a
+        // strict parse of its outcome throws; what matters here is that the findings are there.
+        var lenient = new FhirJsonDeserializer(new DeserializerSettings().UsingMode(DeserializationMode.Ostrich));
+        var outcome = lenient.Deserialize<OperationOutcome>(await response.Content.ReadAsStringAsync(CT));
+        outcome.Issue.Should().Contain(i =>
+            i.Severity == OperationOutcome.IssueSeverity.Error || i.Severity == OperationOutcome.IssueSeverity.Fatal);
+        return outcome;
     }
 
     private async Task<HttpResponseMessage> PutFhirResource(string path, Resource resource)

@@ -254,7 +254,13 @@ function ResultStep({
         </Panel>
       ) : !result.ok ? (
         <Panel accent="flush" status="error">
-          <Text>{m.validation_request_failed()}</Text>
+          <Text>
+            {result.reason === "no-outcome"
+              ? m.validation_unexpected_response({ status: result.status })
+              : result.reason === "error-outcome"
+              ? m.validation_error_response({ status: result.status, message: result.message ?? "" })
+              : m.validation_request_failed()}
+          </Text>
         </Panel>
       ) : (
         <>
