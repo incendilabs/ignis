@@ -32,9 +32,7 @@ helm upgrade --install ignis infra/helm \
 Downloads need network at startup. For air-gapped clusters, mount a volume of
 `*.tgz` via `extraVolumes`/`extraVolumeMounts` and point the API at it with
 `extraEnv: [{name: ProfileValidationSettings__PackageDirectory, value: /your/mount}]`.
-The same `extraEnv` switches parsing to strict:
-`{name: Validation__Parsing, value: Strict}`. See the
-[validation guide](../../docs/developer/validation.md) for the profile story.
+See the [validation guide](../../docs/developer/validation.md) for the profile story.
 
 ### Web (`app.web`)
 

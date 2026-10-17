@@ -155,9 +155,8 @@ public class FhirController : ControllerBase
 
     private ActionResult<FhirResponse> ValidateResource(string type, Resource resource)
     {
-        // NOTE: Spark's input formatter parses the body strictly and rejects structurally-invalid
-        // resources (e.g. missing required elements) with a 400 before we get here — so $validate cannot
-        // yet report base-cardinality violations. Doing so would need permissive parsing on this endpoint.
+        // A body that does not parse never reaches here: Spark's strict input formatter rejects it
+        // with a 400 and a located OperationOutcome (via ErrorHandler in Program.cs).
         if (resource.TypeName != type)
             return new ActionResult<FhirResponse>(
                 Respond.WithError(HttpStatusCode.BadRequest, "Resource type does not match endpoint."));

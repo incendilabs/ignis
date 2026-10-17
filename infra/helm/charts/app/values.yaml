@@ -34,8 +34,8 @@ api:
   extraVolumeMounts: []
   # Extra volumes for the API pod (e.g. Kubernetes Secrets)
   extraVolumes: []
-  # Extra {name, value} env entries for the API container, e.g. to switch
-  # validation to strict parsing: {name: Validation__Parsing, value: Strict}
+  # Extra {name, value} env entries for the API container, e.g.
+  # {name: ProfileValidationSettings__PackageDirectory, value: /your/mount}
   extraEnv: []
   # FHIR conformance packages ($validate) added on top of the image's built-in
   # set without rebuilding it. Each `id@version` is downloaded from
