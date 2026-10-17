@@ -48,7 +48,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  if (!isEnabled()) return { ok: false as const };
+  if (!isEnabled()) return { ok: false as const, reason: "unreachable" as const };
   const session = await optionalSession(request);
 
   const form = await request.formData();

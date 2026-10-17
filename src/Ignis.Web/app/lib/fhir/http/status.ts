@@ -12,6 +12,7 @@ export const HttpStatus = {
   Unauthorized: 401,
   Forbidden: 403,
   ContentTooLarge: 413,
+  UnprocessableEntity: 422,
   TooManyRequests: 429,
   ServiceUnavailable: 503,
 } as const;

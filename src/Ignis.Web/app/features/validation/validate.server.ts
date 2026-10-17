@@ -7,6 +7,7 @@
 import { fhirHeaders, resolveFhirUrl } from "#app/fhir.server";
 import { getOperationOutcomeIssues } from "#app/lib/fhir";
 import { asString, asStringArray } from "#app/lib/fhir/guards";
+import { HttpStatus } from "#app/lib/fhir/http";
 import { isResource } from "#app/lib/fhir/model";
 import { isValidFhirResourceTypeName } from "#app/lib/fhir/validation";
 import { Logger } from "#app/logger";
@@ -23,7 +24,12 @@ export interface ValidationIssue {
 
 export type ValidationResult =
   | { ok: true; issues: ValidationIssue[]; }
-  | { ok: false; };
+  | { ok: false; reason: "unreachable"; }
+  | { ok: false; reason: "no-outcome"; status: number; }
+  | { ok: false; reason: "error-outcome"; status: number; message: string | null; };
+
+/** Statuses on which $validate's OperationOutcome is a validation report, not a server error. */
+const REPORT_STATUSES: ReadonlySet<number> = new Set([HttpStatus.BadRequest, HttpStatus.UnprocessableEntity]);
 
 /**
  * Validates a pasted resource against the FHIR server's $validate operation.
@@ -48,39 +54,58 @@ export async function validateResource(
     return { ok: true, issues: [localIssue(localMessages.notAResource)] };
   }
 
+  let response: Response;
   try {
     const url = resolveFhirUrl(request, `${parsed.resourceType}/$validate`);
     if (profile !== null && profile !== "") url.searchParams.set("profile", profile);
 
     const headers = new Headers(fhirHeaders(accessToken));
     headers.set("Content-Type", "application/fhir+json");
-    const response = await fetch(url, { method: "POST", headers, body: resourceText });
-
-    // $validate reports through an OperationOutcome on success and on strict
-    // 4xx rejections alike; only outcome-less responses are transport errors.
-    const payload: unknown = await response.json();
-    const issues = getOperationOutcomeIssues(payload);
-    if (issues.length === 0 && !response.ok) {
-      logger.warn({ context: { status: response.status } }, "$validate returned no outcome");
-      return { ok: false };
-    }
-
-    return {
-      ok: true,
-      issues: issues.map((issue) => ({
-        severity: asString(issue.severity) ?? "information",
-        code: asString(issue.code) ?? null,
-        message: asString(issue.details?.text)
-          ?? asString(issue.diagnostics)
-          ?? asString(issue.code)
-          ?? "",
-        expression: asStringArray(issue.expression),
-      })),
-    };
+    response = await fetch(url, { method: "POST", headers, body: resourceText });
   } catch (error) {
     logger.error({ error }, "Failed to call $validate");
-    return { ok: false };
+    return { ok: false, reason: "unreachable" };
   }
+
+  let payload: unknown = null;
+  try {
+    payload = await response.json();
+  } catch {
+    // An empty or non-JSON body carries no outcome; handled below.
+  }
+
+  // $validate always answers with an OperationOutcome; anything else (an empty body,
+  // a gateway's HTML page) is not a validation result, whatever the status.
+  if (!isResource(payload) || payload.resourceType !== "OperationOutcome") {
+    logger.warn({ context: { status: response.status } }, "$validate returned no outcome");
+    return { ok: false, reason: "no-outcome", status: response.status };
+  }
+
+  // On success and on strict 4xx rejections the outcome is the report. 
+  const issues = getOperationOutcomeIssues(payload);
+  if (!response.ok && !REPORT_STATUSES.has(response.status)) {
+    logger.warn({ context: { status: response.status } }, "$validate failed");
+    return {
+      ok: false,
+      reason: "error-outcome",
+      status: response.status,
+      message: issues.map((issue) => asString(issue.details?.text) ?? asString(issue.diagnostics))
+        .find((text) => text !== undefined && text !== "") ?? null,
+    };
+  }
+
+  return {
+    ok: true,
+    issues: issues.map((issue) => ({
+      severity: asString(issue.severity) ?? "information",
+      code: asString(issue.code) ?? null,
+      message: asString(issue.details?.text)
+        ?? asString(issue.diagnostics)
+        ?? asString(issue.code)
+        ?? "",
+      expression: asStringArray(issue.expression),
+    })),
+  };
 }
 
 function localIssue(message: string): ValidationIssue {

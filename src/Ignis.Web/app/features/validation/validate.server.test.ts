@@ -85,7 +85,7 @@ describe("validateResource", () => {
     });
   });
 
-  it("treats an error response carrying no outcome as a failed request", async () => {
+  it("reports an error response carrying no outcome with its status", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({ type: "about:blank", title: "Bad Request", status: 400 }),
@@ -95,7 +95,46 @@ describe("validateResource", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     expect(await validateResource(request(), accessToken, patient, null, localMessages))
-      .toEqual({ ok: false });
+      .toEqual({ ok: false, reason: "no-outcome", status: HttpStatus.BadRequest });
+  });
+
+  it("reports an empty 500 with its status rather than as unreachable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
+
+    expect(await validateResource(request(), accessToken, patient, null, localMessages))
+      .toEqual({ ok: false, reason: "no-outcome", status: 500 });
+  });
+
+  // A gateway can answer 2xx with an empty body or an HTML page; neither means "valid".
+  it("reports a 2xx without an outcome rather than as no problems found", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: HttpStatus.Ok })));
+
+    expect(await validateResource(request(), accessToken, patient, null, localMessages))
+      .toEqual({ ok: false, reason: "no-outcome", status: HttpStatus.Ok });
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response("<html><body>Sign in</body></html>", { status: HttpStatus.Ok, headers: { "Content-Type": "text/html" } }),
+    ));
+
+    expect(await validateResource(request(), accessToken, patient, null, localMessages))
+      .toEqual({ ok: false, reason: "no-outcome", status: HttpStatus.Ok });
+  });
+
+  // Spark's error handler answers 500 with an OperationOutcome holding the exception text.
+  it("reports an error outcome on a 5xx as a failed request, not as findings", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(outcomeResponse([
+      { severity: "error", diagnostics: "MongoConnectionException: timeout" },
+    ], 500)));
+
+    expect(await validateResource(request(), accessToken, patient, null, localMessages))
+      .toEqual({ ok: false, reason: "error-outcome", status: 500, message: "MongoConnectionException: timeout" });
+  });
+
+  it("reports a failed fetch as unreachable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
+
+    expect(await validateResource(request(), accessToken, patient, null, localMessages))
+      .toEqual({ ok: false, reason: "unreachable" });
   });
 
   it("posts the pasted text unchanged, with the chosen profile as a query parameter", async () => {
