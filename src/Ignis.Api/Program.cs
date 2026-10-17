@@ -25,6 +25,7 @@ using OpenIddict.Validation.AspNetCore;
 using Serilog;
 
 using Spark.Engine;
+using Spark.Engine.ExceptionHandling;
 using Spark.Engine.Extensions;
 using Spark.Store.MongoDB.Extensions;
 
@@ -144,6 +145,10 @@ if (forwardedHeadersSettings.IsConfigured)
     app.UseForwardedHeaders();
 
 app.UseSerilogRequestLogging();
+// Spark's formatters and services signal errors by throwing SparkException; without this
+// they surface as a bare 500 instead of the FHIR status + OperationOutcome they carry.
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/fhir"),
+    fhir => fhir.UseMiddleware<ErrorHandler>());
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
