@@ -144,5 +144,7 @@
   "validation_step_result": "Result",
   "validation_submit": "Validate",
   "validation_title": "Validation",
+  "validation_error_response": "The FHIR API answered {status}. {message}",
+  "validation_unexpected_response": "The FHIR API answered {status} without an OperationOutcome.",
   "validation_validating": "Validating…"
 }

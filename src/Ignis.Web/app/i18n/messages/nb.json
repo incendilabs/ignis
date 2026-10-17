@@ -144,5 +144,7 @@
   "validation_step_result": "Resultat",
   "validation_submit": "Valider",
   "validation_title": "Validering",
+  "validation_error_response": "FHIR-API-et svarte {status}. {message}",
+  "validation_unexpected_response": "FHIR-API-et svarte {status} uten en OperationOutcome.",
   "validation_validating": "Validerer…"
 }
