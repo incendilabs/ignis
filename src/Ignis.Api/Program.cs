@@ -27,7 +27,6 @@ using Serilog;
 using Spark.Engine;
 using Spark.Engine.ExceptionHandling;
 using Spark.Engine.Extensions;
-using Spark.Store.MongoDB.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,10 +43,6 @@ builder.Host.UseSerilog((context, configuration) =>
 // Bind Spark FHIR settings from configuration
 var sparkSettings = new SparkSettings();
 builder.Configuration.Bind("SparkSettings", sparkSettings);
-
-// Bind Store settings (includes MongoDB connection string)
-var storeSettings = new StoreSettings();
-builder.Configuration.Bind("StoreSettings", storeSettings);
 
 // Bind Auth settings
 var authSettings = new AuthSettings();
@@ -88,8 +83,8 @@ builder.Services.AddCors(options =>
         }
     }));
 
-// Register MongoDB FHIR store
-builder.Services.AddMongoFhirStore(storeSettings);
+// Register the FHIR store
+builder.Services.AddFhirStore(builder.Configuration);
 
 // Register Spark FHIR engine (also registers controllers + FHIR formatters)
 builder.Services.AddFhirWithMvc(sparkSettings);
