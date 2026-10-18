@@ -4,12 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+using Ignis.Auth;
 using Ignis.Auth.Authorization;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-
-using OpenIddict.Validation.AspNetCore;
 
 namespace Ignis.Api.Hubs;
 
@@ -19,7 +18,7 @@ namespace Ignis.Api.Hubs;
 /// events for long-running server operations.
 /// </summary>
 [Authorize(
-    AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
+    AuthenticationSchemes = AuthConstants.ApiScheme,
     Policy = OperationsPolicies.Read)]
 public sealed class OperationProgressHub : Hub;
 

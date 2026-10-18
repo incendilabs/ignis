@@ -11,12 +11,11 @@ using Hl7.Fhir.Rest;
 using Hl7.Fhir.Specification.Terminology;
 
 using Ignis.Api.Extensions;
+using Ignis.Auth;
 using Ignis.Terminology;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-using OpenIddict.Validation.AspNetCore;
 
 using Spark.Engine.Core;
 using Spark.Engine.Service;
@@ -28,7 +27,7 @@ namespace Ignis.Api.Controllers;
 /// or an inline <c>valueSet</c>). Canonical <c>url</c> resolves against the loaded FHIR packages.
 /// </summary>
 [Route("fhir"), ApiController]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = AuthConstants.ApiScheme)]
 public class TerminologyController(IValueSetExpansionService expansion, IFhirService fhirService) : ControllerBase
 {
     /// <summary>Expand a ValueSet by canonical <c>url</c> (GET query parameters).</summary>

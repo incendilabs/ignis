@@ -14,6 +14,11 @@ public static class AuthConstants
     public const string SessionScheme = "IgnisAuth.Session";
 
     /// <summary>
+    /// Authentication scheme for API callers presenting a bearer token.
+    /// </summary>
+    public const string ApiScheme = "IgnisAuth.Api";
+
+    /// <summary>
     /// MongoDB collection holding the ASP.NET Core Data Protection key ring, so cookies
     /// protected before a restart (or by another replica) can still be decrypted.
     /// </summary>
