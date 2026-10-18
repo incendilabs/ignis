@@ -20,8 +20,6 @@ using Ignis.Validation;
 
 using Microsoft.AspNetCore.Authorization;
 
-using OpenIddict.Validation.AspNetCore;
-
 using Serilog;
 
 using Spark.Engine;
@@ -117,12 +115,12 @@ builder.Services.AddHostedService<QueuedHostedService>();
 
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
-        .AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+        .AddAuthenticationSchemes(AuthConstants.ApiScheme)
         .RequireAuthenticatedUser()
         .Build())
     // Opt-in escape hatch from the fallback policy for $validate; see FeatureSettings.
     .AddPolicy(ValidationPolicies.Validate, policy => policy
-        .AddAuthenticationSchemes(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+        .AddAuthenticationSchemes(AuthConstants.ApiScheme)
         .AddRequirements(new ValidationAccessRequirement()));
 builder.Services.AddSingleton<IAuthorizationHandler, ValidationAccessHandler>();
 

@@ -7,11 +7,10 @@
 using Hl7.Fhir.Model;
 
 using Ignis.Api.Extensions;
+using Ignis.Auth;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-using OpenIddict.Validation.AspNetCore;
 
 using Spark.Engine.Core;
 
@@ -22,7 +21,7 @@ namespace Ignis.Api.Controllers;
 /// package profiles (see <see cref="ProfilesController"/>) are resolved from.
 /// </summary>
 [Route("fhir"), ApiController]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = AuthConstants.ApiScheme)]
 public class PackagesController(IPackageCatalog packages) : ControllerBase
 {
     /// <summary>The loaded packages as a Parameters resource — one <c>package</c> part (id + version) each.</summary>

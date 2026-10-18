@@ -23,6 +23,8 @@ using Microsoft.Extensions.Options;
 
 using MongoDB.Driver;
 
+using OpenIddict.Validation.AspNetCore;
+
 namespace Ignis.Auth.Extensions;
 
 public static class AuthServerExtensions
@@ -267,6 +269,10 @@ public static class AuthServerExtensions
                 options.UseLocalServer();
                 options.UseAspNetCore();
             });
+
+        services.AddAuthentication()
+            .AddPolicyScheme(AuthConstants.ApiScheme, displayName: null, options =>
+                options.ForwardDefault = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
 
         return services;
     }

@@ -6,16 +6,17 @@
 
 using System.Security.Claims;
 
+using Ignis.Auth;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using OpenIddict.Abstractions;
-using OpenIddict.Validation.AspNetCore;
 
 namespace Ignis.Api.Users;
 
 [Route("userprofile"), ApiController]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = AuthConstants.ApiScheme)]
 public class UserProfileController : ControllerBase
 {
     /// <summary>

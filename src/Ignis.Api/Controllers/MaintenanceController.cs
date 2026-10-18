@@ -11,6 +11,7 @@ using Hl7.Fhir.Model;
 using Ignis.Api.Configuration;
 using Ignis.Api.Extensions;
 using Ignis.Api.Services.Maintenance;
+using Ignis.Auth;
 using Ignis.Auth.Authorization;
 
 using Microsoft.AspNetCore.Authorization;
@@ -18,14 +19,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 using OpenIddict.Abstractions;
-using OpenIddict.Validation.AspNetCore;
 
 using Spark.Engine.Core;
 
 namespace Ignis.Api.Controllers;
 
 [Route("fhir"), ApiController]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = AuthConstants.ApiScheme)]
 public class MaintenanceController(
     IMaintenanceService maintenanceService,
     IOptions<FeatureSettings> featureSettings,

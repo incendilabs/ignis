@@ -14,6 +14,7 @@ using Ignis.Api.Extensions;
 using Ignis.Api.Filters;
 using Ignis.Api.Services.BackgroundTasks;
 using Ignis.Api.Services.Import;
+using Ignis.Auth;
 using Ignis.Auth.Authorization;
 
 using Microsoft.AspNetCore.Authorization;
@@ -21,14 +22,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 using OpenIddict.Abstractions;
-using OpenIddict.Validation.AspNetCore;
 
 using Spark.Engine.Core;
 
 namespace Ignis.Api.Controllers;
 
 [Route("fhir"), ApiController]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = AuthConstants.ApiScheme)]
 public class ImportController(
     BackgroundTaskQueue backgroundTaskQueue,
     IOptions<FeatureSettings> featureSettings,
