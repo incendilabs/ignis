@@ -116,16 +116,29 @@ public class TerminologyControllerTests : IClassFixture<IntegrationFixture>, IAs
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = _deserializer.Deserialize<ValueSet>(await createResponse.Content.ReadAsStringAsync(CT));
 
-        // Spec-style POST: a Parameters body; {id} identifies the ValueSet to expand. (The local terminology
-        // service ignores filter/count, so we assert the stored ValueSet expands rather than a narrowing.)
+        // Spec-style POST: a Parameters body; {id} identifies the ValueSet to expand.
         var body = new Parameters();
-        body.Add("activeOnly", new FhirBoolean(true));
+        body.Add("filter", new FhirString("fem"));
 
         var response = await PostFhir($"ValueSet/{created.Id}/$expand", body);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var expanded = _deserializer.Deserialize<ValueSet>(await response.Content.ReadAsStringAsync(CT));
-        CodesOf(expanded).Should().BeEquivalentTo(new[] { "male", "female" });
+        CodesOf(expanded).Should().BeEquivalentTo(new[] { "female" });
+        expanded.Expansion.Total.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Expand_ByUrl_WithOffsetAndCount_ReturnsOnePage()
+    {
+        var response = await _client.GetAsync(
+            $"/fhir/ValueSet/$expand?url={Uri.EscapeDataString(GenderValueSet)}&offset=1&count=2", CT);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var expanded = _deserializer.Deserialize<ValueSet>(await response.Content.ReadAsStringAsync(CT));
+        CodesOf(expanded).Should().HaveCount(2);
+        expanded.Expansion.Total.Should().Be(4);
+        expanded.Expansion.Offset.Should().Be(1);
     }
 
     [Fact]

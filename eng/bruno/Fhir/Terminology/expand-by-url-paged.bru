@@ -1,0 +1,31 @@
+meta {
+  name: Expand ValueSet by url (paged)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{fhirBase}}/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/administrative-gender&offset=1&count=2
+  body: none
+  auth: inherit
+}
+
+params:query {
+  url: http://hl7.org/fhir/ValueSet/administrative-gender
+  offset: 1
+  count: 2
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq ValueSet
+  res.body.expansion.total: eq 4
+  res.body.expansion.offset: eq 1
+  res.body.expansion.contains: length 2
+}
+
+docs {
+  One page of the expansion: `offset` skips codes, `count` caps the page. `expansion.total`
+  is the full number of matches, so a client knows how far there is to go. `count=0` asks
+  for the total only.
+}
