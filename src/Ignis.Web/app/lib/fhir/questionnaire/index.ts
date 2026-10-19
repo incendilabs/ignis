@@ -5,7 +5,12 @@
  */
 
 export type { AnswerChoice } from "./answers";
-export { resolveAnswerChoices } from "./answers";
+export {
+  externalAnswerValueSets,
+  hasExternalAnswerValueSet,
+  resolveAnswerChoices,
+  valueSetChoices,
+} from "./answers";
 export type {
   Questionnaire,
   QuestionnaireEnableWhen,

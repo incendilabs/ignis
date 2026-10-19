@@ -18,8 +18,9 @@ export interface AnswerChoice {
 }
 
 /**
- * The answer choices for a `choice` / `open-choice` item.
- * TODO: resolve external ValueSet (needs the server's `$expand`)
+ * The answer choices for a `choice` / `open-choice` item, from inline `answerOption` or a
+ * contained ValueSet. Null for an external `answerValueSet`: those need the server's `$expand`,
+ * see {@link externalAnswerValueSets}.
  */
 export function resolveAnswerChoices(
   resource: Resource,
@@ -34,6 +35,34 @@ export function resolveAnswerChoices(
     return containedValueSetChoices(resource, valueSet.slice(1));
   }
   return null;
+}
+
+/** Whether an item's answers come from a ValueSet that is not contained in the Questionnaire. */
+export function hasExternalAnswerValueSet(item: QuestionnaireItem): boolean {
+  if (item.type !== "choice" && item.type !== "open-choice") return false;
+  if (item.answerOption && item.answerOption.length > 0) return false;
+  return item.answerValueSet !== undefined && !item.answerValueSet.startsWith("#");
+}
+
+/** The distinct external `answerValueSet` canonicals across an item tree, in document order. */
+export function externalAnswerValueSets(items: QuestionnaireItem[]): string[] {
+  const canonicals = new Set<string>();
+  const visit = (item: QuestionnaireItem) => {
+    if (hasExternalAnswerValueSet(item) && item.answerValueSet !== undefined) {
+      canonicals.add(item.answerValueSet);
+    }
+    item.item?.forEach(visit);
+  };
+  items.forEach(visit);
+  return [...canonicals];
+}
+
+/** The choices of a ValueSet: its expansion when present, else the concepts listed in compose. */
+export function valueSetChoices(valueSet: Record<string, unknown>): AnswerChoice[] {
+  const choices: AnswerChoice[] = [];
+  collectExpansion(choices, valueSet.expansion);
+  if (choices.length === 0) collectCompose(choices, valueSet.compose);
+  return choices;
 }
 
 function optionToChoice(option: QuestionnaireItemAnswerOption): AnswerChoice {
@@ -62,10 +91,7 @@ function containedValueSetChoices(resource: Resource, id: string): AnswerChoice[
   );
   if (!isObject(valueSet)) return null;
 
-  // Prefer a precomputed expansion; fall back to the compose definition.
-  const choices: AnswerChoice[] = [];
-  collectExpansion(choices, valueSet.expansion);
-  if (choices.length === 0) collectCompose(choices, valueSet.compose);
+  const choices = valueSetChoices(valueSet);
   return choices.length > 0 ? choices : null;
 }
 
