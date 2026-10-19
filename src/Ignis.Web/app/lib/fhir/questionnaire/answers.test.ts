@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { resolveAnswerChoices } from "./answers";
+import { externalAnswerValueSets, resolveAnswerChoices, valueSetChoices } from "./answers";
 import type { QuestionnaireItem } from "./model";
 
 const emptyQuestionnaire = { resourceType: "Questionnaire" };
@@ -108,5 +108,45 @@ describe("resolveAnswerChoices", () => {
 
   it("returns null when the contained ValueSet is missing", () => {
     expect(resolveAnswerChoices(emptyQuestionnaire, item({ answerValueSet: "#nope" }))).toBeNull();
+  });
+});
+
+describe("externalAnswerValueSets", () => {
+  it("collects distinct external canonicals across nested items, in document order", () => {
+    const canonicals = externalAnswerValueSets([
+      item({ answerValueSet: "http://x/vs-b" }),
+      item({
+        type: "group",
+        item: [
+          item({ answerValueSet: "http://x/vs-a|1.0.0" }),
+          item({ answerValueSet: "http://x/vs-b" }),
+          item({ type: "open-choice", answerValueSet: "http://x/vs-c" }),
+        ],
+      }),
+    ]);
+    expect(canonicals).toEqual(["http://x/vs-b", "http://x/vs-a|1.0.0", "http://x/vs-c"]);
+  });
+
+  it("skips contained ValueSets, inline answerOption and non-choice items", () => {
+    const canonicals = externalAnswerValueSets([
+      item({ answerValueSet: "#local" }),
+      item({ answerValueSet: "http://x/vs", answerOption: [{ valueString: "x" }] }),
+      item({ type: "string", answerValueSet: "http://x/vs" }),
+    ]);
+    expect(canonicals).toEqual([]);
+  });
+});
+
+describe("valueSetChoices", () => {
+  it("prefers the expansion over compose", () => {
+    const choices = valueSetChoices({
+      expansion: { contains: [{ system: "http://x", code: "e", display: "Expanded" }] },
+      compose: { include: [{ system: "http://x", concept: [{ code: "c" }] }] },
+    });
+    expect(choices).toEqual([{ system: "http://x", code: "e", display: "Expanded", label: "Expanded" }]);
+  });
+
+  it("is empty for a ValueSet with neither", () => {
+    expect(valueSetChoices({ resourceType: "ValueSet" })).toEqual([]);
   });
 });
