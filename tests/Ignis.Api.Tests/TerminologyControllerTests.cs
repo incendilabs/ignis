@@ -125,7 +125,7 @@ public class TerminologyControllerTests : IClassFixture<IntegrationFixture>, IAs
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var expanded = _deserializer.Deserialize<ValueSet>(await response.Content.ReadAsStringAsync(CT));
         CodesOf(expanded).Should().BeEquivalentTo(new[] { "female" });
-        expanded.Expansion.Total.Should().Be(1);
+        ExpansionOf(expanded).Total.Should().Be(1);
     }
 
     [Fact]
@@ -136,9 +136,10 @@ public class TerminologyControllerTests : IClassFixture<IntegrationFixture>, IAs
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var expanded = _deserializer.Deserialize<ValueSet>(await response.Content.ReadAsStringAsync(CT));
-        CodesOf(expanded).Should().HaveCount(2);
-        expanded.Expansion.Total.Should().Be(4);
-        expanded.Expansion.Offset.Should().Be(1);
+        var expansion = ExpansionOf(expanded);
+        expansion.Contains.Should().HaveCount(2);
+        expansion.Total.Should().Be(4);
+        expansion.Offset.Should().Be(1);
     }
 
     [Fact]
@@ -200,10 +201,13 @@ public class TerminologyControllerTests : IClassFixture<IntegrationFixture>, IAs
         },
     };
 
-    private static IEnumerable<string?> CodesOf(ValueSet expanded)
+    private static IEnumerable<string?> CodesOf(ValueSet expanded) =>
+        ExpansionOf(expanded).Contains.Select(c => c.Code);
+
+    private static ValueSet.ExpansionComponent ExpansionOf(ValueSet expanded)
     {
         expanded.Expansion.Should().NotBeNull();
-        return expanded.Expansion.Contains.Select(c => c.Code);
+        return expanded.Expansion;
     }
 
     private async Task<HttpResponseMessage> PostFhir(string path, Resource resource)
