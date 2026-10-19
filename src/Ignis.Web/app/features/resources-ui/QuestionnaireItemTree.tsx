@@ -11,7 +11,8 @@ import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Text } from "@eventuras/ratio-ui/core/Text";
 import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { Tree, type TreeNode } from "@eventuras/ratio-ui/tree";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useFetcher } from "react-router";
 
 import { m } from "#app/i18n/paraglide/messages";
 import { formatPrimitive } from "#app/lib/fhir/format";
@@ -19,17 +20,23 @@ import type { Extension, Resource } from "#app/lib/fhir/model";
 import { extensionValue, extensionValueType } from "#app/lib/fhir/model";
 import {
   type AnswerChoice,
+  externalAnswerValueSets,
+  hasExternalAnswerValueSet,
   parseQuestionnaireExtensions,
   parseQuestionnaireItems,
   type QuestionnaireItem,
   resolveAnswerChoices,
 } from "#app/lib/fhir/questionnaire";
 
+import type { ExpansionResult } from "./expand.server";
+
 /** A tree node: either a Questionnaire item or one of its answer options. */
 type QuestionnaireNode = ItemNode | OptionNode;
 interface ItemNode extends TreeNode {
   kind: "item";
   item: QuestionnaireItem;
+  /** Set when the item's answers come from an external ValueSet. */
+  expansion?: ExpansionState;
   children?: QuestionnaireNode[];
 }
 interface OptionNode extends TreeNode {
@@ -37,9 +44,37 @@ interface OptionNode extends TreeNode {
   choice: AnswerChoice;
 }
 
+/** Where the `$expand` of an item's external ValueSet stands. */
+type ExpansionState =
+  | { kind: "pending"; }
+  | { kind: "error"; }
+  | { kind: "ready"; choices: AnswerChoice[]; truncated: boolean; };
+
+interface ExpansionsData {
+  expansions: Record<string, ExpansionResult>;
+}
+
 export function QuestionnaireItemTree({ resource }: { resource: Resource; }) {
-  const { nodes, expandedKeys } = useMemo(() => build(resource), [resource]);
+  const items = useMemo(() => parseQuestionnaireItems(resource), [resource]);
   const extensions = useMemo(() => parseQuestionnaireExtensions(resource), [resource]);
+  const expansions = useExpansions(items);
+  const { nodes, expandedKeys: autoExpanded } = useMemo(
+    () => build(resource, items, expansions),
+    [resource, items, expansions],
+  );
+
+  // Expansion is controlled so rows that gain option children once their
+  // ValueSet arrives open like the rest, without resetting what the user toggled.
+  const [expandedKeys, setExpandedKeys] = useState<Set<string | number>>(
+    () => new Set(autoExpanded),
+  );
+  useEffect(() => {
+    setExpandedKeys((previous) =>
+      autoExpanded.every((key) => previous.has(key))
+        ? previous
+        : new Set([...previous, ...autoExpanded]),
+    );
+  }, [autoExpanded]);
 
   if (nodes.length === 0 && extensions.length === 0) {
     return (
@@ -57,14 +92,15 @@ export function QuestionnaireItemTree({ resource }: { resource: Resource; }) {
           <Tree
             aria-label={m.resources_instance_tab_form()}
             items={nodes}
-            defaultExpandedKeys={expandedKeys}
+            expandedKeys={expandedKeys}
+            onExpandedChange={setExpandedKeys}
             getLabel={nodeLabel}
             renderNode={(node) => {
               if (node.kind === "option") return <OptionRow choice={node.choice} />;
               return node.item.type === "group" ? (
                 <GroupRow item={node.item} />
               ) : (
-                <QuestionRow item={node.item} />
+                <QuestionRow item={node.item} expansion={node.expansion} />
               );
             }}
           />
@@ -72,6 +108,38 @@ export function QuestionnaireItemTree({ resource }: { resource: Resource; }) {
       ) : null}
     </Stack>
   );
+}
+
+/**
+ * Expands the items' external ValueSets through the data-only expansions route, once
+ * per set of canonicals. Pending until the response lands; on the server it stays pending.
+ */
+function useExpansions(items: QuestionnaireItem[]): Record<string, ExpansionState> {
+  const canonicals = useMemo(() => externalAnswerValueSets(items), [items]);
+  const fetcher = useFetcher<ExpansionsData>();
+  const { load, data } = fetcher;
+
+  const requested = useRef<string | null>(null);
+  useEffect(() => {
+    const key = canonicals.join("\n");
+    if (canonicals.length === 0 || requested.current === key) return;
+    requested.current = key;
+    const query = new URLSearchParams(canonicals.map((canonical) => ["url", canonical]));
+    void load(`/resources/expansions?${query.toString()}`);
+  }, [canonicals, load]);
+
+  return useMemo(() => {
+    const states: Record<string, ExpansionState> = {};
+    for (const canonical of canonicals) {
+      const result = data?.expansions[canonical];
+      states[canonical] = data === undefined
+        ? { kind: "pending" }
+        : result?.ok
+          ? { kind: "ready", choices: result.choices, truncated: result.truncated }
+          : { kind: "error" };
+    }
+    return states;
+  }, [canonicals, data]);
 }
 
 /** Extensions carried by the Questionnaire itself — where a profile marks the definition. */
@@ -163,7 +231,11 @@ function ExtensionChip({ extension }: { extension: Extension; }) {
   );
 }
 
-function build(resource: Resource): { nodes: QuestionnaireNode[]; expandedKeys: string[]; } {
+function build(
+  resource: Resource,
+  items: QuestionnaireItem[],
+  expansions: Record<string, ExpansionState>,
+): { nodes: QuestionnaireNode[]; expandedKeys: string[]; } {
   const expandedKeys: string[] = [];
   const toNode = (item: QuestionnaireItem, id: string): ItemNode => {
     const itemChildren = (item.item ?? []).map((child, index) =>
@@ -173,20 +245,26 @@ function build(resource: Resource): { nodes: QuestionnaireNode[]; expandedKeys: 
       expandedKeys.push(id);
       return { kind: "item", id, item, children: itemChildren };
     }
-    const choices = resolveAnswerChoices(resource, item);
+
+    const node: ItemNode = { kind: "item", id, item };
+    let choices = resolveAnswerChoices(resource, item);
+    if (choices === null && hasExternalAnswerValueSet(item) && item.answerValueSet !== undefined) {
+      const expansion = expansions[item.answerValueSet];
+      node.expansion = expansion;
+      if (expansion.kind === "ready") choices = expansion.choices;
+    }
     if (choices && choices.length > 0) {
       expandedKeys.push(id);
-      const children: OptionNode[] = choices.map((choice, index) => ({
+      node.children = choices.map((choice, index) => ({
         kind: "option",
         id: `${id}.opt.${String(index)}`,
         choice,
       }));
-      return { kind: "item", id, item, children };
     }
-    return { kind: "item", id, item };
+    return node;
   };
 
-  const nodes = parseQuestionnaireItems(resource).map((item, index) => toNode(item, String(index)));
+  const nodes = items.map((item, index) => toNode(item, String(index)));
   return { nodes, expandedKeys };
 }
 
@@ -211,8 +289,15 @@ function GroupRow({ item }: { item: QuestionnaireItem; }) {
 }
 
 /** A question row: the text, then a subtle line with type / flags / answer source. */
-function QuestionRow({ item }: { item: QuestionnaireItem; }) {
+function QuestionRow({
+  item,
+  expansion,
+}: {
+  item: QuestionnaireItem;
+  expansion: ExpansionState | undefined;
+}) {
   const hint = answerHint(item);
+  const expansionHint = expansion === undefined ? undefined : expansionStatus(expansion);
   return (
     <Stack direction="vertical" gap="xs">
       <Text size="xl">{item.text ?? item.linkId}</Text>
@@ -231,6 +316,11 @@ function QuestionRow({ item }: { item: QuestionnaireItem; }) {
         {hint ? (
           <Text as="span" variant="subtle">
             {hint}
+          </Text>
+        ) : null}
+        {expansionHint ? (
+          <Text as="span" variant="subtle">
+            {expansionHint}
           </Text>
         ) : null}
       </Stack>
@@ -263,6 +353,20 @@ function answerHint(item: QuestionnaireItem): string | undefined {
     return m.resources_questionnaire_options({ count: item.answerOption.length });
   }
   return undefined;
+}
+
+/** What to say about an external ValueSet's expansion; nothing when it arrived whole. */
+function expansionStatus(expansion: ExpansionState): string | undefined {
+  switch (expansion.kind) {
+    case "pending":
+      return m.resources_questionnaire_valueset_loading();
+    case "error":
+      return m.resources_questionnaire_valueset_error();
+    case "ready":
+      return expansion.truncated
+        ? m.resources_questionnaire_valueset_truncated({ count: expansion.choices.length })
+        : undefined;
+  }
 }
 
 /** The human-facing tail of a canonical URL, dropping any `|version` suffix. */

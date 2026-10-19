@@ -30,7 +30,8 @@ export default [
       route("resources/:resourceType", "features/resources-ui/routes/$resourceType.tsx"),
       route("resources/:resourceType/:id", "features/resources-ui/routes/$resourceType.$id.tsx"),
     ]),
-    // Data-only route — no UI, so it skips the layout (and its loader).
+    // Data-only routes — no UI, so they skip the layout (and its loader).
+    route("resources/expansions", "features/resources-ui/routes/expansions.tsx"),
     route("resources/:resourceType/:id/xml", "features/resources-ui/routes/$resourceType.$id.xml.tsx"),
   ]),
   // Skip i18n handling for these routes.
