@@ -49,4 +49,17 @@ public class ValueSetExpansionServiceTests(R4CoreTerminologyFixture fixture)
         var codes = expanded.Expansion!.Contains.Select(c => c.Code).ToList();
         codes.Should().Contain("male").And.Contain("female").And.Contain("other").And.Contain("unknown");
     }
+
+    [Fact]
+    public async Task Expand_WithFilter_NarrowsToMatchingCodes()
+    {
+        var parameters = new ExpandParameters()
+            .WithValueSet("http://hl7.org/fhir/ValueSet/administrative-gender", null, null, null, null)
+            .WithFilter("fem");
+
+        var expanded = await fixture.Service.ExpandAsync(parameters);
+
+        expanded.Expansion!.Contains.Select(c => c.Code).Should().Equal("female");
+        expanded.Expansion.Total.Should().Be(1);
+    }
 }

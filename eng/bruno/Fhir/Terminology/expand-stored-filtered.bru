@@ -1,0 +1,28 @@
+meta {
+  name: Expand stored ValueSet (filtered)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{fhirBase}}/ValueSet/{{valueSetId}}/$expand?filter=fem
+  body: none
+  auth: inherit
+}
+
+params:query {
+  filter: fem
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq ValueSet
+  res.body.expansion.total: eq 1
+  res.body.expansion.contains: length 1
+  res.body.expansion.contains[0].code: eq female
+}
+
+docs {
+  Narrows a stored ValueSet with `filter`, the way a form's typeahead would. Needs
+  `valueSetId` from **Create ValueSet**.
+}

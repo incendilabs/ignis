@@ -25,8 +25,11 @@ public sealed class ValueSetExpansionService(ITerminologyService terminology) : 
         // Firely's Expand returns a Resource that is always a ValueSet (with Expansion populated) on success;
         // failures surface as a thrown FhirOperationException carrying an OperationOutcome.
         var result = await _terminology.Expand(parameters).ConfigureAwait(false);
-        return result as ValueSet
+        var expanded = result as ValueSet
             ?? throw new InvalidOperationException(
                 $"$expand returned '{result?.TypeName ?? "null"}', expected a ValueSet.");
+
+        ExpansionSubset.Apply(expanded, parameters);
+        return expanded;
     }
 }

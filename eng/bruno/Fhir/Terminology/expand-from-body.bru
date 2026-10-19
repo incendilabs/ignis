@@ -27,8 +27,13 @@ body:json {
 assert {
   res.status: eq 200
   res.body.resourceType: eq ValueSet
+  res.body.expansion.total: eq 1
+  res.body.expansion.contains: length 1
+  res.body.expansion.contains[0].code: eq female
+  res.body.expansion.parameter[0].name: eq filter
 }
 
 docs {
-  Same operation via a `Parameters` body, which also accepts an inline `valueSet`.
+  Same operation via a `Parameters` body, which also accepts an inline `valueSet`. The
+  `filter` matches code or display, ignoring case; the expansion echoes it in `parameter`.
 }
