@@ -2,7 +2,7 @@
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:3cc3bbbbf93d82104892f42aa9106b6be4d120346dea0649643a97c801525256 AS build
 ARG TARGETARCH
 WORKDIR /src
-COPY fhir-packages.targets ./
+COPY Directory.Build.props fhir-packages.targets ./
 COPY src/Ignis.Api/Ignis.Api.csproj src/Ignis.Api/
 COPY src/Ignis.Auth/Ignis.Auth.csproj src/Ignis.Auth/
 COPY src/Ignis.Terminology/Ignis.Terminology.csproj src/Ignis.Terminology/
