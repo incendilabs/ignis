@@ -58,6 +58,8 @@ function toItem(value: unknown): QuestionnaireItem | null {
   if (answerOption.length > 0) item.answerOption = answerOption;
   const enableWhen = toEnableWhen(value.enableWhen);
   if (enableWhen.length > 0) item.enableWhen = enableWhen;
+  const enableBehavior = asString(value.enableBehavior);
+  if (enableBehavior !== undefined) item.enableBehavior = enableBehavior;
   const nested = toItems(value.item);
   if (nested.length > 0) item.item = nested;
   const extension = parseExtensions(value.extension);

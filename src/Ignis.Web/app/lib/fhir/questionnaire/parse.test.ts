@@ -98,12 +98,14 @@ describe("parseQuestionnaireItems", () => {
           linkId: "q2",
           type: "string",
           enableWhen: [{ question: "q1", operator: "=", answerBoolean: true }],
+          enableBehavior: "all",
         },
       ],
     });
 
     expect(item.enableWhen).toHaveLength(1);
     expect(item.enableWhen?.[0]).toMatchObject({ question: "q1", operator: "=", answerBoolean: true });
+    expect(item.enableBehavior).toBe("all");
   });
 
   it("defaults missing linkId/type to empty strings and drops non-object entries", () => {
