@@ -65,6 +65,8 @@ export interface QuestionnaireItem {
   answerValueSet?: Canonical;
   answerOption?: QuestionnaireItemAnswerOption[];
   enableWhen?: QuestionnaireEnableWhen[];
+  /** `all` or `any` — how several `enableWhen` rules combine. */
+  enableBehavior?: string;
   item?: QuestionnaireItem[];
   extension?: Extension[];
 }
