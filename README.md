@@ -1,4 +1,5 @@
 # Ignis
+
 Explorative area for early-stage concepts and implementations for the [Spark FHIR Server](https://github.com/firelyteam/spark)
 
 This repository exists to test concepts quickly, learn fast, and validate direction before committing to long-term
@@ -30,6 +31,10 @@ The API will be available at `https://localhost:5201/fhir` and the OpenAPI docum
 ### Local configuration
 
 Copy `src/Ignis.Api/appsettings.local.example.json` to `src/Ignis.Api/appsettings.local.json` to apply per-developer overrides. The file is loaded only when the environment is `Development` and is gitignored.
+
+### Aspire (optional for local development)
+
+There is also an [Aspire AppHost](eng/aspire/README.md) that starts MongoDB, the API and Web together. Run `aspire run` to start it, and see the console for a login with the token.
 
 ### Kubernetes
 
