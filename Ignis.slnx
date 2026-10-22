@@ -6,4 +6,5 @@
   <Project Path="tests/Ignis.Api.Tests/Ignis.Api.Tests.csproj" />
   <Project Path="tests/Ignis.Terminology.Tests/Ignis.Terminology.Tests.csproj" />
   <Project Path="tests/Ignis.Validation.Tests/Ignis.Validation.Tests.csproj" />
+  <Project Path="eng/aspire/Ignis.AppHost.csproj" />
 </Solution>

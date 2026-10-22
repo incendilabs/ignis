@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "src/Ignis.AppHost/Ignis.AppHost.csproj"
+  }
+}
