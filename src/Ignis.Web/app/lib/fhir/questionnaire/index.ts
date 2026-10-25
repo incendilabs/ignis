@@ -6,10 +6,12 @@
 
 export type { AnswerChoice } from "./answers";
 export {
-  externalAnswerValueSets,
+  getExternalAnswerValueSets,
+  findAnswerChoiceIndex,
   hasExternalAnswerValueSet,
+  isSameAnswer,
   resolveAnswerChoices,
-  valueSetChoices,
+  valueSetToAnswerChoices,
 } from "./answers";
 export type {
   Questionnaire,

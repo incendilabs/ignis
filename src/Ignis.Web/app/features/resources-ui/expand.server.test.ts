@@ -56,8 +56,8 @@ describe("expandValueSet", () => {
       ok: true,
       truncated: false,
       choices: [
-        { system: "http://loinc.org", code: "LA1", display: "Oriented", label: "Oriented" },
-        { system: undefined, code: "LA2", display: undefined, label: "LA2" },
+        { label: "Oriented", answer: { valueCoding: { system: "http://loinc.org", code: "LA1", display: "Oriented" } } },
+        { label: "LA2", answer: { valueCoding: { code: "LA2" } } },
       ],
     });
   });
