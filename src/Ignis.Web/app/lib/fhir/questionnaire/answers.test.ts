@@ -6,7 +6,13 @@
 
 import { describe, expect, it } from "vitest";
 
-import { externalAnswerValueSets, resolveAnswerChoices, valueSetChoices } from "./answers";
+import {
+  getExternalAnswerValueSets,
+  findAnswerChoiceIndex,
+  isSameAnswer,
+  resolveAnswerChoices,
+  valueSetToAnswerChoices,
+} from "./answers";
 import type { QuestionnaireItem } from "./model";
 
 const emptyQuestionnaire = { resourceType: "Questionnaire" };
@@ -35,19 +41,21 @@ describe("resolveAnswerChoices", () => {
     ).toBeNull();
   });
 
-  it("flattens inline answerOption (coding and string)", () => {
+  it("keeps the type of inline answerOption values", () => {
     const choices = resolveAnswerChoices(
       emptyQuestionnaire,
       item({
         answerOption: [
           { valueCoding: { system: "http://x", code: "a", display: "Alpha" } },
           { valueString: "Other" },
+          { valueInteger: 3 },
         ],
       }),
     );
     expect(choices).toEqual([
-      { code: "a", display: "Alpha", system: "http://x", label: "Alpha" },
-      { display: "Other", label: "Other" },
+      { label: "Alpha", answer: { valueCoding: { system: "http://x", code: "a", display: "Alpha" } } },
+      { label: "Other", answer: { valueString: "Other" } },
+      { label: "3", answer: { valueInteger: 3 } },
     ]);
   });
 
@@ -83,8 +91,8 @@ describe("resolveAnswerChoices", () => {
     };
     const choices = resolveAnswerChoices(resource, item({ answerValueSet: "#verbal" }));
     expect(choices).toEqual([
-      { code: "LA1", display: "Oriented", system: "http://loinc.org", label: "Oriented" },
-      { code: "LA2", display: "Confused", system: "http://loinc.org", label: "Confused" },
+      { label: "Oriented", answer: { valueCoding: { system: "http://loinc.org", code: "LA1", display: "Oriented" } } },
+      { label: "Confused", answer: { valueCoding: { system: "http://loinc.org", code: "LA2", display: "Confused" } } },
     ]);
   });
 
@@ -102,7 +110,7 @@ describe("resolveAnswerChoices", () => {
     };
     const choices = resolveAnswerChoices(resource, item({ answerValueSet: "#eye" }));
     expect(choices).toEqual([
-      { code: "LA3", display: "Spontaneous", system: "http://loinc.org", label: "Spontaneous" },
+      { label: "Spontaneous", answer: { valueCoding: { system: "http://loinc.org", code: "LA3", display: "Spontaneous" } } },
     ]);
   });
 
@@ -111,9 +119,9 @@ describe("resolveAnswerChoices", () => {
   });
 });
 
-describe("externalAnswerValueSets", () => {
+describe("getExternalAnswerValueSets", () => {
   it("collects distinct external canonicals across nested items, in document order", () => {
-    const canonicals = externalAnswerValueSets([
+    const canonicals = getExternalAnswerValueSets([
       item({ answerValueSet: "http://x/vs-b" }),
       item({
         type: "group",
@@ -128,7 +136,7 @@ describe("externalAnswerValueSets", () => {
   });
 
   it("skips contained ValueSets, inline answerOption and non-choice items", () => {
-    const canonicals = externalAnswerValueSets([
+    const canonicals = getExternalAnswerValueSets([
       item({ answerValueSet: "#local" }),
       item({ answerValueSet: "http://x/vs", answerOption: [{ valueString: "x" }] }),
       item({ type: "string", answerValueSet: "http://x/vs" }),
@@ -137,16 +145,45 @@ describe("externalAnswerValueSets", () => {
   });
 });
 
-describe("valueSetChoices", () => {
+describe("valueSetToAnswerChoices", () => {
   it("prefers the expansion over compose", () => {
-    const choices = valueSetChoices({
+    const choices = valueSetToAnswerChoices({
       expansion: { contains: [{ system: "http://x", code: "e", display: "Expanded" }] },
       compose: { include: [{ system: "http://x", concept: [{ code: "c" }] }] },
     });
-    expect(choices).toEqual([{ system: "http://x", code: "e", display: "Expanded", label: "Expanded" }]);
+    expect(choices).toEqual([{ label: "Expanded", answer: { valueCoding: { system: "http://x", code: "e", display: "Expanded" } } }]);
   });
 
   it("is empty for a ValueSet with neither", () => {
-    expect(valueSetChoices({ resourceType: "ValueSet" })).toEqual([]);
+    expect(valueSetToAnswerChoices({ resourceType: "ValueSet" })).toEqual([]);
+  });
+});
+
+describe("isSameAnswer", () => {
+  it("matches codings on system and code, ignoring display", () => {
+    const answer = { valueCoding: { system: "http://x", code: "a", display: "Alpha" } };
+    expect(isSameAnswer(answer, { valueCoding: { system: "http://x", code: "a" } })).toBe(true);
+    expect(isSameAnswer(answer, { valueCoding: { system: "http://y", code: "a" } })).toBe(false);
+  });
+
+  it("matches other values on type and value", () => {
+    expect(isSameAnswer({ valueInteger: 3 }, { valueInteger: 3 })).toBe(true);
+    expect(isSameAnswer({ valueInteger: 3 }, { valueString: "3" })).toBe(false);
+  });
+});
+
+describe("findAnswerChoiceIndex", () => {
+  const choices = [
+    { label: "Alpha", answer: { valueCoding: { system: "http://x", code: "a" } } },
+    { label: "3", answer: { valueInteger: 3 } },
+  ];
+
+  it("finds the choice giving the answer", () => {
+    expect(findAnswerChoiceIndex(choices, { valueInteger: 3 })).toBe(1);
+  });
+
+  it("is -1 when no choice matches or there is no answer", () => {
+    expect(findAnswerChoiceIndex(choices, { valueString: "3" })).toBe(-1);
+    expect(findAnswerChoiceIndex(choices, undefined)).toBe(-1);
   });
 });

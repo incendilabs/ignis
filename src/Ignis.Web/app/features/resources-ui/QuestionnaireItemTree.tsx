@@ -11,8 +11,7 @@ import { Panel } from "@eventuras/ratio-ui/core/Panel";
 import { Text } from "@eventuras/ratio-ui/core/Text";
 import { Stack } from "@eventuras/ratio-ui/layout/Stack";
 import { Tree, type TreeNode } from "@eventuras/ratio-ui/tree";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useFetcher } from "react-router";
+import { useEffect, useMemo, useState } from "react";
 
 import { m } from "#app/i18n/paraglide/messages";
 import { formatPrimitive } from "#app/lib/fhir/format";
@@ -20,7 +19,6 @@ import type { Extension, Resource } from "#app/lib/fhir/model";
 import { extensionValue, extensionValueType } from "#app/lib/fhir/model";
 import {
   type AnswerChoice,
-  externalAnswerValueSets,
   hasExternalAnswerValueSet,
   parseQuestionnaireExtensions,
   parseQuestionnaireItems,
@@ -28,7 +26,7 @@ import {
   resolveAnswerChoices,
 } from "#app/lib/fhir/questionnaire";
 
-import type { ExpansionResult } from "./expand.server";
+import { type ExpansionState, useExpansions } from "./use-expansions";
 
 /** A tree node: either a Questionnaire item or one of its answer options. */
 type QuestionnaireNode = ItemNode | OptionNode;
@@ -42,16 +40,6 @@ interface ItemNode extends TreeNode {
 interface OptionNode extends TreeNode {
   kind: "option";
   choice: AnswerChoice;
-}
-
-/** Where the `$expand` of an item's external ValueSet stands. */
-type ExpansionState =
-  | { kind: "pending"; }
-  | { kind: "error"; }
-  | { kind: "ready"; choices: AnswerChoice[]; truncated: boolean; };
-
-interface ExpansionsData {
-  expansions: Record<string, ExpansionResult>;
 }
 
 export function QuestionnaireItemTree({ resource }: { resource: Resource; }) {
@@ -108,38 +96,6 @@ export function QuestionnaireItemTree({ resource }: { resource: Resource; }) {
       ) : null}
     </Stack>
   );
-}
-
-/**
- * Expands the items' external ValueSets through the data-only expansions route, once
- * per set of canonicals. Pending until the response lands; on the server it stays pending.
- */
-function useExpansions(items: QuestionnaireItem[]): Record<string, ExpansionState> {
-  const canonicals = useMemo(() => externalAnswerValueSets(items), [items]);
-  const fetcher = useFetcher<ExpansionsData>();
-  const { load, data } = fetcher;
-
-  const requested = useRef<string | null>(null);
-  useEffect(() => {
-    const key = canonicals.join("\n");
-    if (canonicals.length === 0 || requested.current === key) return;
-    requested.current = key;
-    const query = new URLSearchParams(canonicals.map((canonical) => ["url", canonical]));
-    void load(`/resources/expansions?${query.toString()}`);
-  }, [canonicals, load]);
-
-  return useMemo(() => {
-    const states: Record<string, ExpansionState> = {};
-    for (const canonical of canonicals) {
-      const result = data?.expansions[canonical];
-      states[canonical] = data === undefined
-        ? { kind: "pending" }
-        : result?.ok
-          ? { kind: "ready", choices: result.choices, truncated: result.truncated }
-          : { kind: "error" };
-    }
-    return states;
-  }, [canonicals, data]);
 }
 
 /** Extensions carried by the Questionnaire itself — where a profile marks the definition. */
@@ -331,11 +287,12 @@ function QuestionRow({
 
 /** One answer option row: its code as a badge, then the display text. */
 function OptionRow({ choice }: { choice: AnswerChoice; }) {
+  const code = choice.answer.valueCoding?.code;
   return (
     <Stack direction="horizontal" gap="sm" align="center" wrap>
-      {choice.code ? <Chip>{choice.code}</Chip> : null}
+      {code ? <Chip>{code}</Chip> : null}
       <Text as="span" variant="subtle">
-        {choice.display ?? choice.code ?? choice.label}
+        {choice.label}
       </Text>
       {choice.extension?.map((extension, index) => (
         <ExtensionChip key={`${extension.url}.${String(index)}`} extension={extension} />

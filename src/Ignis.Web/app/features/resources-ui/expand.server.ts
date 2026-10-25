@@ -7,7 +7,7 @@
 import { fhirHeaders, resolveFhirUrl } from "#app/fhir.server";
 import { mapWithConcurrency } from "#app/lib/concurrency";
 import { isObject } from "#app/lib/fhir/guards";
-import { type AnswerChoice, valueSetChoices } from "#app/lib/fhir/questionnaire";
+import { type AnswerChoice, valueSetToAnswerChoices } from "#app/lib/fhir/questionnaire";
 import { Logger } from "#app/logger";
 
 const logger = Logger.create({ namespace: "resources-ui:expand" });
@@ -61,7 +61,7 @@ export async function expandValueSet(
 
   // An unknown canonical comes back as an empty expansion rather than a 404, so
   // nothing-to-show is reported the same way as any other failure.
-  const all = valueSetChoices(payload);
+  const all = valueSetToAnswerChoices(payload);
   if (all.length === 0) {
     logger.warn({ context: { canonical } }, "$expand returned no codes");
     return { ok: false };
