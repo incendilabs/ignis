@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { m } from "#app/i18n/paraglide/messages";
 import type { Resource } from "#app/lib/fhir/model";
 
+import { QuestionnaireFiller } from "./QuestionnaireFiller";
 import { QuestionnaireItemTree } from "./QuestionnaireItemTree";
 
 /** A FHIR resource type name, e.g. "Questionnaire". */
@@ -38,6 +39,11 @@ const registry: Record<ResourceType, ResourceDetailTab[]> = {
       id: "form",
       title: () => m.resources_instance_tab_form(),
       render: ({ resource }) => <QuestionnaireItemTree resource={resource} />,
+    },
+    {
+      id: "fill",
+      title: () => m.resources_instance_tab_fill(),
+      render: ({ resource, id }) => <QuestionnaireFiller key={id} resource={resource} showResponse />,
     },
   ],
 };
