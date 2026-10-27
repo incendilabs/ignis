@@ -7,9 +7,9 @@
         <IsPackable>false</IsPackable>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="xunit.v3" Version="4.0.1" />
+        <PackageReference Include="xunit.v3" Version="4.0.2" />
         <PackageReference Include="FluentAssertions" Version="8.11.0" />
-        <PackageReference Include="Firely.Fhir.Packages" Version="6.1.0" />
+        <PackageReference Include="Firely.Fhir.Packages" Version="6.2.0" />
         <PackageReference Include="Hl7.Fhir.R4" Version="6.6.0" />
     </ItemGroup>
     <ItemGroup>
