@@ -9,8 +9,8 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.13" />
-        <PackageReference Include="xunit.v3" Version="4.0.1" />
-        <PackageReference Include="Testcontainers.MongoDb" Version="4.15.0" />
+        <PackageReference Include="xunit.v3" Version="4.0.2" />
+        <PackageReference Include="Testcontainers.MongoDb" Version="4.16.0" />
         <PackageReference Include="FluentAssertions" Version="8.11.0" />
     </ItemGroup>
     <ItemGroup>
