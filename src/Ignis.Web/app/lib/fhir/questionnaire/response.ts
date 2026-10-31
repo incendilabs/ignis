@@ -24,6 +24,7 @@ export interface QuestionnaireResponseAnswer {
 
 /** A response item. Groups nest children in `item`, questions in `answer[].item`, never both (qrs-1). */
 export interface QuestionnaireResponseItem {
+  id?: string;
   linkId: string;
   text?: string;
   answer?: QuestionnaireResponseAnswer[];
@@ -43,6 +44,20 @@ export interface QuestionnaireResponse extends Resource<"QuestionnaireResponse">
   questionnaire?: Canonical;
   status: QuestionnaireResponseStatus;
   item?: QuestionnaireResponseItem[];
+}
+
+/** The `index`-th sibling with `linkId`. */
+export interface PathSegment {
+  linkId: string;
+  index: number;
+}
+
+/** Segments from the root down to a response item. */
+export type ResponsePath = readonly PathSegment[];
+
+/** A json formatted key for the path, e.g. `[["med",1],["dose",0]]`. */
+export function pathToKey(path: ResponsePath): string {
+  return JSON.stringify(path.map((segment) => [segment.linkId, segment.index]));
 }
 
 /** An empty in-progress response mirroring the item tree (minus display items). */
@@ -73,77 +88,86 @@ function skeleton(items: QuestionnaireItem[]): QuestionnaireResponseItem[] {
   return result;
 }
 
-/** The answers with a value given to the item with `linkId`; empty when there are none. */
+/** Answers with a value, across every instance of `linkId`. */
 export function getAnswers(
   response: QuestionnaireResponse,
   linkId: string,
 ): QuestionnaireResponseAnswer[] {
-  return (findItem(response.item ?? [], linkId)?.answer ?? []).filter(hasValue);
+  return findItems(response.item ?? [], linkId).flatMap((item) => item.answer ?? []).filter(hasValue);
 }
 
-/**
- * A new response with the answer replaced; `undefined` or a valueless answer clears it. One answer
- * per item for now. Copies only the path to the item; a question's children follow the answer (qrs-1).
- */
+/** Answers with a value at `path`. */
+export function getAnswersAt(
+  response: QuestionnaireResponse,
+  path: ResponsePath,
+): QuestionnaireResponseAnswer[] {
+  return (findItemAt(response.item ?? [], path)?.answer ?? []).filter(hasValue);
+}
+
+/** Replaces the answer at `path`; a valueless answer clears it. One answer per item for now. */
 export function setAnswer(
   response: QuestionnaireResponse,
-  linkId: string,
+  path: ResponsePath,
   answer: QuestionnaireResponseAnswer | undefined,
 ): QuestionnaireResponse {
   if (response.item === undefined) return response;
   const value = answer !== undefined && hasValue(answer) ? answer : undefined;
-  const items = replaceAnswer(response.item, linkId, value);
+  const items = updateAt(response.item, path, (item) => replaceAnswer(item, value));
   return items === response.item ? response : { ...response, item: items };
 }
 
+/** Children move under the answer, and back under the item when cleared (qrs-1). */
 function replaceAnswer(
-  items: QuestionnaireResponseItem[],
-  linkId: string,
-  answer: QuestionnaireResponseAnswer | undefined,
-): QuestionnaireResponseItem[] {
-  return mapShared(items, (item) =>
-    item.linkId === linkId
-      ? withAnswer(item, answer)
-      : mapChildren(item, (children) => replaceAnswer(children, linkId, answer)),
-  );
-}
-
-function withAnswer(
   item: QuestionnaireResponseItem,
   answer: QuestionnaireResponseAnswer | undefined,
 ): QuestionnaireResponseItem {
-  const children = answer?.item ?? item.item ?? item.answer?.[0]?.item;
+  const children = answer?.item ?? childrenOf(item);
   const updated = bare(item);
   if (answer === undefined) {
-    if (children !== undefined) updated.item = children;
+    if (children.length > 0) updated.item = children;
   } else {
-    updated.answer = [children === undefined ? answer : { ...answer, item: children }];
+    updated.answer = [children.length === 0 ? answer : { ...answer, item: children }];
   }
   return updated;
 }
 
-/** The item with `fn` applied to its children under `item` and under each answer; the item itself when unchanged. */
-function mapChildren(
+/** Applies `fn` to the item at `path`; the same array when nothing changed. */
+function updateAt(
+  items: QuestionnaireResponseItem[],
+  path: ResponsePath,
+  fn: (item: QuestionnaireResponseItem) => QuestionnaireResponseItem,
+): QuestionnaireResponseItem[] {
+  const segment = path.at(0);
+  if (segment === undefined) return items;
+  const position = indexOfSegment(items, segment);
+  if (position < 0) return items;
+  const item = items[position];
+  const rest = path.slice(1);
+  const updated = rest.length === 0 ? fn(item) : updateChildren(item, (children) => updateAt(children, rest, fn));
+  return updated === item ? items : [...items.slice(0, position), updated, ...items.slice(position + 1)];
+}
+
+function updateChildren(
   item: QuestionnaireResponseItem,
   fn: (children: QuestionnaireResponseItem[]) => QuestionnaireResponseItem[],
 ): QuestionnaireResponseItem {
-  const children = item.item === undefined ? undefined : fn(item.item);
-  const answers = item.answer === undefined ? undefined : mapShared(item.answer, (answer) => {
-    if (answer.item === undefined) return answer;
-    const nested = fn(answer.item);
-    return nested === answer.item ? answer : { ...answer, item: nested };
-  });
-  if (children === item.item && answers === item.answer) return item;
-  const updated = { ...item };
-  if (children !== undefined) updated.item = children;
-  if (answers !== undefined) updated.answer = answers;
-  return updated;
-}
-
-/** `entries.map(fn)`, but the same array when nothing changed. */
-function mapShared<T>(entries: T[], fn: (entry: T) => T): T[] {
-  const result = entries.map(fn);
-  return result.every((entry, index) => entry === entries[index]) ? entries : result;
+  const children = childrenOf(item);
+  const updated = fn(children);
+  if (updated === children) return item;
+  let offset = 0;
+  const take = (count: number) => updated.slice(offset, (offset += count));
+  const result: QuestionnaireResponseItem = omit(item, "item");
+  const own = take(item.item?.length ?? 0);
+  if (own.length > 0) result.item = own;
+  if (item.answer !== undefined) {
+    result.answer = item.answer.map((answer) => {
+      const kept: QuestionnaireResponseAnswer = omit(answer, "item");
+      const nested = take(answer.item?.length ?? 0);
+      if (nested.length > 0) kept.item = nested;
+      return kept;
+    });
+  }
+  return result;
 }
 
 /** A new response without unanswered items. Disabled items are kept, so not yet the `completed` shape. */
@@ -204,16 +228,34 @@ function isPresent(value: unknown): boolean {
   return value !== undefined && value !== null;
 }
 
-function findItem(
-  items: QuestionnaireResponseItem[],
-  linkId: string,
-): QuestionnaireResponseItem | undefined {
-  for (const item of items) {
-    if (item.linkId === linkId) return item;
-    const nested = findItem(childrenOf(item), linkId);
-    if (nested !== undefined) return nested;
+/** All items with `linkId`, at any depth. */
+function findItems(items: QuestionnaireResponseItem[], linkId: string): QuestionnaireResponseItem[] {
+  return items.flatMap((item) =>
+    item.linkId === linkId ? [item, ...findItems(childrenOf(item), linkId)] : findItems(childrenOf(item), linkId),
+  );
+}
+
+function findItemAt(items: QuestionnaireResponseItem[], path: ResponsePath): QuestionnaireResponseItem | undefined {
+  let siblings = items;
+  let found: QuestionnaireResponseItem | undefined;
+  for (const segment of path) {
+    const position = indexOfSegment(siblings, segment);
+    if (position < 0) return undefined;
+    found = siblings[position];
+    siblings = childrenOf(found);
   }
-  return undefined;
+  return found;
+}
+
+/** Where the `index`-th item with `linkId` sits in `items`, or -1. */
+function indexOfSegment(items: QuestionnaireResponseItem[], segment: PathSegment): number {
+  let seen = 0;
+  for (const [position, item] of items.entries()) {
+    if (item.linkId !== segment.linkId) continue;
+    if (seen === segment.index) return position;
+    seen++;
+  }
+  return -1;
 }
 
 function childrenOf(item: QuestionnaireResponseItem): QuestionnaireResponseItem[] {

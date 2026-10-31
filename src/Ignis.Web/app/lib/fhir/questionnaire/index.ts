@@ -23,11 +23,13 @@ export type {
 export { parseQuestionnaireExtensions, parseQuestionnaireItems } from "./parse";
 export { getEnabledItems } from "./enable-when";
 export type {
+  PathSegment,
   QuestionnaireResponse,
   QuestionnaireResponseAnswer,
   QuestionnaireResponseItem,
   QuestionnaireResponseStatus,
+  ResponsePath,
 } from "./response";
-export { createResponse, getAnswers, pruneEmptyItems, setAnswer } from "./response";
+export { createResponse, getAnswers, getAnswersAt, pathToKey, pruneEmptyItems, setAnswer } from "./response";
 export type { ResponseIssue } from "./validate";
 export { validateResponse } from "./validate";

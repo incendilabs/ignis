@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import type { QuestionnaireItem } from "./model";
 import { createResponse, setAnswer } from "./response";
+import { pathOf } from "./test-support";
 import { validateResponse } from "./validate";
 
 const items: QuestionnaireItem[] = [
@@ -33,7 +34,8 @@ const items: QuestionnaireItem[] = [
 function linkIds(questionnaire: QuestionnaireItem[], answers: Record<string, boolean | string>): string[] {
   let response = createResponse({ item: questionnaire });
   for (const [linkId, value] of Object.entries(answers)) {
-    response = setAnswer(response, linkId, typeof value === "boolean" ? { valueBoolean: value } : { valueString: value });
+    const answer = typeof value === "boolean" ? { valueBoolean: value } : { valueString: value };
+    response = setAnswer(response, pathOf(questionnaire, linkId), answer);
   }
   return validateResponse({ item: questionnaire }, response).map((issue) => issue.linkId);
 }
@@ -43,9 +45,9 @@ describe("validateResponse", () => {
     const issues = validateResponse({ item: items }, createResponse({ item: items }));
 
     expect(issues).toEqual([
-      { linkId: "g1", code: "required" },
-      { linkId: "name", code: "required" },
-      { linkId: "smoker", code: "required" },
+      { path: [{ linkId: "g1", index: 0 }], linkId: "g1", code: "required" },
+      { path: [{ linkId: "g1", index: 0 }, { linkId: "name", index: 0 }], linkId: "name", code: "required" },
+      { path: [{ linkId: "smoker", index: 0 }], linkId: "smoker", code: "required" },
     ]);
   });
 
