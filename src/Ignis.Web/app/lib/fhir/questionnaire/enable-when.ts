@@ -11,9 +11,8 @@ import type { Questionnaire, QuestionnaireEnableWhen, QuestionnaireItem } from "
 import { getAnswers, type QuestionnaireResponse, type QuestionnaireResponseAnswer } from "./response";
 
 /**
- * The linkIds of the enabled items. Items under a disabled item are disabled, and a rule on a disabled
- * question sees it as unanswered. A rule that cannot be evaluated is indeterminate, and an indeterminate
- * item is enabled. `enableBehavior` defaults to `any`. Keyed by linkId, so repeating groups are not told apart yet.
+ * The linkIds of the enabled items. A disabled item disables its children and counts as unanswered; a rule
+ * that cannot be evaluated enables. `enableBehavior` defaults to `any`. Keyed by linkId.
  */
 export function getEnabledItems(
   questionnaire: Pick<Questionnaire, "item">,
