@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import { getEnabledItems } from "./enable-when";
 import type { QuestionnaireEnableWhen, QuestionnaireItem } from "./model";
 import { createResponse, type QuestionnaireResponse, type QuestionnaireResponseAnswer, setAnswer } from "./response";
+import { pathOf } from "./test-support";
 
 const questions: QuestionnaireItem[] = [
   { linkId: "smoker", type: "boolean" },
@@ -29,7 +30,7 @@ function isEnabledWhen(
 }
 
 function answered(linkId: string, answer: QuestionnaireResponseAnswer): QuestionnaireResponse {
-  return setAnswer(createResponse({ item: questions }), linkId, answer);
+  return setAnswer(createResponse({ item: questions }), pathOf(questions, linkId), answer);
 }
 
 const unanswered = createResponse({ item: questions });
@@ -101,7 +102,7 @@ describe("getEnabledItems", () => {
 
     expect(isEnabledWhen(rules, smokerOnly)).toBe(true);
     expect(isEnabledWhen(rules, smokerOnly, "all")).toBe(false);
-    expect(isEnabledWhen(rules, setAnswer(smokerOnly, "packs", { valueInteger: 2 }), "all")).toBe(true);
+    expect(isEnabledWhen(rules, setAnswer(smokerOnly, pathOf(questions, "packs"), { valueInteger: 2 }), "all")).toBe(true);
   });
 
   it("disables everything under a disabled item", () => {
@@ -128,11 +129,11 @@ describe("getEnabledItems", () => {
         { linkId: "q", type: "string", enableWhen: [{ question: "packs", operator: ">", answerInteger: 0 }] },
       ],
     };
-    let response = setAnswer(createResponse(questionnaire), "smoker", { valueBoolean: true });
-    response = setAnswer(response, "packs", { valueInteger: 5 });
+    let response = setAnswer(createResponse(questionnaire), pathOf(questionnaire.item, "smoker"), { valueBoolean: true });
+    response = setAnswer(response, pathOf(questionnaire.item, "packs"), { valueInteger: 5 });
     expect(getEnabledItems(questionnaire, response).has("q")).toBe(true);
 
-    response = setAnswer(response, "smoker", { valueBoolean: false });
+    response = setAnswer(response, pathOf(questionnaire.item, "smoker"), { valueBoolean: false });
     expect(getEnabledItems(questionnaire, response)).toEqual(new Set(["smoker"]));
   });
 

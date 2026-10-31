@@ -72,8 +72,8 @@ export function QuestionnaireFiller({
           <QuestionnaireForm
             items={questionnaire.item}
             response={response}
-            onAnswer={(linkId, answer) => {
-              setResponse((current) => setAnswer(current, linkId, answer));
+            onAnswer={(path, answer) => {
+              setResponse((current) => setAnswer(current, path, answer));
             }}
             getChoices={getChoices}
             issues={issues}
