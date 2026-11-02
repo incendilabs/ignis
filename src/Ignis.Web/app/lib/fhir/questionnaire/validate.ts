@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { getEnabledItems } from "./enable-when";
+import { getEnabledLinkIds } from "./enable-when";
 import type { Questionnaire, QuestionnaireItem } from "./model";
 import { getAnswersAt, type QuestionnaireResponse, type ResponsePath } from "./response";
 
@@ -23,7 +23,7 @@ export function validateResponse(
   questionnaire: Pick<Questionnaire, "item">,
   response: QuestionnaireResponse,
 ): ResponseIssue[] {
-  const enabledItems = getEnabledItems(questionnaire, response);
+  const enabledItems = getEnabledLinkIds(questionnaire, response);
   const pathTo = (item: QuestionnaireItem, parentPath: ResponsePath): ResponsePath =>
     [...parentPath, { linkId: item.linkId, index: 0 }];
   const isAnswered = (item: QuestionnaireItem, path: ResponsePath): boolean =>
