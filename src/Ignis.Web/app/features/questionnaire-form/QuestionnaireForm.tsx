@@ -5,70 +5,32 @@
  */
 
 import { m } from "#app/i18n/paraglide/messages";
-import {
-  getAnswersAt,
-  getEnabledItems,
-  pathToKey,
-  type QuestionnaireItem,
-  type QuestionnaireResponse,
-  type QuestionnaireResponseAnswer,
-  type ResponseIssue,
-  type ResponsePath,
-} from "#app/lib/fhir/questionnaire";
+import type { FormNode, QuestionnaireItem, FormEvent } from "#app/lib/fhir/questionnaire";
 
 import type { AnswerChoicesState, QuestionnaireFormComponents } from "./components";
 
 interface FormContext {
-  response: QuestionnaireResponse;
-  onAnswer: (path: ResponsePath, answer: QuestionnaireResponseAnswer | undefined) => void;
+  dispatch: (event: FormEvent) => void;
   getChoices: (item: QuestionnaireItem) => AnswerChoicesState;
-  enabledItems: Set<string>;
-  issuePaths: Set<string>;
   components: QuestionnaireFormComponents;
 }
 
-/** Disabled items are hidden. Every item is rendered once; `repeats` is not supported yet. */
-export function QuestionnaireForm({
-  items,
-  issues,
-  ...context
-}: Omit<FormContext, "enabledItems" | "issuePaths"> & { items: QuestionnaireItem[]; issues: ResponseIssue[]; }) {
-  const enabledItems = getEnabledItems({ item: items }, context.response);
-  const issuePaths = new Set(issues.map((issue) => pathToKey(issue.path)));
-  return <FormItems items={items} parentPath={[]} context={{ ...context, enabledItems, issuePaths }} />;
+export function QuestionnaireForm({ nodes, ...context }: FormContext & { nodes: FormNode[]; }) {
+  return <FormNodes nodes={nodes} context={context} />;
 }
 
-function FormItems({
-  items,
-  parentPath,
-  context,
-}: {
-  items: QuestionnaireItem[];
-  parentPath: ResponsePath;
-  context: FormContext;
-}) {
-  return items
-    .filter((item) => context.enabledItems.has(item.linkId))
-    .map((item) => <FormItem key={item.linkId} item={item} parentPath={parentPath} context={context} />);
+function FormNodes({ nodes, context }: { nodes: FormNode[]; context: FormContext; }) {
+  return nodes.map((node) => <FormItem key={node.item.linkId} node={node} context={context} />);
 }
 
-function FormItem({
-  item,
-  parentPath,
-  context,
-}: {
-  item: QuestionnaireItem;
-  parentPath: ResponsePath;
-  context: FormContext;
-}) {
+function FormItem({ node, context }: { node: FormNode; context: FormContext; }) {
+  const { item, path, children } = node;
   const { Group, Display, Unsupported, fields } = context.components;
-  const children = item.item ?? [];
-  const path = [...parentPath, { linkId: item.linkId, index: 0 }];
   if (item.type === "display") return <Display item={item} />;
   if (item.type === "group") {
     return (
       <Group item={item}>
-        <FormItems items={children} parentPath={path} context={context} />
+        <FormNodes nodes={children} context={context} />
       </Group>
     );
   }
@@ -81,16 +43,16 @@ function FormItem({
       ) : (
         <Field
           item={item}
-          answer={getAnswersAt(context.response, path)[0]}
+          answer={node.answer}
           onAnswer={(answer) => {
-            context.onAnswer(path, answer);
+            context.dispatch({ type: "setAnswer", path, answer });
           }}
           choices={context.getChoices(item)}
-          error={context.issuePaths.has(pathToKey(path)) ? m.questionnaire_form_required() : undefined}
+          error={node.issue === undefined ? undefined : m.questionnaire_form_required()}
           disabled={item.readOnly === true}
         />
       )}
-      {children.length > 0 ? <FormItems items={children} parentPath={path} context={context} /> : null}
+      {children.length > 0 ? <FormNodes nodes={children} context={context} /> : null}
     </>
   );
 }

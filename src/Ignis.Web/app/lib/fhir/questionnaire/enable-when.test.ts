@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { getEnabledItems } from "./enable-when";
+import { getEnabledLinkIds } from "./enable-when";
 import type { QuestionnaireEnableWhen, QuestionnaireItem } from "./model";
 import { createResponse, type QuestionnaireResponse, type QuestionnaireResponseAnswer, setAnswer } from "./response";
 import { pathOf } from "./test-support";
@@ -26,7 +26,7 @@ function isEnabledWhen(
 ): boolean {
   const q: QuestionnaireItem = { linkId: "q", type: "string", enableWhen: rules };
   if (enableBehavior !== undefined) q.enableBehavior = enableBehavior;
-  return getEnabledItems({ item: [...questions, q] }, response).has("q");
+  return getEnabledLinkIds({ item: [...questions, q] }, response).has("q");
 }
 
 function answered(linkId: string, answer: QuestionnaireResponseAnswer): QuestionnaireResponse {
@@ -35,9 +35,9 @@ function answered(linkId: string, answer: QuestionnaireResponseAnswer): Question
 
 const unanswered = createResponse({ item: questions });
 
-describe("getEnabledItems", () => {
+describe("getEnabledLinkIds", () => {
   it("enables items without rules", () => {
-    expect(getEnabledItems({ item: questions }, unanswered)).toEqual(new Set(["smoker", "packs", "gender", "since"]));
+    expect(getEnabledLinkIds({ item: questions }, unanswered)).toEqual(new Set(["smoker", "packs", "gender", "since"]));
   });
 
   it("checks exists against whether the question was answered", () => {
@@ -117,8 +117,8 @@ describe("getEnabledItems", () => {
         },
       ],
     };
-    expect(getEnabledItems(questionnaire, unanswered).has("q")).toBe(false);
-    expect(getEnabledItems(questionnaire, answered("smoker", { valueBoolean: true })).has("q")).toBe(true);
+    expect(getEnabledLinkIds(questionnaire, unanswered).has("q")).toBe(false);
+    expect(getEnabledLinkIds(questionnaire, answered("smoker", { valueBoolean: true })).has("q")).toBe(true);
   });
 
   it("treats a disabled question as unanswered", () => {
@@ -131,10 +131,10 @@ describe("getEnabledItems", () => {
     };
     let response = setAnswer(createResponse(questionnaire), pathOf(questionnaire.item, "smoker"), { valueBoolean: true });
     response = setAnswer(response, pathOf(questionnaire.item, "packs"), { valueInteger: 5 });
-    expect(getEnabledItems(questionnaire, response).has("q")).toBe(true);
+    expect(getEnabledLinkIds(questionnaire, response).has("q")).toBe(true);
 
     response = setAnswer(response, pathOf(questionnaire.item, "smoker"), { valueBoolean: false });
-    expect(getEnabledItems(questionnaire, response)).toEqual(new Set(["smoker"]));
+    expect(getEnabledLinkIds(questionnaire, response)).toEqual(new Set(["smoker"]));
   });
 
   it("enables an item whose rule it cannot evaluate", () => {
@@ -166,6 +166,6 @@ describe("getEnabledItems", () => {
         { linkId: "b", type: "string", enableWhen: [{ question: "a", operator: "exists", answerBoolean: false }] },
       ],
     };
-    expect(getEnabledItems(questionnaire, createResponse(questionnaire))).toEqual(new Set(["a", "b"]));
+    expect(getEnabledLinkIds(questionnaire, createResponse(questionnaire))).toEqual(new Set(["a", "b"]));
   });
 });

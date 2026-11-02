@@ -14,7 +14,7 @@ import { getAnswers, type QuestionnaireResponse, type QuestionnaireResponseAnswe
  * The linkIds of the enabled items. A disabled item disables its children and counts as unanswered; a rule
  * that cannot be evaluated enables. `enableBehavior` defaults to `any`. Keyed by linkId.
  */
-export function getEnabledItems(
+export function getEnabledLinkIds(
   questionnaire: Pick<Questionnaire, "item">,
   response: QuestionnaireResponse,
 ): Set<string> {
