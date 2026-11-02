@@ -43,6 +43,17 @@ describe("reduceFormState", () => {
     expect(state.showIssues).toBe(true);
   });
 
+  it("adds and removes instances of a repeating group", () => {
+    const med: QuestionnaireItem = { linkId: "med", type: "group", repeats: true, item: [{ linkId: "dose", type: "integer" }] };
+    const initial = createFormState({ item: [med] });
+
+    const added = reduceFormState(initial, { type: "addItem", parentPath: [], item: med });
+    const removed = reduceFormState(added, { type: "removeItem", path: [{ linkId: "med", index: 0 }] });
+
+    expect(added.response.item).toHaveLength(2);
+    expect(removed.response.item).toHaveLength(1);
+  });
+
   it("returns the same state when nothing changes", () => {
     const initial = createFormState({ item: items });
     const checked = reduceFormState(initial, { type: "check" });

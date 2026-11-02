@@ -8,6 +8,8 @@ import { getEnabledLinkIds } from "./enable-when";
 import type { Questionnaire, QuestionnaireItem } from "./model";
 import {
   getAnswersAt,
+  getInstancePaths,
+  isRepeatingGroup,
   pathToKey,
   type QuestionnaireResponse,
   type QuestionnaireResponseAnswer,
@@ -18,6 +20,14 @@ import type { ResponseIssue } from "./validate";
 /** An item as a form renders it. */
 export interface FormNode {
   item: QuestionnaireItem;
+  parentPath: ResponsePath;
+  repeats: boolean;
+  canRemove: boolean;
+  instances: FormInstance[];
+}
+
+/** The item as it occurs in the response; only a repeating group has more than one. */
+export interface FormInstance {
   path: ResponsePath;
   answer: QuestionnaireResponseAnswer | undefined;
   issue: ResponseIssue | undefined;
@@ -35,13 +45,19 @@ export function getFormNodes(
     items
       .filter((item) => enabledItems.has(item.linkId))
       .map((item) => {
-        const path = [...parentPath, { linkId: item.linkId, index: 0 }];
+        const paths = getInstancePaths(response, parentPath, item);
+        const repeats = isRepeatingGroup(item);
         return {
           item,
-          path,
-          answer: getAnswersAt(response, path).at(0),
-          issue: issuesByKey.get(pathToKey(path)),
-          children: toNodes(item.item ?? [], path),
+          parentPath,
+          repeats,
+          canRemove: repeats && (paths.length > 1 || item.required !== true),
+          instances: paths.map((path) => ({
+            path,
+            answer: getAnswersAt(response, path).at(0),
+            issue: issuesByKey.get(pathToKey(path)),
+            children: toNodes(item.item ?? [], path),
+          })),
         };
       });
   return toNodes(questionnaire.item ?? [], []);

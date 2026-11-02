@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { QuestionnaireItem } from "./model";
-import { createResponse, setAnswer } from "./response";
+import { addItem, createResponse, removeItem, setAnswer } from "./response";
 import { pathOf } from "./test-support";
 import { validateResponse } from "./validate";
 
@@ -88,5 +88,41 @@ describe("validateResponse", () => {
     ];
     expect(linkIds(guarded, { smoker: true, packs: "2" })).toEqual([]);
     expect(linkIds(guarded, { smoker: false, packs: "2" })).toEqual(["g"]);
+  });
+
+  describe("repeating groups", () => {
+    const med: QuestionnaireItem = {
+      linkId: "med",
+      type: "group",
+      repeats: true,
+      required: true,
+      item: [{ linkId: "drug", type: "string", required: true }],
+    };
+    const drug = (index: number) => [{ linkId: "med", index }, { linkId: "drug", index: 0 }];
+
+    it("checks every instance", () => {
+      let response = addItem(createResponse({ item: [med] }), [], med);
+      response = setAnswer(response, drug(0), { valueString: "Paracetamol" });
+
+      expect(validateResponse({ item: [med] }, response)).toEqual([
+        { path: [{ linkId: "med", index: 1 }], linkId: "med", code: "required" },
+        { path: drug(1), linkId: "drug", code: "required" },
+      ]);
+    });
+
+    it("accepts an optional group with no instances", () => {
+      const optional = { ...med, required: false };
+      const response = removeItem(createResponse({ item: [optional] }), [{ linkId: "med", index: 0 }]);
+
+      expect(validateResponse({ item: [optional] }, response)).toEqual([]);
+    });
+
+    it("requires at least one instance of a required group", () => {
+      const response = removeItem(createResponse({ item: [med] }), [{ linkId: "med", index: 0 }]);
+
+      expect(validateResponse({ item: [med] }, response)).toEqual([
+        { path: [{ linkId: "med", index: 0 }], linkId: "med", code: "required" },
+      ]);
+    });
   });
 });
