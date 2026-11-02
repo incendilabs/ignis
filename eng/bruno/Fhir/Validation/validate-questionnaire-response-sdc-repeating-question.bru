@@ -1,0 +1,50 @@
+meta {
+  name: Validate QuestionnaireResponse (SDC validation fails: repeated question)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{fhirBase}}/QuestionnaireResponse/$validate?profile=http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaireresponse
+  body: json
+  auth: inherit
+}
+
+params:query {
+  profile: http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaireresponse
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "QuestionnaireResponse",
+    "questionnaire": "http://example.org/Questionnaire/allergies",
+    "status": "completed",
+    "subject": { "display": "Test patient" },
+    "authored": "2026-11-02T21:00:00+01:00",
+    "item": [
+      { "linkId": "allergy", "answer": [{ "valueString": "Nuts" }] },
+      { "linkId": "allergy", "answer": [{ "valueString": "Milk" }] }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.resourceType: eq OperationOutcome
+}
+
+tests {
+  test("warns about sdcqr-2", function () {
+    const texts = (res.getBody().issue || []).map((issue) => (issue.details && issue.details.text) || "");
+    expect(texts.some((text) => text.includes("sdcqr-2"))).to.equal(true);
+  });
+}
+
+docs {
+  A repeating question must be one item with several answers, not several items (sdcqr-2).
+  SDC makes this a warning. Needs `hl7.fhir.uv.sdc` loaded.
+}

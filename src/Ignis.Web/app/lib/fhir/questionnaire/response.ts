@@ -131,11 +131,64 @@ function replaceAnswer(
   return updated;
 }
 
-/** Applies `fn` to the item at `path`; the same array when nothing changed. */
+/** Only a repeating group has several instances; a repeating question has several answers instead (sdcqr-2). */
+export function isRepeatingGroup(item: QuestionnaireItem): boolean {
+  return item.type === "group" && item.repeats === true;
+}
+
+/** One path per instance of a repeating group under `parentPath`, and one for any other item. */
+export function getInstancePaths(
+  response: QuestionnaireResponse,
+  parentPath: ResponsePath,
+  item: QuestionnaireItem,
+): ResponsePath[] {
+  const count = isRepeatingGroup(item) ? countInstances(response, parentPath, item.linkId) : 1;
+  return Array.from({ length: count }, (_, index) => [...parentPath, { linkId: item.linkId, index }]);
+}
+
+/** How many instances of `linkId` sit directly under `parentPath`; the root when it is empty. */
+function countInstances(response: QuestionnaireResponse, parentPath: ResponsePath, linkId: string): number {
+  return childrenAt(response, parentPath).filter((item) => item.linkId === linkId).length;
+}
+
+/** Adds an empty instance of a repeating group after its last instance under `parentPath`. */
+export function addItem(
+  response: QuestionnaireResponse,
+  parentPath: ResponsePath,
+  item: QuestionnaireItem,
+): QuestionnaireResponse {
+  const instance = skeleton([item]).at(0);
+  if (!isRepeatingGroup(item) || instance === undefined) return response;
+  const insertAfterLast = (siblings: QuestionnaireResponseItem[]) => {
+    const last = indexOfLastInstance(siblings, item.linkId);
+    const position = last < 0 ? siblings.length : last + 1;
+    return [...siblings.slice(0, position), instance, ...siblings.slice(position)];
+  };
+  if (parentPath.length === 0) return { ...response, item: insertAfterLast(response.item ?? []) };
+  if (response.item === undefined) return response;
+  const items = updateAt(response.item, parentPath, (parent) => {
+    const lists = childListsOf(parent);
+    let target = (parent.answer?.length ?? 0) > 0 ? 1 : 0;
+    for (const [index, list] of lists.entries()) {
+      if (list.some((sibling) => sibling.linkId === item.linkId)) target = index;
+    }
+    return replaceChildLists(parent, lists.map((list, index) => (index === target ? insertAfterLast(list) : list)));
+  });
+  return items === response.item ? response : { ...response, item: items };
+}
+
+/** Removes the item at `path`, children included. */
+export function removeItem(response: QuestionnaireResponse, path: ResponsePath): QuestionnaireResponse {
+  if (response.item === undefined) return response;
+  const items = updateAt(response.item, path, () => undefined);
+  return items === response.item ? response : { ...response, item: items };
+}
+
+/** Applies `fn` to the item at `path`, and removes it when `fn` gives `undefined`; the same array when nothing changed. */
 function updateAt(
   items: QuestionnaireResponseItem[],
   path: ResponsePath,
-  fn: (item: QuestionnaireResponseItem) => QuestionnaireResponseItem,
+  fn: (item: QuestionnaireResponseItem) => QuestionnaireResponseItem | undefined,
 ): QuestionnaireResponseItem[] {
   const segment = path.at(0);
   if (segment === undefined) return items;
@@ -143,26 +196,47 @@ function updateAt(
   if (position < 0) return items;
   const item = items[position];
   const rest = path.slice(1);
-  const updated = rest.length === 0 ? fn(item) : updateChildren(item, (children) => updateAt(children, rest, fn));
-  return updated === item ? items : [...items.slice(0, position), updated, ...items.slice(position + 1)];
+  const updated = rest.length === 0 ? fn(item) : updateChildAt(item, rest, fn);
+  if (updated === item) return items;
+  return [...items.slice(0, position), ...(updated === undefined ? [] : [updated]), ...items.slice(position + 1)];
 }
 
-function updateChildren(
+/** `updateAt` in the child list of `item` that holds the first segment of `path`. */
+function updateChildAt(
   item: QuestionnaireResponseItem,
-  fn: (children: QuestionnaireResponseItem[]) => QuestionnaireResponseItem[],
+  path: ResponsePath,
+  fn: (item: QuestionnaireResponseItem) => QuestionnaireResponseItem | undefined,
 ): QuestionnaireResponseItem {
-  const children = childrenOf(item);
-  const updated = fn(children);
-  if (updated === children) return item;
-  let offset = 0;
-  const take = (count: number) => updated.slice(offset, (offset += count));
+  const segment = path.at(0);
+  if (segment === undefined) return item;
+  const lists = childListsOf(item);
+  let before = 0;
+  for (const [index, list] of lists.entries()) {
+    const count = list.filter((child) => child.linkId === segment.linkId).length;
+    if (segment.index < before + count) {
+      const local = [{ linkId: segment.linkId, index: segment.index - before }, ...path.slice(1)];
+      const updated = updateAt(list, local, fn);
+      return updated === list ? item : replaceChildLists(item, lists.map((other, at) => (at === index ? updated : other)));
+    }
+    before += count;
+  }
+  return item;
+}
+
+/** The child lists of an item: its own, then one per answer. qrs-1 allows only one of the two kinds. */
+function childListsOf(item: QuestionnaireResponseItem): QuestionnaireResponseItem[][] {
+  return [item.item ?? [], ...(item.answer ?? []).map((answer) => answer.item ?? [])];
+}
+
+/** The item with its child lists replaced, in the order `childListsOf` gives them. */
+function replaceChildLists(item: QuestionnaireResponseItem, lists: QuestionnaireResponseItem[][]): QuestionnaireResponseItem {
   const result: QuestionnaireResponseItem = omit(item, "item");
-  const own = take(item.item?.length ?? 0);
+  const own = lists.at(0) ?? [];
   if (own.length > 0) result.item = own;
   if (item.answer !== undefined) {
-    result.answer = item.answer.map((answer) => {
+    result.answer = item.answer.map((answer, index) => {
       const kept: QuestionnaireResponseAnswer = omit(answer, "item");
-      const nested = take(answer.item?.length ?? 0);
+      const nested = lists.at(index + 1) ?? [];
       if (nested.length > 0) kept.item = nested;
       return kept;
     });
@@ -258,6 +332,16 @@ function indexOfSegment(items: QuestionnaireResponseItem[], segment: PathSegment
   return -1;
 }
 
+function indexOfLastInstance(items: QuestionnaireResponseItem[], linkId: string): number {
+  return items.map((item) => item.linkId).lastIndexOf(linkId);
+}
+
+function childrenAt(response: QuestionnaireResponse, parentPath: ResponsePath): QuestionnaireResponseItem[] {
+  if (parentPath.length === 0) return response.item ?? [];
+  const parent = findItemAt(response.item ?? [], parentPath);
+  return parent === undefined ? [] : childrenOf(parent);
+}
+
 function childrenOf(item: QuestionnaireResponseItem): QuestionnaireResponseItem[] {
-  return [...(item.item ?? []), ...(item.answer ?? []).flatMap((answer) => answer.item ?? [])];
+  return childListsOf(item).flat();
 }

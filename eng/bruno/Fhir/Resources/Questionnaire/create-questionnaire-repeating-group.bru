@@ -1,0 +1,54 @@
+meta {
+  name: Create Questionnaire (repeating group)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{fhirBase}}/Questionnaire
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/fhir+json
+}
+
+body:json {
+  {
+    "resourceType": "Questionnaire",
+    "status": "active",
+    "title": "Repeating group questionnaire",
+    "item": [
+      {
+        "linkId": "meds",
+        "text": "Medication",
+        "type": "group",
+        "repeats": true,
+        "required": true,
+        "item": [
+          { "linkId": "drug", "text": "Drug", "type": "string", "required": true },
+          { "linkId": "dose", "text": "Dose per day", "type": "integer" },
+          {
+            "linkId": "prn",
+            "text": "As needed?",
+            "type": "boolean",
+            "item": [
+              {
+                "linkId": "prn-reason",
+                "text": "For what?",
+                "type": "string",
+                "enableWhen": [{ "question": "prn", "operator": "=", "answerBoolean": true }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.resourceType: eq Questionnaire
+}

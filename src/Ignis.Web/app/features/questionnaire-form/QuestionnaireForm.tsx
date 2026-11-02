@@ -4,8 +4,10 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import { useId } from "react";
+
 import { m } from "#app/i18n/paraglide/messages";
-import type { FormNode, QuestionnaireItem, FormEvent } from "#app/lib/fhir/questionnaire";
+import type { FormEvent, FormInstance, FormNode, QuestionnaireItem } from "#app/lib/fhir/questionnaire";
 
 import type { AnswerChoicesState, QuestionnaireFormComponents } from "./components";
 
@@ -24,17 +26,36 @@ function FormNodes({ nodes, context }: { nodes: FormNode[]; context: FormContext
 }
 
 function FormItem({ node, context }: { node: FormNode; context: FormContext; }) {
-  const { item, path, children } = node;
-  const { Group, Display, Unsupported, fields } = context.components;
+  const { item, instances } = node;
+  const { Group, Repeat, Display } = context.components;
   if (item.type === "display") return <Display item={item} />;
-  if (item.type === "group") {
-    return (
-      <Group item={item}>
-        <FormNodes nodes={children} context={context} />
-      </Group>
-    );
+  if (item.type !== "group") {
+    return instances.map((instance, index) => (
+      <QuestionItem key={index} item={item} instance={instance} context={context} />
+    ));
   }
 
+  const groups = instances.map((instance, index) => {
+    const remove = () => {
+      context.dispatch({ type: "removeItem", path: instance.path });
+    };
+    return (
+      <Group key={index} item={item} onRemove={node.canRemove ? remove : undefined}>
+        <FormNodes nodes={instance.children} context={context} />
+      </Group>
+    );
+  });
+  if (!node.repeats) return groups;
+
+  const add = () => {
+    context.dispatch({ type: "addItem", parentPath: node.parentPath, item });
+  };
+  return <Repeat item={item} onAdd={add}>{groups}</Repeat>;
+}
+
+function QuestionItem({ item, instance, context }: { item: QuestionnaireItem; instance: FormInstance; context: FormContext; }) {
+  const id = useId();
+  const { fields, Unsupported } = context.components;
   const Field = fields[item.type];
   return (
     <>
@@ -42,17 +63,18 @@ function FormItem({ node, context }: { node: FormNode; context: FormContext; }) 
         <Unsupported item={item} />
       ) : (
         <Field
+          id={id}
           item={item}
-          answer={node.answer}
+          answer={instance.answer}
           onAnswer={(answer) => {
-            context.dispatch({ type: "setAnswer", path, answer });
+            context.dispatch({ type: "setAnswer", path: instance.path, answer });
           }}
           choices={context.getChoices(item)}
-          error={node.issue === undefined ? undefined : m.questionnaire_form_required()}
+          error={instance.issue === undefined ? undefined : m.questionnaire_form_required()}
           disabled={item.readOnly === true}
         />
       )}
-      {children.length > 0 ? <FormNodes nodes={children} context={context} /> : null}
+      {instance.children.length > 0 ? <FormNodes nodes={instance.children} context={context} /> : null}
     </>
   );
 }

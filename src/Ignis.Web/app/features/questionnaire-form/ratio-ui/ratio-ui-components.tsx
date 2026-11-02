@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import { Button } from "@eventuras/ratio-ui/core/Button";
 import { Text } from "@eventuras/ratio-ui/core/Text";
 import { Fieldset, NumberField, RadioGroup, Select, TextField } from "@eventuras/ratio-ui/forms";
 import { Stack } from "@eventuras/ratio-ui/layout/Stack";
@@ -18,10 +19,10 @@ const MAX_RADIO_CHOICES = 5;
 const getLabel = (item: QuestionnaireItem) => item.text ?? item.linkId;
 
 function createTextField(type: "text" | "url" | "date", key: "valueString" | "valueUri" | "valueDate", multiline = false) {
-  return function Field({ item, answer, onAnswer, error, disabled }: QuestionFieldProps) {
+  return function Field({ id, item, answer, onAnswer, error, disabled }: QuestionFieldProps) {
     return (
       <TextField
-        name={item.linkId}
+        name={id}
         type={type}
         label={getLabel(item)}
         multiline={multiline}
@@ -29,7 +30,7 @@ function createTextField(type: "text" | "url" | "date", key: "valueString" | "va
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           onAnswer({ [key]: event.target.value });
         }}
-        errors={error === undefined ? undefined : { [item.linkId]: { message: error } }}
+        errors={error === undefined ? undefined : { [id]: { message: error } }}
         disabled={disabled}
       />
     );
@@ -54,11 +55,11 @@ function createNumberField(key: "valueInteger" | "valueDecimal") {
   };
 }
 
-function BooleanField({ item, answer, onAnswer, error, disabled }: QuestionFieldProps) {
+function BooleanField({ id, item, answer, onAnswer, error, disabled }: QuestionFieldProps) {
   const value = answer?.valueBoolean;
   return (
     <RadioGroup
-      name={item.linkId}
+      name={id}
       label={getLabel(item)}
       value={value === undefined ? "" : String(value)}
       onChange={(selected) => {
@@ -99,6 +100,7 @@ function getChoicesProblem(item: QuestionnaireItem, choices: AnswerChoicesState)
 }
 
 function ChoiceInput({
+  id,
   item,
   answer,
   onAnswer,
@@ -116,7 +118,7 @@ function ChoiceInput({
   if (choices.length <= MAX_RADIO_CHOICES) {
     return (
       <RadioGroup
-        name={item.linkId}
+        name={id}
         label={getLabel(item)}
         value={selected < 0 ? "" : String(selected)}
         onChange={select}
@@ -152,10 +154,25 @@ export const ratioUiComponents: QuestionnaireFormComponents = {
     boolean: BooleanField,
     choice: ChoiceField,
   },
-  Group: ({ item, children }) => (
+  Group: ({ item, onRemove, children }) => (
     <Fieldset label={getLabel(item)}>
-      <Stack direction="vertical" gap="md">{children}</Stack>
+      <Stack direction="vertical" gap="md">
+        {children}
+        {onRemove === undefined ? null : (
+          <Stack direction="horizontal" justify="end">
+            <Button variant="text" size="sm" onPress={onRemove}>{m.questionnaire_form_remove()}</Button>
+          </Stack>
+        )}
+      </Stack>
     </Fieldset>
+  ),
+  Repeat: ({ onAdd, children }) => (
+    <Stack direction="vertical" gap="md">
+      {children}
+      <Stack direction="horizontal">
+        <Button variant="secondary" size="sm" onPress={onAdd}>{m.questionnaire_form_add()}</Button>
+      </Stack>
+    </Stack>
   ),
   Display: ({ item }) => <Text>{getLabel(item)}</Text>,
   Unsupported: ({ item }) => (

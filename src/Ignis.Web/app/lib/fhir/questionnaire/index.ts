@@ -35,5 +35,5 @@ export { validateResponse } from "./validate";
 
 export type { FormEvent, FormState } from "./form-state";
 export { createFormState, getFormIssues, reduceFormState } from "./form-state";
-export type { FormNode } from "./form-nodes";
+export type { FormInstance, FormNode } from "./form-nodes";
 export { getFormNodes } from "./form-nodes";

@@ -8,12 +8,15 @@ import { describe, expect, it } from "vitest";
 
 import type { QuestionnaireItem } from "./model";
 import {
+  addItem,
   createResponse,
   pathToKey,
   getAnswers,
   getAnswersAt,
+  getInstancePaths,
   pruneEmptyItems,
   type QuestionnaireResponse,
+  removeItem,
   setAnswer,
 } from "./response";
 import { pathOf } from "./test-support";
@@ -189,6 +192,82 @@ describe("setAnswer", () => {
     const updated = setAnswer(response, dose(0), { valueInteger: 5 });
 
     expect(updated.item?.[0]).toEqual({ linkId: "med", id: "m1", item: [{ linkId: "dose", answer: [{ valueInteger: 5 }] }] });
+  });
+});
+
+describe("addItem", () => {
+  const med: QuestionnaireItem = {
+    linkId: "med",
+    type: "group",
+    repeats: true,
+    item: [{ linkId: "dose", type: "integer" }],
+  };
+
+  it("adds an empty instance after the last one", () => {
+    const response = addItem(twoMeds, [], med);
+
+    expect(response.item?.map((item) => item.linkId)).toEqual(["med", "med", "med"]);
+    expect(response.item?.[2]).toEqual({ linkId: "med", item: [{ linkId: "dose" }] });
+    expect(response.item?.[0]).toBe(twoMeds.item?.[0]);
+  });
+
+  it("adds under a parent instance", () => {
+    const visit: QuestionnaireItem = { linkId: "visit", type: "group", repeats: true, item: [med] };
+    const response = createResponse({ item: [visit] });
+
+    const added = addItem(response, [{ linkId: "visit", index: 0 }], med);
+
+    expect(getInstancePaths(added, [{ linkId: "visit", index: 0 }], med)).toHaveLength(2);
+  });
+
+  it("adds under the answer of an answered question (qrs-1)", () => {
+    const smokerItem: QuestionnaireItem = { linkId: "smoker", type: "boolean", item: [med] };
+    const response = setAnswer(createResponse({ item: [smokerItem] }), [{ linkId: "smoker", index: 0 }], { valueBoolean: true });
+
+    const added = addItem(response, [{ linkId: "smoker", index: 0 }], med);
+
+    expect(added.item?.[0].item).toBeUndefined();
+    expect(added.item?.[0].answer?.[0].item?.map((item) => item.linkId)).toEqual(["med", "med"]);
+  });
+
+  it("only adds instances of a repeating group", () => {
+    expect(addItem(twoMeds, [], { ...med, repeats: false })).toBe(twoMeds);
+    expect(addItem(twoMeds, [], { linkId: "med", type: "string", repeats: true })).toBe(twoMeds);
+  });
+});
+
+describe("removeItem", () => {
+  it("removes one instance and keeps the others", () => {
+    const response = removeItem(twoMeds, [{ linkId: "med", index: 0 }]);
+
+    expect(response.item).toEqual([twoMeds.item?.[1]]);
+    expect(getAnswersAt(response, dose(0))).toEqual([]);
+  });
+
+  it("removes a nested item", () => {
+    const response = removeItem(twoMeds, dose(0));
+    expect(response.item?.[0]).toEqual({ linkId: "med" });
+  });
+
+  it("returns the response itself for an unknown path", () => {
+    expect(removeItem(twoMeds, [{ linkId: "med", index: 2 }])).toBe(twoMeds);
+  });
+});
+
+describe("getInstancePaths", () => {
+  const med: QuestionnaireItem = { linkId: "med", type: "group", repeats: true };
+  const doseItem: QuestionnaireItem = { linkId: "dose", type: "integer" };
+
+  it("gives one path per instance of a repeating group, and one for any other item", () => {
+    expect(getInstancePaths(twoMeds, [], med)).toEqual([[{ linkId: "med", index: 0 }], [{ linkId: "med", index: 1 }]]);
+    expect(getInstancePaths(twoMeds, [{ linkId: "med", index: 1 }], doseItem)).toEqual([dose(1)]);
+    expect(getInstancePaths(twoMeds, [{ linkId: "med", index: 2 }], doseItem)).toEqual([
+      [{ linkId: "med", index: 2 }, { linkId: "dose", index: 0 }],
+    ]);
+  });
+
+  it("gives no path for a repeating group without instances", () => {
+    expect(getInstancePaths(removeItem(removeItem(twoMeds, [{ linkId: "med", index: 1 }]), [{ linkId: "med", index: 0 }]), [], med)).toEqual([]);
   });
 });
 
