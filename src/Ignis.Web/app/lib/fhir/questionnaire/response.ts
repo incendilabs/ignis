@@ -142,8 +142,18 @@ export function getInstancePaths(
   parentPath: ResponsePath,
   item: QuestionnaireItem,
 ): ResponsePath[] {
-  const count = isRepeatingGroup(item) ? countInstances(response, parentPath, item.linkId) : 1;
-  return Array.from({ length: count }, (_, index) => [...parentPath, { linkId: item.linkId, index }]);
+  if (isRepeatingGroup(item)) return findInstancePaths(response, parentPath, item.linkId);
+  return [[...parentPath, { linkId: item.linkId, index: 0 }]];
+}
+
+/** One path per item with `linkId` directly under `parentPath`, as the response has them; none when absent. */
+export function findInstancePaths(
+  response: QuestionnaireResponse,
+  parentPath: ResponsePath,
+  linkId: string,
+): ResponsePath[] {
+  const count = countInstances(response, parentPath, linkId);
+  return Array.from({ length: count }, (_, index) => [...parentPath, { linkId, index }]);
 }
 
 /** How many instances of `linkId` sit directly under `parentPath`; the root when it is empty. */

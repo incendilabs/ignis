@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { getEnabledLinkIds } from "./enable-when";
+import { createEnabledItemCheck } from "./enable-when";
 import type { Questionnaire, QuestionnaireItem } from "./model";
 import { getAnswersAt, getInstancePaths, type QuestionnaireResponse, type ResponsePath } from "./response";
 
@@ -23,20 +23,20 @@ export function validateResponse(
   questionnaire: Pick<Questionnaire, "item">,
   response: QuestionnaireResponse,
 ): ResponseIssue[] {
-  const enabledItems = getEnabledLinkIds(questionnaire, response);
-  const isAnswered = (item: QuestionnaireItem, path: ResponsePath): boolean =>
-    enabledItems.has(item.linkId) && item.type !== "group" && getAnswersAt(response, path).length > 0;
+  const isItemEnabled = createEnabledItemCheck(questionnaire, response);
+  const isAnswered = (item: QuestionnaireItem, parentPath: ResponsePath, path: ResponsePath): boolean =>
+    isItemEnabled(parentPath, item.linkId) && item.type !== "group" && getAnswersAt(response, path).length > 0;
   const hasAnsweredQuestion = (items: QuestionnaireItem[], parentPath: ResponsePath): boolean =>
     items.some((item) =>
       getInstancePaths(response, parentPath, item).some((path) =>
-        isAnswered(item, path) || hasAnsweredQuestion(item.item ?? [], path)
+        isAnswered(item, parentPath, path) || hasAnsweredQuestion(item.item ?? [], path)
       )
     );
 
   const issues: ResponseIssue[] = [];
   const visit = (items: QuestionnaireItem[], parentPath: ResponsePath) => {
     for (const item of items) {
-      if (!enabledItems.has(item.linkId)) continue;
+      if (!isItemEnabled(parentPath, item.linkId)) continue;
       const paths = getInstancePaths(response, parentPath, item);
       const isRequired = item.required === true && item.type !== "display";
       if (isRequired && paths.length === 0) {
@@ -44,7 +44,7 @@ export function validateResponse(
       }
       for (const path of paths) {
         if (isRequired) {
-          const satisfied = item.type === "group" ? hasAnsweredQuestion(item.item ?? [], path) : isAnswered(item, path);
+          const satisfied = item.type === "group" ? hasAnsweredQuestion(item.item ?? [], path) : isAnswered(item, parentPath, path);
           if (!satisfied) issues.push({ path, linkId: item.linkId, code: "required" });
         }
         visit(item.item ?? [], path);
