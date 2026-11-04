@@ -117,6 +117,28 @@ describe("validateResponse", () => {
       expect(validateResponse({ item: [optional] }, response)).toEqual([]);
     });
 
+    it("requires an enabled question only in the instance that enables it", () => {
+      const withUnit: QuestionnaireItem = {
+        ...med,
+        item: [
+          { linkId: "drug", type: "string" },
+          {
+            linkId: "unit",
+            type: "string",
+            required: true,
+            enableWhen: [{ question: "drug", operator: "exists", answerBoolean: true }],
+          },
+        ],
+      };
+      let response = addItem(createResponse({ item: [withUnit] }), [], withUnit);
+      response = setAnswer(response, drug(1), { valueString: "Paracetamol" });
+
+      expect(validateResponse({ item: [withUnit] }, response)).toEqual([
+        { path: [{ linkId: "med", index: 0 }], linkId: "med", code: "required" },
+        { path: [{ linkId: "med", index: 1 }, { linkId: "unit", index: 0 }], linkId: "unit", code: "required" },
+      ]);
+    });
+
     it("requires at least one instance of a required group", () => {
       const response = removeItem(createResponse({ item: [med] }), [{ linkId: "med", index: 0 }]);
 

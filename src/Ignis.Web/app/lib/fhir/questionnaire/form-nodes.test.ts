@@ -32,7 +32,10 @@ const med: QuestionnaireItem = {
   linkId: "med",
   type: "group",
   repeats: true,
-  item: [{ linkId: "dose", type: "integer" }],
+  item: [
+    { linkId: "dose", type: "integer" },
+    { linkId: "unit", type: "string", enableWhen: [{ question: "dose", operator: "exists", answerBoolean: true }] },
+  ],
 };
 
 describe("getFormNodes", () => {
@@ -107,5 +110,15 @@ describe("getFormNodes", () => {
       { linkId: "med", index: 1 },
       { linkId: "dose", index: 0 },
     ]);
+  });
+
+  it("enables a child in the instance whose answer its rule reads", () => {
+    let response = addItem(createResponse({ item: [med] }), [], med);
+    response = setAnswer(response, [{ linkId: "med", index: 1 }, { linkId: "dose", index: 0 }], { valueInteger: 2 });
+
+    const [node] = getFormNodes({ item: [med] }, response, []);
+
+    expect(node.instances[0].children.map((child) => child.item.linkId)).toEqual(["dose"]);
+    expect(node.instances[1].children.map((child) => child.item.linkId)).toEqual(["dose", "unit"]);
   });
 });
