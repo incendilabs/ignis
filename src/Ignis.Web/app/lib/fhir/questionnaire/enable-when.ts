@@ -8,57 +8,130 @@ import { assertNever } from "../../assert";
 import type { Coding } from "../model";
 import { isObject } from "../guards";
 import type { Questionnaire, QuestionnaireEnableWhen, QuestionnaireItem } from "./model";
-import { getAnswers, type QuestionnaireResponse, type QuestionnaireResponseAnswer } from "./response";
+import {
+  findInstancePaths,
+  getAnswersAt,
+  getInstancePaths,
+  pathToKey,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseAnswer,
+  type ResponsePath,
+} from "./response";
+
+/** Whether the item with `linkId` under the instance at `parentPath` is enabled. */
+export type EnabledItemCheck = (parentPath: ResponsePath, linkId: string) => boolean;
 
 /**
- * The linkIds of the enabled items. A disabled item disables its children and counts as unanswered; a rule
- * that cannot be evaluated enables. `enableBehavior` defaults to `any`. Keyed by linkId.
+ * A disabled item disables its children and counts as unanswered; a rule that cannot be evaluated enables.
+ * `enableBehavior` defaults to `any`. A rule reads the question instances nearest to the item, so inside a
+ * repeating group each instance follows its own answers. Every item is evaluated up front in questionnaire
+ * order, so circular rules resolve the same way for every caller; create the check once per response.
  */
-export function getEnabledLinkIds(
+export function createEnabledItemCheck(
   questionnaire: Pick<Questionnaire, "item">,
   response: QuestionnaireResponse,
-): Set<string> {
-  const nodes = new Map<string, Node>();
-  const index = (items: QuestionnaireItem[], parent: Node | undefined) => {
-    for (const item of items) {
-      const node = { item, parent };
-      if (!nodes.has(item.linkId)) nodes.set(item.linkId, node);
-      index(item.item ?? [], node);
-    }
-  };
-  index(questionnaire.item ?? [], undefined);
+): EnabledItemCheck {
+  const nodesByLinkId = getNodesByLinkId(questionnaire.item ?? []);
 
-  const memo = new Map<string, boolean | "visiting">();
-  const isItemEnabled = (node: Node): boolean => {
-    const known = memo.get(node.item.linkId);
-    if (known === "visiting") return true;
-    if (known !== undefined) return known;
-    memo.set(node.item.linkId, "visiting");
-    const result = (node.parent === undefined || isItemEnabled(node.parent)) && evaluateRules(node.item) !== false;
-    memo.set(node.item.linkId, result);
+  const enabledByItemKey = new Map<string, boolean>();
+  const itemKeysBeingEvaluated = new Set<string>();
+  const isItemEnabled = (parentPath: ResponsePath, node: Node): boolean => {
+    const itemKey = getItemKey(parentPath, node.item.linkId);
+    if (itemKeysBeingEvaluated.has(itemKey)) return true;
+    const previouslyComputedIsEnabled = enabledByItemKey.get(itemKey);
+    if (previouslyComputedIsEnabled !== undefined) return previouslyComputedIsEnabled;
+    itemKeysBeingEvaluated.add(itemKey);
+    const parentEnabled = node.parent === undefined || isItemEnabled(parentPath.slice(0, -1), node.parent);
+    const result = parentEnabled && evaluateEnableWhen(node.item, parentPath) !== false;
+    itemKeysBeingEvaluated.delete(itemKey);
+    enabledByItemKey.set(itemKey, result);
     return result;
   };
-  const evaluateRules = (item: QuestionnaireItem): Outcome => {
+  const evaluateEnableWhen = (item: QuestionnaireItem, parentPath: ResponsePath): Outcome => {
     const rules = item.enableWhen ?? [];
     if (rules.length === 0) return true;
     const outcomes = rules.map((rule) => {
-      const question = nodes.get(rule.question);
-      if (question === undefined) return "indeterminate";
-      return evaluateRule(rule, isItemEnabled(question) ? getAnswers(response, rule.question) : []);
+      const question = nodesByLinkId.get(rule.question);
+      return question === undefined
+        ? "indeterminate"
+        : evaluateRule(rule, getAnswersFromNearestInstances(question, parentPath));
     });
     return combine(outcomes, item.enableBehavior);
   };
+  /**
+   * Answers of the enabled instances of `question` below the ancestor instance it shares with `parentPath`:
+   * `reason` under `meds[1]` reads `prn` under `meds[1]`, a question outside the group reads every `prn`.
+   */
+  const getAnswersFromNearestInstances = (question: Node, parentPath: ResponsePath): QuestionnaireResponseAnswer[] => {
+    const ancestorsAndSelf = getAncestorsAndSelf(question);
+    const sharedAncestors = countSharedAncestors(parentPath, ancestorsAndSelf);
+    let instancePaths: ResponsePath[] = [parentPath.slice(0, sharedAncestors)];
+    for (const item of ancestorsAndSelf.slice(sharedAncestors)) {
+      instancePaths = instancePaths.flatMap((path) => findInstancePaths(response, path, item.linkId));
+    }
+    const enabledInstancePaths = instancePaths.filter((path) => {
+      const questionParentPath = path.slice(0, -1);
+      return isItemEnabled(questionParentPath, question);
+    });
+    const answers = enabledInstancePaths.flatMap((path) => getAnswersAt(response, path));
+    return answers;
+  };
 
-  const enabled = new Set<string>();
-  for (const node of nodes.values()) {
-    if (isItemEnabled(node)) enabled.add(node.item.linkId);
-  }
-  return enabled;
+  const evaluateInQuestionnaireOrder = (items: QuestionnaireItem[], parentPath: ResponsePath) => {
+    for (const item of items) {
+      const node = nodesByLinkId.get(item.linkId);
+      if (node !== undefined) isItemEnabled(parentPath, node);
+      for (const path of getInstancePaths(response, parentPath, item)) {
+        evaluateInQuestionnaireOrder(item.item ?? [], path);
+      }
+    }
+  };
+  evaluateInQuestionnaireOrder(questionnaire.item ?? [], []);
+
+  return (parentPath, linkId) => {
+    const node = nodesByLinkId.get(linkId);
+    return node !== undefined && isItemEnabled(parentPath, node);
+  };
 }
 
 interface Node {
   item: QuestionnaireItem;
   parent: Node | undefined;
+}
+
+/** All instances of an item under one parent are enabled alike, so the first instance's path serves as key. */
+function getItemKey(parentPath: ResponsePath, linkId: string): string {
+  return pathToKey([...parentPath, { linkId, index: 0 }]);
+}
+
+/** Every item with its parent, by linkId; the first wins when a linkId repeats. */
+function getNodesByLinkId(items: QuestionnaireItem[]): Map<string, Node> {
+  const nodesByLinkId = new Map<string, Node>();
+  const addItems = (items: QuestionnaireItem[], parent: Node | undefined) => {
+    for (const item of items) {
+      const node = { item, parent };
+      if (!nodesByLinkId.has(item.linkId)) nodesByLinkId.set(item.linkId, node);
+      addItems(item.item ?? [], node);
+    }
+  };
+  addItems(items, undefined);
+  return nodesByLinkId;
+}
+
+/** The items from the root down to and including `node`. */
+function getAncestorsAndSelf(node: Node): QuestionnaireItem[] {
+  const items: QuestionnaireItem[] = [];
+  for (let current: Node | undefined = node; current !== undefined; current = current.parent) {
+    items.unshift(current.item);
+  }
+  return items;
+}
+
+/** How many leading segments of `path` and leading items of `ancestorsAndSelf` have the same linkId. */
+function countSharedAncestors(path: ResponsePath, ancestorsAndSelf: QuestionnaireItem[]): number {
+  let shared = 0;
+  while (shared < path.length && path.at(shared)?.linkId === ancestorsAndSelf.at(shared)?.linkId) shared++;
+  return shared;
 }
 
 /** A rule's result; `indeterminate` when it cannot be evaluated. */
