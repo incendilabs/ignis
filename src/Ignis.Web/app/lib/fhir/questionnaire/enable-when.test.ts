@@ -6,9 +6,9 @@
 
 import { describe, expect, it } from "vitest";
 
-import { getEnabledLinkIds } from "./enable-when";
+import { createEnabledItemCheck } from "./enable-when";
 import type { QuestionnaireEnableWhen, QuestionnaireItem } from "./model";
-import { createResponse, type QuestionnaireResponse, type QuestionnaireResponseAnswer, setAnswer } from "./response";
+import { addItem, createResponse, type QuestionnaireResponse, type QuestionnaireResponseAnswer, setAnswer } from "./response";
 import { pathOf } from "./test-support";
 
 const questions: QuestionnaireItem[] = [
@@ -26,7 +26,7 @@ function isEnabledWhen(
 ): boolean {
   const q: QuestionnaireItem = { linkId: "q", type: "string", enableWhen: rules };
   if (enableBehavior !== undefined) q.enableBehavior = enableBehavior;
-  return getEnabledLinkIds({ item: [...questions, q] }, response).has("q");
+  return createEnabledItemCheck({ item: [...questions, q] }, response)([], "q");
 }
 
 function answered(linkId: string, answer: QuestionnaireResponseAnswer): QuestionnaireResponse {
@@ -35,9 +35,10 @@ function answered(linkId: string, answer: QuestionnaireResponseAnswer): Question
 
 const unanswered = createResponse({ item: questions });
 
-describe("getEnabledLinkIds", () => {
+describe("createEnabledItemCheck", () => {
   it("enables items without rules", () => {
-    expect(getEnabledLinkIds({ item: questions }, unanswered)).toEqual(new Set(["smoker", "packs", "gender", "since"]));
+    const isItemEnabled = createEnabledItemCheck({ item: questions }, unanswered);
+    expect(questions.map((question) => isItemEnabled([], question.linkId))).toEqual([true, true, true, true]);
   });
 
   it("checks exists against whether the question was answered", () => {
@@ -117,8 +118,9 @@ describe("getEnabledLinkIds", () => {
         },
       ],
     };
-    expect(getEnabledLinkIds(questionnaire, unanswered).has("q")).toBe(false);
-    expect(getEnabledLinkIds(questionnaire, answered("smoker", { valueBoolean: true })).has("q")).toBe(true);
+    const g = [{ linkId: "g", index: 0 }];
+    expect(createEnabledItemCheck(questionnaire, unanswered)(g, "q")).toBe(false);
+    expect(createEnabledItemCheck(questionnaire, answered("smoker", { valueBoolean: true }))(g, "q")).toBe(true);
   });
 
   it("treats a disabled question as unanswered", () => {
@@ -131,10 +133,11 @@ describe("getEnabledLinkIds", () => {
     };
     let response = setAnswer(createResponse(questionnaire), pathOf(questionnaire.item, "smoker"), { valueBoolean: true });
     response = setAnswer(response, pathOf(questionnaire.item, "packs"), { valueInteger: 5 });
-    expect(getEnabledLinkIds(questionnaire, response).has("q")).toBe(true);
+    expect(createEnabledItemCheck(questionnaire, response)([], "q")).toBe(true);
 
     response = setAnswer(response, pathOf(questionnaire.item, "smoker"), { valueBoolean: false });
-    expect(getEnabledLinkIds(questionnaire, response)).toEqual(new Set(["smoker"]));
+    const isItemEnabled = createEnabledItemCheck(questionnaire, response);
+    expect(["smoker", "packs", "q"].map((linkId) => isItemEnabled([], linkId))).toEqual([true, false, false]);
   });
 
   it("enables an item whose rule it cannot evaluate", () => {
@@ -159,6 +162,52 @@ describe("getEnabledLinkIds", () => {
     expect(isEnabledWhen([broken, no], smoker, "all")).toBe(false);
   });
 
+  it("resolves circular rules the same way whichever item is asked for first", () => {
+    const questionnaire = {
+      item: [
+        {
+          linkId: "g",
+          type: "group",
+          item: [{ linkId: "a", type: "string", enableWhen: [{ question: "b", operator: "exists", answerBoolean: false }] }],
+        },
+        { linkId: "b", type: "string", enableWhen: [{ question: "a", operator: "exists", answerBoolean: false }] },
+      ],
+    };
+    const a = pathOf(questionnaire.item, "a");
+    let response = setAnswer(createResponse(questionnaire), a, { valueString: "yes" });
+    response = setAnswer(response, pathOf(questionnaire.item, "b"), { valueString: "yes" });
+
+    const askedForBFirst = createEnabledItemCheck(questionnaire, response);
+    const bFirst = { b: askedForBFirst([], "b"), a: askedForBFirst(a.slice(0, -1), "a") };
+    const askedForAFirst = createEnabledItemCheck(questionnaire, response);
+    const aFirst = { a: askedForAFirst(a.slice(0, -1), "a"), b: askedForAFirst([], "b") };
+
+    expect(aFirst).toEqual(bFirst);
+  });
+
+  it("reads the children of every answer of a repeating question", () => {
+    const questionnaire = {
+      item: [
+        { linkId: "drug", type: "string", repeats: true, item: [{ linkId: "dose", type: "integer" }] },
+        { linkId: "q", type: "string", enableWhen: [{ question: "dose", operator: "exists", answerBoolean: true }] },
+      ],
+    };
+    const response: QuestionnaireResponse = {
+      resourceType: "QuestionnaireResponse",
+      status: "in-progress",
+      item: [{
+        linkId: "drug",
+        answer: [
+          { valueString: "A", item: [{ linkId: "dose" }] },
+          { valueString: "B", item: [{ linkId: "dose", answer: [{ valueInteger: 2 }] }] },
+        ],
+      }],
+    };
+
+    expect(createEnabledItemCheck(questionnaire, response)([], "q")).toBe(true);
+    expect(createEnabledItemCheck(questionnaire, createResponse(questionnaire))([], "q")).toBe(false);
+  });
+
   it("resolves circular rules without looping", () => {
     const questionnaire = {
       item: [
@@ -166,6 +215,73 @@ describe("getEnabledLinkIds", () => {
         { linkId: "b", type: "string", enableWhen: [{ question: "a", operator: "exists", answerBoolean: false }] },
       ],
     };
-    expect(getEnabledLinkIds(questionnaire, createResponse(questionnaire))).toEqual(new Set(["a", "b"]));
+    const isItemEnabled = createEnabledItemCheck(questionnaire, createResponse(questionnaire));
+    expect(isItemEnabled([], "a")).toBe(true);
+    expect(isItemEnabled([], "b")).toBe(true);
+  });
+
+  describe("repeating groups", () => {
+    const meds: QuestionnaireItem = {
+      linkId: "meds",
+      type: "group",
+      repeats: true,
+      item: [
+        { linkId: "prn", type: "boolean" },
+        { linkId: "reason", type: "string", enableWhen: [{ question: "prn", operator: "=", answerBoolean: true }] },
+        {
+          linkId: "unit",
+          type: "string",
+          enableWhen: [{ question: "smoker", operator: "=", answerBoolean: true }],
+        },
+      ],
+    };
+    const items = [...questions, meds];
+    const med = (index: number) => [{ linkId: "meds", index }];
+    const prn = (index: number) => [...med(index), { linkId: "prn", index: 0 }];
+    const twoMeds = addItem(createResponse({ item: items }), [], meds);
+
+    it("follows the answer in the same instance", () => {
+      const response = setAnswer(twoMeds, prn(1), { valueBoolean: true });
+      const isItemEnabled = createEnabledItemCheck({ item: items }, response);
+
+      expect(isItemEnabled(med(0), "reason")).toBe(false);
+      expect(isItemEnabled(med(1), "reason")).toBe(true);
+    });
+
+    it("follows the answer in the same instance when the question is an ancestor", () => {
+      const reason: QuestionnaireItem = {
+        linkId: "reason",
+        type: "string",
+        enableWhen: [{ question: "prn", operator: "=", answerBoolean: true }],
+      };
+      const prnWithChild: QuestionnaireItem = { ...meds, item: [{ linkId: "prn", type: "boolean", item: [reason] }] };
+      let response = addItem(createResponse({ item: [prnWithChild] }), [], prnWithChild);
+      response = setAnswer(response, prn(0), { valueBoolean: true });
+      const isItemEnabled = createEnabledItemCheck({ item: [prnWithChild] }, response);
+
+      expect(isItemEnabled(prn(0), "reason")).toBe(true);
+      expect(isItemEnabled(prn(1), "reason")).toBe(false);
+    });
+
+    it("reads a question outside the group once for every instance", () => {
+      const response = setAnswer(twoMeds, pathOf(items, "smoker"), { valueBoolean: true });
+      const isItemEnabled = createEnabledItemCheck({ item: items }, response);
+
+      expect(isItemEnabled(med(0), "unit")).toBe(true);
+      expect(isItemEnabled(med(1), "unit")).toBe(true);
+    });
+
+    it("lets a question outside the group see every instance", () => {
+      const anyPrn: QuestionnaireItem = {
+        linkId: "warn",
+        type: "display",
+        enableWhen: [{ question: "prn", operator: "=", answerBoolean: true }],
+      };
+      const questionnaire = { item: [...items, anyPrn] };
+      const response = setAnswer(twoMeds, prn(1), { valueBoolean: true });
+
+      expect(createEnabledItemCheck(questionnaire, twoMeds)([], "warn")).toBe(false);
+      expect(createEnabledItemCheck(questionnaire, response)([], "warn")).toBe(true);
+    });
   });
 });

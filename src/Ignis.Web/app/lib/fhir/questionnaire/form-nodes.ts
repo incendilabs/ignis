@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { getEnabledLinkIds } from "./enable-when";
+import { createEnabledItemCheck } from "./enable-when";
 import type { Questionnaire, QuestionnaireItem } from "./model";
 import {
   getAnswersAt,
@@ -39,11 +39,11 @@ export function getFormNodes(
   response: QuestionnaireResponse,
   issues: ResponseIssue[],
 ): FormNode[] {
-  const enabledItems = getEnabledLinkIds(questionnaire, response);
+  const isItemEnabled = createEnabledItemCheck(questionnaire, response);
   const issuesByKey = new Map(issues.map((issue) => [pathToKey(issue.path), issue]));
   const toNodes = (items: QuestionnaireItem[], parentPath: ResponsePath): FormNode[] =>
     items
-      .filter((item) => enabledItems.has(item.linkId))
+      .filter((item) => isItemEnabled(parentPath, item.linkId))
       .map((item) => {
         const paths = getInstancePaths(response, parentPath, item);
         const repeats = isRepeatingGroup(item);

@@ -11,6 +11,7 @@ import {
   addItem,
   createResponse,
   pathToKey,
+  findInstancePaths,
   getAnswers,
   getAnswersAt,
   getInstancePaths,
@@ -264,6 +265,12 @@ describe("getInstancePaths", () => {
     expect(getInstancePaths(twoMeds, [{ linkId: "med", index: 2 }], doseItem)).toEqual([
       [{ linkId: "med", index: 2 }, { linkId: "dose", index: 0 }],
     ]);
+  });
+
+  it("finds the instances the response has, also of a non-repeating item", () => {
+    expect(findInstancePaths(twoMeds, [], "med")).toEqual([[{ linkId: "med", index: 0 }], [{ linkId: "med", index: 1 }]]);
+    expect(findInstancePaths(twoMeds, [{ linkId: "med", index: 1 }], "dose")).toEqual([dose(1)]);
+    expect(findInstancePaths(twoMeds, [], "missing")).toEqual([]);
   });
 
   it("gives no path for a repeating group without instances", () => {
