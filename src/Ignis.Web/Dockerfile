@@ -12,8 +12,8 @@ FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:50c8e8ca1d27439048670df5883
 WORKDIR /app
 COPY --from=dev-deps /app/node_modules /app/node_modules
 COPY . /app/
-# Get the collected docs
-RUN mkdir -p /app/.lectio && npm run build
+# Docs and FHIR types are generated on the host before docker build (no dotnet here)
+RUN mkdir -p /app/.lectio && npx react-router build
 
 FROM node:24-alpine@sha256:50c8e8ca1d27439048670df5883f32d57cf81cff6233222c893fd0d9884cbd81
 COPY --chown=node:node ./package.json package-lock.json /app/

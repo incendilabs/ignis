@@ -6,15 +6,16 @@
     "#app/*": "./app/*"
   },
   "scripts": {
-    "build": "react-router build",
-    "dev": "react-router dev",
+    "build": "npm run fhir:generate && react-router build",
+    "dev": "npm run fhir:generate && react-router dev",
+    "fhir:generate": "dotnet run --project ../Ignis.Codegen -c Release -- --packages ../../fhir-packages --out app/lib/fhir/generated",
     "docs:collect": "node --input-type=module -e \"const { runCollect } = await import('@eventuras/lectio-docs'); await runCollect()\"",
     "lint": "npm run paraglide:compile && react-router typegen && eslint .",
     "paraglide:compile": "paraglide-js compile --project ./app/i18n/project.inlang --outdir ./app/i18n/paraglide --emit-ts-declarations --strategy url cookie preferredLanguage baseLocale",
     "start": "node --enable-source-maps server.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "npm run paraglide:compile && react-router typegen && tsc"
+    "typecheck": "npm run fhir:generate && npm run paraglide:compile && react-router typegen && tsc"
   },
   "dependencies": {
     "@eventuras/fides-auth": "^0.14.1",

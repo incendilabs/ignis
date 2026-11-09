@@ -1,7 +1,8 @@
 <Project>
 
-  <!-- Downloads the FHIR conformance packages and stages them into build output (loaded from disk at run time,
-       no network). Edit the FhirPackage list below to change packages/version. -->
+  <!-- Downloads FHIR conformance packages. The API and tests load the flat list from $(FhirPackageDir) at run
+       time (staged into build output, no network); Ignis.Codegen reads one subfolder per FHIR version. Edit
+       the lists below to change packages/versions. -->
 
   <PropertyGroup>
     <!-- Override $(FhirPackageServer) (CLI -p:, env var, or Directory.Build.props) for a mirror, air-gapped
@@ -14,9 +15,23 @@
     <FhirPackage Include="hl7.fhir.r4.core" Version="4.0.1" />
   </ItemGroup>
 
+  <!-- Core package per FHIR version for the TypeScript generator. Only projects that set
+       $(FhirCodegenPackages) download these; Server overrides the registry for one package. -->
+  <ItemDefinitionGroup>
+    <FhirCodegenPackage>
+      <Server>$(FhirPackageServer)</Server>
+    </FhirCodegenPackage>
+  </ItemDefinitionGroup>
+  <ItemGroup Condition="'$(FhirCodegenPackages)' == 'true'">
+    <FhirCodegenPackage Include="hl7.fhir.r4.core" Version="4.0.1" Folder="r4" />
+    <FhirCodegenPackage Include="hl7.fhir.r4b.core" Version="4.3.0" Folder="r4b" />
+    <FhirCodegenPackage Include="hl7.fhir.r5.core" Version="5.0.0" Folder="r5" />
+    <FhirCodegenPackage Include="hl7.fhir.r6.core" Version="6.0.0-snapshot1" Folder="r6" Server="https://packages2.fhir.org/packages" />
+  </ItemGroup>
+
   <!-- SDK-tracked copy-to-output so packages re-stage when missing from bin (robust on incremental/parallel
        builds, unlike a detached copy). Empty until the first download — the fallback below covers that. -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(FhirCodegenPackages)' != 'true'">
     <None Include="$(FhirPackageDir)/*.tgz" CopyToOutputDirectory="PreserveNewest" Visible="false">
       <Link>fhir-packages\%(Filename)%(Extension)</Link>
     </None>
@@ -31,15 +46,24 @@
                   Condition="!Exists('$(FhirPackageDir)/%(FhirPackage.Identity)-%(FhirPackage.Version).tgz')" />
   </Target>
 
+  <Target Name="DownloadFhirCodegenPackages" BeforeTargets="BeforeBuild" Condition="'$(FhirCodegenPackages)' == 'true'">
+    <MakeDir Directories="$(FhirPackageDir)/%(FhirCodegenPackage.Folder)" />
+    <DownloadFile SourceUrl="%(FhirCodegenPackage.Server)/%(FhirCodegenPackage.Identity)/%(FhirCodegenPackage.Version)"
+                  DestinationFolder="$(FhirPackageDir)/%(FhirCodegenPackage.Folder)"
+                  DestinationFileName="%(FhirCodegenPackage.Identity)-%(FhirCodegenPackage.Version).tgz"
+                  Retries="2"
+                  Condition="!Exists('$(FhirPackageDir)/%(FhirCodegenPackage.Folder)/%(FhirCodegenPackage.Identity)-%(FhirCodegenPackage.Version).tgz')" />
+  </Target>
+
   <!-- First-build fallback: the content glob above evaluates before the packages are downloaded. -->
-  <Target Name="CopyFhirPackagesToOutput" AfterTargets="Build">
+  <Target Name="CopyFhirPackagesToOutput" AfterTargets="Build" Condition="'$(FhirCodegenPackages)' != 'true'">
     <ItemGroup>
       <_FhirPackageFile Include="$(FhirPackageDir)/*.tgz" />
     </ItemGroup>
     <Copy SourceFiles="@(_FhirPackageFile)" DestinationFolder="$(OutDir)fhir-packages" SkipUnchangedFiles="true" />
   </Target>
 
-  <Target Name="CopyFhirPackagesToPublish" AfterTargets="Publish">
+  <Target Name="CopyFhirPackagesToPublish" AfterTargets="Publish" Condition="'$(FhirCodegenPackages)' != 'true'">
     <ItemGroup>
       <_FhirPackageFile Include="$(FhirPackageDir)/*.tgz" />
     </ItemGroup>
