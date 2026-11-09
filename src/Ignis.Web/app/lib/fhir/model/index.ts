@@ -5,6 +5,7 @@ export {
   extensionValue,
   extensionValueType,
   findExtension,
+  findExtensions,
   parseExtensions,
 } from "./extension";
 export type { Extension } from "./extension";
@@ -20,3 +21,5 @@ export type {
   ResourceId,
   Uri,
 } from "./primitives";
+export { extensionDefinitionFromStructureDefinition } from "./extension-definition";
+export type { Extensible, ExtensionDefinition, ExtensionUrl } from "./extension-definition";
