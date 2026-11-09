@@ -5,6 +5,7 @@
  */
 
 import { isObject, asString } from "../guards";
+import type { Extensible, ExtensionDefinition, ExtensionUrl } from "./extension-definition";
 import type { Uri } from "./primitives";
 
 /**
@@ -29,7 +30,7 @@ export interface Extension {
  */
 export function extensionValue(
   extension: Extension,
-): { field: string; value: unknown } | undefined {
+): { field: string; value: unknown; } | undefined {
   for (const [field, value] of Object.entries(extension)) {
     if (field.startsWith("value") && value !== undefined) return { field, value };
   }
@@ -42,12 +43,38 @@ export function extensionValueType(field: string): string {
   return type.charAt(0).toLowerCase() + type.slice(1);
 }
 
-/** The first extension with this url, or undefined. */
+export function findExtension(extensions: Extension[] | undefined, url: Uri): Extension | undefined;
+export function findExtension<T extends ExtensionUrl>(
+  element: Extensible | undefined,
+  definition: ExtensionDefinition<T>,
+): T | undefined;
 export function findExtension(
-  extensions: Extension[] | undefined,
-  url: Uri,
-): Extension | undefined {
-  return extensions?.find((extension) => extension.url === url);
+  source: Extension[] | Extensible | undefined,
+  by: Uri | ExtensionDefinition,
+): ExtensionUrl | undefined {
+  const url = urlOf(by);
+  return extensionsOf(source)?.find((extension) => extension.url === url);
+}
+
+export function findExtensions(extensions: Extension[] | undefined, url: Uri): Extension[];
+export function findExtensions<T extends ExtensionUrl>(
+  element: Extensible | undefined,
+  definition: ExtensionDefinition<T>,
+): T[];
+export function findExtensions(
+  source: Extension[] | Extensible | undefined,
+  by: Uri | ExtensionDefinition,
+): ExtensionUrl[] {
+  const url = urlOf(by);
+  return extensionsOf(source)?.filter((extension) => extension.url === url) ?? [];
+}
+
+function urlOf(by: Uri | ExtensionDefinition): string {
+  return typeof by === "string" ? by : by.url;
+}
+
+function extensionsOf(source: Extension[] | Extensible | undefined): readonly ExtensionUrl[] | undefined {
+  return Array.isArray(source) ? source : source?.extension;
 }
 
 /**
