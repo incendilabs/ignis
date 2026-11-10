@@ -1,5 +1,5 @@
 # Build context: repository root (docker build -f src/Ignis.Api/Dockerfile .)
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:3cc3bbbbf93d82104892f42aa9106b6be4d120346dea0649643a97c801525256 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0-alpine@sha256:52556c0fb9d0f609ae9aeab9efeeba96f4acc2f7038f7696f2235ccbdbb8e290 AS build
 ARG TARGETARCH
 WORKDIR /src
 COPY Directory.Build.props fhir-packages.targets ./
@@ -11,7 +11,7 @@ RUN dotnet restore "src/Ignis.Api/Ignis.Api.csproj" -a $TARGETARCH -p:Configurat
 COPY src ./src
 RUN dotnet publish "src/Ignis.Api/Ignis.Api.csproj" -c Release -a $TARGETARCH -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:f62a272ac1b46e83f56b8ed0416572f31cd1128e2c4a5e63eb34d348e4a36095
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-alpine@sha256:d39b72ad1534fa0faf52b488bffb0762df7ba269d120f0338713d4dda2a41bf5
 WORKDIR /app
 RUN apk add --no-cache wget
 COPY --chown=app:app --from=build /app/publish .
