@@ -63,3 +63,6 @@ appsettings.local.json
 
 # FHIR conformance packages (downloaded at build by fhir-packages.targets)
 fhir-packages/
+
+# Generated FHIR TypeScript types (dotnet run --project src/Ignis.Codegen)
+src/Ignis.Web/app/lib/fhir/generated/r*/
