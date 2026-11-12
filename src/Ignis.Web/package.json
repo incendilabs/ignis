@@ -23,8 +23,8 @@
     "@eventuras/markdown": "^0.16.0",
     "@eventuras/ratio-ui": "^2.35.0",
     "@microsoft/signalr": "^10.0.11",
-    "@react-router/express": "8.5.0",
-    "@react-router/node": "8.5.0",
+    "@react-router/express": "8.5.1",
+    "@react-router/node": "8.5.1",
     "compression": "^1.8.2",
     "express": "^5.3.0",
     "isbot": "^5.2.2",
@@ -32,14 +32,14 @@
     "react": "^19.3.1",
     "react-aria-components": "^1.21.0",
     "react-dom": "^19.3.1",
-    "react-router": "8.5.0"
+    "react-router": "8.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@inlang/paraglide-js": "^2.29.2",
     "@inlang/plugin-m-function-matcher": "^2.3.4",
     "@inlang/plugin-message-format": "^4.5.5",
-    "@react-router/dev": "8.5.0",
+    "@react-router/dev": "8.5.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
