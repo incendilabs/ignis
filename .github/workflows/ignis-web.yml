@@ -21,6 +21,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: src/Ignis.Web/package-lock.json
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
       - name: Install dependencies
         run: npm ci
 
@@ -65,10 +70,16 @@ jobs:
           cache: npm
           cache-dependency-path: src/Ignis.Web/package-lock.json
 
-      - name: Collect documentation
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Collect documentation and generate FHIR types
         run: |
           npm ci
           npm run docs:collect
+          npm run fhir:generate
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
