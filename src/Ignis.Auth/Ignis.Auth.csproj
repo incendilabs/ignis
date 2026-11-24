@@ -24,7 +24,7 @@
     Transitive dependency System.Security.Cryptography.Xml has vulnerabilties, reference it directly until this is
     resolved in OpenIddict packages.
      -->
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.14" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />
   </ItemGroup>
 
   <ItemGroup>
