@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenIddict.AspNetCore" Version="7.7.2" />
-    <PackageReference Include="OpenIddict.MongoDb" Version="7.7.2" />
+    <PackageReference Include="OpenIddict.AspNetCore" Version="7.8.0" />
+    <PackageReference Include="OpenIddict.MongoDb" Version="7.8.0" />
     <!--
     Updating MongoDB.Driver to 3.9.0 resolves the vulnerable transitive dependencies SharpCompress and Snappier.
     When OpenIddict.MongoDb resolves this upstream we can remove this package again.
@@ -24,7 +24,7 @@
     Transitive dependency System.Security.Cryptography.Xml has vulnerabilties, reference it directly until this is
     resolved in OpenIddict packages.
      -->
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.14" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.15" />
   </ItemGroup>
 
   <ItemGroup>
